@@ -52,7 +52,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       : "Онгоинг";
 
   return (
-    <div className="group relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-white/5 bg-[#12131A] shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-xl hover:shadow-black/50">
+    <div className="group relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-white/5 bg-[#12131A] transition-all duration-300 hover:-translate-y-1 hover:border-white/20">
       {/* Clickable Card Action */}
       <button
         type="button"
@@ -137,7 +137,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
 
       {/* Hover Darkening Overlay with Details */}
       <div className="absolute inset-0 z-10 flex flex-col justify-end bg-gradient-to-t from-[#090A0F] via-[#090A0F]/80 to-transparent p-3 opacity-90 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none">
-        <h4 className="text-xs font-bold text-white line-clamp-2 leading-tight drop-shadow">
+        <h4 className="text-xs font-bold text-white line-clamp-2 leading-tight">
           {release.name.main}
         </h4>
         {(release.name.english || release.name.alternative) && (

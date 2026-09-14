@@ -139,7 +139,7 @@ function ReleaseHero({
               variant="default"
               size="lg"
               onClick={() => onPlay(startEpisode)}
-              className="gap-2.5 px-6 shadow-xl shadow-rose-900/40"
+              className="gap-2.5 px-6"
             >
               <Play className="h-5 w-5 fill-current" />
               <span>

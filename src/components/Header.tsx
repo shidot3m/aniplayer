@@ -38,7 +38,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
           onClick={() => setActiveScreen("home")}
           className="flex items-center gap-2.5 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-xl cursor-pointer"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 text-white shadow-lg shadow-rose-900/30 transition-transform group-hover:scale-105">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-600 text-white transition-transform group-hover:scale-105">
             <Film className="h-5 w-5" />
           </div>
           <div>
@@ -77,9 +77,9 @@ export function Header({ onOpenSettings }: HeaderProps) {
         </nav>
       </div>
 
-      {/* Center: Search Bar */}
-      <div className="relative w-72 md:w-96">
-        <div className="relative">
+      {/* Right: Search Bar & Settings */}
+      <div className="flex items-center gap-3">
+        <div className="relative w-64 md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <Input
             value={localQuery}
@@ -100,16 +100,13 @@ export function Header({ onOpenSettings }: HeaderProps) {
                 setLocalQuery("");
                 setSearchQuery("");
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 rounded"
             >
               ✕
             </button>
           )}
         </div>
-      </div>
 
-      {/* Right: Quick Settings */}
-      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="icon"

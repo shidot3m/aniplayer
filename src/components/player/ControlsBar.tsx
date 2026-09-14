@@ -101,7 +101,7 @@ export function ControlsBar({
           data-testid="player-play-pause-btn"
           onClick={onTogglePlay}
           title={isPlaying ? "Пауза (Space)" : "Воспроизведение (Space)"}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg shadow-rose-900/40 hover:bg-rose-500 hover:scale-105 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-600 text-white hover:bg-rose-500 hover:scale-105 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
         >
           {isPlaying ? (
             <Pause className="h-5 w-5 fill-current" />

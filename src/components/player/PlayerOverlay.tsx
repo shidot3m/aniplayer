@@ -32,11 +32,9 @@ function PlayerTopBar({ isVisible, release, onBack }: PlayerTopBarProps) {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <h2 className="text-base font-bold text-white leading-tight drop-shadow">
-            {release.name.main}
-          </h2>
+          <h2 className="text-base font-bold text-white leading-tight">{release.name.main}</h2>
           {(release.name.alternative || release.name.english) && (
-            <p className="text-xs text-slate-300 drop-shadow">
+            <p className="text-xs text-slate-300">
               {release.name.alternative || release.name.english}
             </p>
           )}

@@ -105,11 +105,6 @@ export default function App() {
             {/* Continue Watching Section */}
             {!searchQuery && <ContinueWatching onSelectRelease={handleSelectRelease} />}
 
-            {/* Genres Filter */}
-            {!searchQuery && (
-              <GenreSelector selectedGenre={selectedGenre} onSelectGenre={setSelectedGenre} />
-            )}
-
             {/* Releases Header */}
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
@@ -128,7 +123,7 @@ export default function App() {
                 <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
               </div>
             ) : displayedReleases.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 mb-12">
                 {displayedReleases.map((release) => (
                   <AnimeCard
                     key={release.id}
@@ -138,9 +133,14 @@ export default function App() {
                 ))}
               </div>
             ) : (
-              <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#12131A]/30 text-center">
+              <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#12131A]/30 text-center mb-12">
                 <p className="text-sm text-slate-400">Релизы не найдены</p>
               </div>
+            )}
+
+            {/* Genres Section at the End */}
+            {!searchQuery && (
+              <GenreSelector selectedGenre={selectedGenre} onSelectGenre={setSelectedGenre} />
             )}
           </div>
         )}

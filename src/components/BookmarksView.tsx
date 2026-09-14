@@ -97,7 +97,7 @@ export function BookmarksView({ onSelectRelease }: BookmarksViewProps) {
               onClick={() => setActiveCategory(cat.id)}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
                 isSelected
-                  ? "bg-rose-600 text-white shadow-lg shadow-rose-900/30"
+                  ? "bg-rose-600 text-white"
                   : "bg-[#12131A] text-slate-400 border border-white/5 hover:border-white/20 hover:text-white"
               }`}
             >

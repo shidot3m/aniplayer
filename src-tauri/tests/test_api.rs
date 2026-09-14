@@ -36,3 +36,12 @@ async fn test_api_fetch_torrents_and_codecs() {
     });
     assert!(has_hevc, "Expected at least one HEVC torrent for release 10239");
 }
+
+#[tokio::test]
+async fn test_api_fetch_genres() {
+    let client = AnilibriaClient::new();
+    let genres = client.get_genres().await.expect("Get genres failed");
+    assert!(!genres.is_empty(), "Genres list should not be empty");
+    let has_releases_count = genres.iter().any(|g| g.total_releases.unwrap_or(0) > 0);
+    assert!(has_releases_count, "Expected at least one genre to have total_releases");
+}

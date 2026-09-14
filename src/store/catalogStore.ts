@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import type { BookmarkCategory, BookmarkItem, HistoryItem, Release } from "../types";
+import type { BookmarkCategory, BookmarkItem, GenreItem, HistoryItem, Release } from "../types";
 
 interface CatalogState {
   activeScreen: "home" | "bookmarks" | "details";
@@ -8,6 +8,7 @@ interface CatalogState {
   searchQuery: string;
   searchResults: Release[];
   latestReleases: Release[];
+  genres: GenreItem[];
   history: HistoryItem[];
   bookmarks: Record<BookmarkCategory, BookmarkItem[]>;
   isSearching: boolean;
@@ -19,6 +20,7 @@ interface CatalogState {
   setSearchQuery: (query: string) => void;
   performSearch: (query: string) => Promise<void>;
   loadInitialData: () => Promise<void>;
+  loadGenres: () => Promise<void>;
   fetchAllBookmarks: () => Promise<void>;
   setBookmark: (releaseId: number, category: BookmarkCategory, release: Release) => Promise<void>;
   removeBookmark: (releaseId: number) => Promise<void>;
@@ -46,6 +48,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   searchQuery: "",
   searchResults: [],
   latestReleases: [],
+  genres: [],
   history: [],
   bookmarks: INITIAL_BOOKMARKS,
   isSearching: false,
@@ -54,6 +57,15 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   setActiveScreen: (screen) => set({ activeScreen: screen }),
   setSelectedRelease: (release) => set({ selectedRelease: release }),
   setSearchQuery: (query) => set({ searchQuery: query }),
+
+  loadGenres: async () => {
+    try {
+      const genres = await invoke<GenreItem[]>("api_get_genres");
+      set({ genres });
+    } catch (e) {
+      console.error("Failed to load genres:", e);
+    }
+  },
 
   performSearch: async (query: string) => {
     if (!query.trim()) {
@@ -109,7 +121,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         history: historyItems,
         isLoading: false,
       });
-      await get().fetchAllBookmarks();
+      await Promise.all([get().fetchAllBookmarks(), get().loadGenres()]);
     } catch (e) {
       console.error("Failed to load initial data:", e);
       set({ isLoading: false });

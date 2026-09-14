@@ -30,6 +30,7 @@ pub struct ImageSource {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ImageOptimized {
     pub src: Option<String>,
+    pub preview: Option<String>,
     pub thumbnail: Option<String>,
 }
 
@@ -57,6 +58,8 @@ pub struct EpisodeItem {
 pub struct GenreItem {
     pub id: i64,
     pub name: String,
+    pub image: Option<ImageSource>,
+    pub total_releases: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

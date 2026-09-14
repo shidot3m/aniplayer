@@ -20,6 +20,7 @@ export interface ReleaseType {
 
 export interface ImageOptimized {
   src?: string | null;
+  preview?: string | null;
   thumbnail?: string | null;
 }
 
@@ -51,6 +52,8 @@ export interface EpisodeItem {
 export interface GenreItem {
   id: number;
   name: string;
+  image?: ImageSource | null;
+  total_releases?: number | null;
 }
 
 export interface ReleasePreview {
