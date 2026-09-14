@@ -1,20 +1,23 @@
 pub mod api;
 pub mod db;
 pub mod downloader;
+pub mod player;
 
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tauri::State;
 use api::models::*;
 use api::AnilibriaClient;
 use db::models::*;
 use db::Database;
 use downloader::HlsDownloader;
+use player::MpvCore;
 
 pub struct AppState {
     pub db: Arc<Database>,
     pub api: Arc<AnilibriaClient>,
     pub downloader: Arc<HlsDownloader>,
+    pub player: Arc<Mutex<Option<MpvCore>>>,
     pub app_dir: PathBuf,
 }
 
@@ -139,6 +142,166 @@ async fn downloader_start_episode(
     Ok(path.to_string_lossy().to_string())
 }
 
+// Player IPC commands
+#[tauri::command]
+fn player_init(state: State<'_, AppState>, hwnd: Option<usize>) -> Result<(), String> {
+    let dll_candidates = [
+        state.app_dir.join("bin/mpv-dev/libmpv-2.dll"),
+        state.app_dir.join("libmpv-2.dll"),
+        PathBuf::from("bin/mpv-dev/libmpv-2.dll"),
+        PathBuf::from("libmpv-2.dll"),
+    ];
+    let dll_path = dll_candidates.into_iter().find(|p| p.exists())
+        .ok_or_else(|| "libmpv-2.dll not found".to_string())?;
+    
+    let shaders_candidates = [
+        state.app_dir.join("shaders/anime4k"),
+        PathBuf::from("shaders/anime4k"),
+    ];
+    let shaders_dir = shaders_candidates.into_iter().find(|p| p.exists())
+        .unwrap_or_else(|| state.app_dir.join("shaders/anime4k"));
+
+    let core = MpvCore::new(&dll_path, &shaders_dir, hwnd)?;
+    let mut p = state.player.lock().map_err(|e| e.to_string())?;
+    *p = Some(core);
+    Ok(())
+}
+
+#[tauri::command]
+fn player_load_video(state: State<'_, AppState>, url: String, start_pos: Option<f64>) -> Result<(), String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.load_video(&url, start_pos.unwrap_or(0.0))
+    } else {
+        Err("Player not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_play(state: State<'_, AppState>) -> Result<(), String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.play()
+    } else {
+        Err("Player not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_pause(state: State<'_, AppState>) -> Result<(), String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.pause()
+    } else {
+        Err("Player not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_seek(state: State<'_, AppState>, seconds: f64) -> Result<(), String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.seek(seconds)
+    } else {
+        Err("Player not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_seek_relative(state: State<'_, AppState>, offset: f64) -> Result<(), String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.seek_relative(offset)
+    } else {
+        Err("Player not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_set_volume(state: State<'_, AppState>, volume: f64) -> Result<(), String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.set_volume(volume)?;
+        // Save to SQLite
+        let _ = state.db.save_setting("volume", &format!("{:.1}", volume));
+        Ok(())
+    } else {
+        Err("Player not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_get_volume(state: State<'_, AppState>) -> Result<f64, String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.get_volume()
+    } else {
+        Ok(80.0)
+    }
+}
+
+#[tauri::command]
+fn player_set_speed(state: State<'_, AppState>, speed: f64) -> Result<(), String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.set_speed(speed)
+    } else {
+        Err("Player not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_set_shader_preset(state: State<'_, AppState>, preset: String) -> Result<(), String> {
+    let mut p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_mut() {
+        core.set_shader_preset(&preset)?;
+        let _ = state.db.save_setting("anime4k_preset", &preset);
+        Ok(())
+    } else {
+        Err("Player not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_get_current_preset(state: State<'_, AppState>) -> Result<String, String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        Ok(core.get_current_preset())
+    } else {
+        Ok("A+A".to_string())
+    }
+}
+
+#[tauri::command]
+fn player_get_time_pos(state: State<'_, AppState>) -> Result<f64, String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.get_time_pos()
+    } else {
+        Ok(0.0)
+    }
+}
+
+#[tauri::command]
+fn player_get_duration(state: State<'_, AppState>) -> Result<f64, String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.get_duration()
+    } else {
+        Ok(0.0)
+    }
+}
+
+#[tauri::command]
+fn player_is_paused(state: State<'_, AppState>) -> Result<bool, String> {
+    let p = state.player.lock().map_err(|e| e.to_string())?;
+    if let Some(core) = p.as_ref() {
+        core.is_paused()
+    } else {
+        Ok(true)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_dir = std::env::current_exe()
@@ -154,6 +317,7 @@ pub fn run() {
     }));
     let api_client = Arc::new(AnilibriaClient::new());
     let downloader = Arc::new(HlsDownloader::new(database.clone()));
+    let player_state = Arc::new(Mutex::new(None));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -161,6 +325,7 @@ pub fn run() {
             db: database,
             api: api_client,
             downloader,
+            player: player_state,
             app_dir,
         })
         .invoke_handler(tauri::generate_handler![
@@ -183,6 +348,20 @@ pub fn run() {
             api_get_release_torrents,
             api_search_releases,
             downloader_start_episode,
+            player_init,
+            player_load_video,
+            player_play,
+            player_pause,
+            player_seek,
+            player_seek_relative,
+            player_set_volume,
+            player_get_volume,
+            player_set_speed,
+            player_set_shader_preset,
+            player_get_current_preset,
+            player_get_time_pos,
+            player_get_duration,
+            player_is_paused,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
