@@ -1,8 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import type { PlayerHotkeysConfig, VideoQuality } from "../types";
+import { API_BASE_URL } from "../lib/constants";
+import type { PlayerHotkeysConfig, ReleaseDetails, VideoQuality } from "../types";
 import {
   DEFAULT_HOTKEYS,
+  getInitialAnime4kEnabled,
   getInitialHotkeys,
   getInitialQuality,
   getInitialVolume,
@@ -20,7 +22,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   isMuted: false,
   speed: 1.0,
   anime4kPreset: "Mode A+A (HQ)",
-  anime4kEnabled: true,
+  anime4kEnabled: getInitialAnime4kEnabled(),
   autoSkipOpening: true,
   autoSkipEnding: true,
   autoSkipOpEd: true,
@@ -34,39 +36,67 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   isSettingsOpen: false,
 
   openPlayer: async (release, episode, startPos = 0) => {
+    let activeRelease = release;
+    let activeEpisode = episode;
+
+    // If episode doesn't have stream URLs yet, fetch full release details
+    if (!activeEpisode.hls_1080 && !activeEpisode.hls_720 && !activeEpisode.hls_480) {
+      try {
+        let fullRel: ReleaseDetails | null = null;
+        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+          fullRel = await invoke<ReleaseDetails>("api_get_release", {
+            idOrAlias: String(release.id),
+          }).catch(() => null);
+        }
+        if (!fullRel) {
+          const res = await fetch(`${API_BASE_URL}/anime/releases/${release.id}`).catch(() => null);
+          if (res?.ok) fullRel = await res.json();
+        }
+        if (fullRel && fullRel.episodes?.length) {
+          activeRelease = fullRel;
+          const found = fullRel.episodes.find(
+            (e) => e.id === episode.id || e.ordinal === episode.ordinal,
+          );
+          if (found) activeEpisode = found;
+        }
+      } catch (err) {
+        console.error("Failed to load full release in openPlayer:", err);
+      }
+    }
+
     // Select video stream URL based on preferred quality with fallback
     const pref = get().preferredQuality;
     let url = "";
     let resolvedQuality: VideoQuality = "1080p";
 
-    if (pref === "1080p" && episode.hls_1080) {
-      url = episode.hls_1080;
+    if (pref === "1080p" && activeEpisode.hls_1080) {
+      url = activeEpisode.hls_1080;
       resolvedQuality = "1080p";
-    } else if (pref === "720p" && episode.hls_720) {
-      url = episode.hls_720;
+    } else if (pref === "720p" && activeEpisode.hls_720) {
+      url = activeEpisode.hls_720;
       resolvedQuality = "720p";
-    } else if (pref === "480p" && episode.hls_480) {
-      url = episode.hls_480;
+    } else if (pref === "480p" && activeEpisode.hls_480) {
+      url = activeEpisode.hls_480;
       resolvedQuality = "480p";
     } else {
-      if (episode.hls_1080) {
-        url = episode.hls_1080;
+      if (activeEpisode.hls_1080) {
+        url = activeEpisode.hls_1080;
         resolvedQuality = "1080p";
-      } else if (episode.hls_720) {
-        url = episode.hls_720;
+      } else if (activeEpisode.hls_720) {
+        url = activeEpisode.hls_720;
         resolvedQuality = "720p";
-      } else if (episode.hls_480) {
-        url = episode.hls_480;
+      } else if (activeEpisode.hls_480) {
+        url = activeEpisode.hls_480;
         resolvedQuality = "480p";
       }
     }
 
     set({
       isPlayerOpen: true,
-      currentRelease: release,
-      currentEpisode: episode,
+      currentRelease: activeRelease,
+      currentEpisode: activeEpisode,
       currentTime: startPos,
-      duration: episode.duration || 0,
+      duration: activeEpisode.duration || 0,
       isPlaying: true,
       activeQuality: resolvedQuality,
     });
@@ -203,8 +233,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   toggleAnime4k: async () => {
     const enabled = !get().anime4kEnabled;
     set({ anime4kEnabled: enabled });
-    const preset = enabled ? get().anime4kPreset : "OFF";
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aniplayer_anime4k_enabled", String(enabled));
+    }
     try {
+      await invoke("db_save_setting", { key: "anime4k_enabled", value: String(enabled) });
+      const preset = enabled ? get().anime4kPreset : "OFF";
       await invoke("player_set_shader_preset", { preset });
     } catch (e) {
       console.error(e);
@@ -288,6 +322,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const preset = await invoke<string | null>("db_get_setting", { key: "anime4k_preset" });
       if (preset) {
         set({ anime4kPreset: preset });
+      }
+      const a4k = await invoke<string | null>("db_get_setting", { key: "anime4k_enabled" });
+      if (a4k !== null) {
+        set({ anime4kEnabled: a4k === "true" });
       }
       const qual = await invoke<string | null>("db_get_setting", { key: "preferred_quality" });
       if (qual === "1080p" || qual === "720p" || qual === "480p") {
@@ -373,13 +411,21 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const cur = await invoke<number>("player_get_time_pos");
       const dur = await invoke<number>("player_get_duration");
 
-      set({
-        volume: vol,
-        anime4kPreset: preset,
-        isPlaying: !paused,
-        currentTime: cur,
-        duration: dur > 0 ? dur : get().duration,
-      });
+      // Only update time and isPlaying if backend has an active running stream
+      if (dur > 0 && cur >= 0) {
+        set({
+          volume: vol,
+          anime4kPreset: preset,
+          isPlaying: !paused,
+          currentTime: cur,
+          duration: dur,
+        });
+      } else {
+        set({
+          volume: vol,
+          anime4kPreset: preset,
+        });
+      }
     } catch (_e) {
       // Backend not ready yet or no active stream
     }

@@ -31,6 +31,12 @@ impl MpvCore {
         ffi.set_option_string(handle, "vo", "gpu-next")?;
         ffi.set_option_string(handle, "gpu-api", "auto")?;
         ffi.set_option_string(handle, "keep-open", "yes")?;
+        ffi.set_option_string(
+            handle,
+            "user-agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        )?;
+        ffi.set_option_string(handle, "referrer", "https://aniliberty.top/")?;
 
         if let Some(w) = hwnd {
             let wid_str = w.to_string();
@@ -79,7 +85,11 @@ impl MpvCore {
     }
 
     pub fn load_video(&self, url: &str, start_pos: f64) -> Result<(), String> {
-        let cmd = format!("loadfile \"{}\" replace start={}", url, start_pos);
+        let cmd = if start_pos > 0.0 {
+            format!("loadfile \"{}\" replace start={:.2}", url, start_pos)
+        } else {
+            format!("loadfile \"{}\" replace", url)
+        };
         self.ffi.command_string(self.handle, &cmd)
     }
 

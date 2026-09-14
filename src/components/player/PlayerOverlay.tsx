@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useCatalogStore } from "../../store/catalogStore";
 import { usePlayerStore } from "../../store/playerStore";
 import type { EpisodeItem, Release } from "../../types";
 import { EpisodeDrawer } from "./EpisodeDrawer";
 import { PlayerBottomBar } from "./PlayerBottomBar";
+import { PlayerSkipToasts } from "./PlayerSkipToasts";
 import { PlayerTopBar } from "./PlayerTopBar";
-import { SkipToast } from "./SkipToast";
-import { usePlayerHotkeys } from "./usePlayerHotkeys";
+import { PlayerVideoViewport } from "./PlayerVideoViewport";
+import { usePlayerControllers } from "./usePlayerControllers";
 import { useAutoHide, useFullscreen } from "./usePlayerOverlayState";
 
 interface PlayerOverlayProps {
@@ -18,127 +19,108 @@ interface PlayerOverlayProps {
 
 export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: PlayerOverlayProps) {
   const { history } = useCatalogStore();
-  const {
-    isPlaying,
-    currentTime,
-    duration,
-    volume,
-    setVolume,
-    togglePlay,
-    seekTo,
-    seekRelative,
-    toggleMute,
-    setAnime4kPreset,
-    playEpisode,
-    autoSkipOpEd,
-    autoplayNext,
-    activeQuality,
-    setQuality,
-  } = usePlayerStore();
+  const playerStore = usePlayerStore();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { isVisible, handleUserActivity } = useAutoHide(isPlaying, isDrawerOpen);
+  const { isVisible, handleUserActivity } = useAutoHide(playerStore.isPlaying, isDrawerOpen);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
-  const currentIndex = release.episodes.findIndex((e) => e.id === episode.id);
-  const hasPrev = currentIndex > 0;
-  const hasNext = currentIndex >= 0 && currentIndex < release.episodes.length - 1;
-
-  const handlePrev = useCallback(() => {
-    if (hasPrev) playEpisode(release, release.episodes[currentIndex - 1]);
-  }, [hasPrev, playEpisode, release, currentIndex]);
-
-  const handleNext = useCallback(() => {
-    if (hasNext) playEpisode(release, release.episodes[currentIndex + 1]);
-  }, [hasNext, playEpisode, release, currentIndex]);
-
-  const isInsideOpening =
-    episode.opening?.start != null &&
-    episode.opening?.stop != null &&
-    currentTime >= episode.opening.start &&
-    currentTime <= episode.opening.stop;
-
-  const isInsideEnding =
-    episode.ending?.start != null &&
-    episode.ending?.stop != null &&
-    currentTime >= episode.ending.start &&
-    currentTime <= episode.ending.stop;
-
-  useEffect(() => {
-    if (autoSkipOpEd) {
-      if (isInsideOpening && episode.opening?.stop != null) {
-        seekTo(episode.opening.stop + 0.5);
-      } else if (isInsideEnding && episode.ending?.stop != null) {
-        seekTo(episode.ending.stop + 0.5);
-      }
-    }
-  }, [autoSkipOpEd, isInsideOpening, isInsideEnding, episode.opening, episode.ending, seekTo]);
-
-  usePlayerHotkeys({
-    onUserActivity: handleUserActivity,
-    togglePlay,
-    seekRelative,
-    seekTo,
-    setVolume,
-    volume,
-    toggleMute,
-    toggleFullscreen,
+  const {
+    videoRef,
+    streamUrl,
+    hasPrev,
+    hasNext,
+    handlePrev,
+    handleNext,
+    handleSeek,
+    handleTogglePlay,
+    handleTimeUpdate,
+    handleLoadedMetadata,
+    timeLeft,
+    isAutoplayCountdown,
     isInsideOpening,
     isInsideEnding,
-    openingStop: episode.opening?.stop,
-    endingStop: episode.ending?.stop,
-    onNext: handleNext,
-    onPrev: handlePrev,
-    setPreset: setAnime4kPreset,
+  } = usePlayerControllers({
+    release,
+    episode,
+    currentTime: playerStore.currentTime,
+    duration: playerStore.duration,
+    activeQuality: playerStore.activeQuality,
+    autoSkipOpEd: playerStore.autoSkipOpEd,
+    autoplayNext: playerStore.autoplayNext,
+    isPlaying: playerStore.isPlaying,
+    volume: playerStore.volume,
+    isMuted: playerStore.isMuted,
+    speed: playerStore.speed,
+    play: playerStore.play,
+    pause: playerStore.pause,
+    seekTo: playerStore.seekTo,
+    seekRelative: playerStore.seekRelative,
+    togglePlay: playerStore.togglePlay,
+    setVolume: playerStore.setVolume,
+    toggleMute: playerStore.toggleMute,
+    setAnime4kPreset: playerStore.setAnime4kPreset,
+    playEpisode: playerStore.playEpisode,
+    updateTime: playerStore.updateTime,
+    handleUserActivity,
+    toggleFullscreen,
   });
 
-  const timeLeft = duration > 0 ? duration - currentTime : 999;
-  const isAutoplayCountdown = autoplayNext && hasNext && timeLeft <= 15 && timeLeft > 0;
-
-  const watchedEpIds = new Set(
-    history.filter((h) => h.release_id === release.id && h.is_completed).map((h) => h.episode_id),
+  const watchedEpIds = useMemo(
+    () =>
+      new Set(
+        history
+          .filter((h) => h.release_id === release.id && h.is_completed)
+          .map((h) => h.episode_id),
+      ),
+    [history, release.id],
   );
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black select-none font-sans">
+      <PlayerVideoViewport
+        videoRef={videoRef}
+        streamUrl={streamUrl}
+        onTogglePlay={handleTogglePlay}
+        onToggleFullscreen={toggleFullscreen}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+      />
+
       <PlayerTopBar isVisible={isVisible} release={release} onBack={onBack} />
 
-      <div className="absolute bottom-28 right-8 z-40 flex flex-col gap-2 pointer-events-auto">
-        {!autoSkipOpEd && isInsideOpening && episode.opening?.stop != null && (
-          <SkipToast type="opening" onSkip={() => seekTo(episode.opening?.stop ?? currentTime)} />
-        )}
-        {!autoSkipOpEd && isInsideEnding && episode.ending?.stop != null && (
-          <SkipToast type="ending" onSkip={() => seekTo(episode.ending?.stop ?? currentTime)} />
-        )}
-        {isAutoplayCountdown && (
-          <SkipToast
-            type="next_episode"
-            countdownSeconds={Math.ceil(timeLeft)}
-            onSkip={handleNext}
-          />
-        )}
-      </div>
+      <PlayerSkipToasts
+        autoSkipOpEd={playerStore.autoSkipOpEd}
+        isInsideOpening={isInsideOpening}
+        isInsideEnding={isInsideEnding}
+        openingStop={episode.opening?.stop}
+        endingStop={episode.ending?.stop}
+        isAutoplayCountdown={isAutoplayCountdown}
+        timeLeft={timeLeft}
+        onSeek={handleSeek}
+        onNext={handleNext}
+      />
 
       <PlayerBottomBar
         isVisible={isVisible}
         episode={episode}
-        currentTime={currentTime}
-        duration={duration}
-        isPlaying={isPlaying}
-        volume={volume}
+        currentTime={playerStore.currentTime}
+        duration={playerStore.duration}
+        isPlaying={playerStore.isPlaying}
+        volume={playerStore.volume}
         hasPrev={hasPrev}
         hasNext={hasNext}
         isFullscreen={isFullscreen}
-        currentQuality={activeQuality}
-        onSeek={seekTo}
-        onTogglePlay={togglePlay}
+        currentQuality={playerStore.activeQuality}
+        onSeek={handleSeek}
+        onTogglePlay={handleTogglePlay}
         onPrev={handlePrev}
         onNext={handleNext}
-        onVolumeChange={setVolume}
+        onVolumeChange={playerStore.setVolume}
         onToggleFullscreen={toggleFullscreen}
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onGoToRelease={onGoToRelease}
-        onSelectQuality={setQuality}
+        onSelectQuality={playerStore.setQuality}
       />
 
       <EpisodeDrawer
@@ -147,7 +129,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         release={release}
         currentEpisode={episode}
         watchedEpIds={watchedEpIds}
-        onSelectEpisode={(ep) => playEpisode(release, ep)}
+        onSelectEpisode={(ep) => playerStore.playEpisode(release, ep)}
       />
     </div>
   );

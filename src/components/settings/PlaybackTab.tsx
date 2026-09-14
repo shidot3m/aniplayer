@@ -25,6 +25,8 @@ export function PlaybackTab() {
     setPreferredQuality,
     anime4kPreset,
     setAnime4kPreset,
+    anime4kEnabled,
+    toggleAnime4k,
     autoSkipOpEd,
     setAutoSkipOpEd,
     autoplayNext,
@@ -70,17 +72,43 @@ export function PlaybackTab() {
         <Slider value={volume} min={0} max={100} step={1} onChange={setVolume} />
       </div>
 
-      {/* Anime4K Preset */}
+      {/* Anime4K Upscaler */}
       <div>
-        <span className="flex items-center gap-1.5 mb-2 font-medium text-slate-200">
-          <Sparkles className="h-3.5 w-3.5 text-rose-500" />
-          Пресет апскейлера Anime4K
-        </span>
-        <div className="grid grid-cols-2 gap-2">
-          {SHADER_PRESETS.map((p) => (
+        <div className="flex items-center justify-between mb-2">
+          <span className="flex items-center gap-1.5 font-medium text-slate-200">
+            <Sparkles className="h-3.5 w-3.5 text-rose-500" />
+            Апскейлер Anime4K
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-label="Переключить апскейлер Anime4K"
+            aria-checked={anime4kEnabled}
+            onClick={toggleAnime4k}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+              anime4kEnabled ? "bg-rose-600" : "bg-white/20"
+            }`}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                anime4kEnabled ? "translate-x-4.5" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+        <div className="text-[11px] text-slate-400 mb-2.5">
+          {anime4kEnabled ? "Включен (активен выбранный шейдер)" : "Выключен"}
+        </div>
+        <div
+          className={`grid grid-cols-2 gap-2 transition-opacity duration-200 ${
+            anime4kEnabled ? "opacity-100" : "opacity-40 pointer-events-none"
+          }`}
+        >
+          {SHADER_PRESETS.filter((p) => p.id !== "Off").map((p) => (
             <button
               key={p.id}
               type="button"
+              disabled={!anime4kEnabled}
               onClick={() => setAnime4kPreset(p.id)}
               className={`rounded-xl px-3 py-2 text-left border transition-all cursor-pointer ${
                 anime4kPreset === p.id

@@ -119,14 +119,21 @@ async fn api_search_releases(state: State<'_, AppState>, query: String) -> Resul
 }
 
 #[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DownloadEpisodeItem {
+    #[serde(alias = "episode_id")]
     pub episode_id: String,
     pub ordinal: f64,
+    #[serde(alias = "m3u8_url")]
     pub m3u8_url: String,
     pub quality: Option<String>,
+    #[serde(alias = "op_start")]
     pub op_start: Option<f64>,
+    #[serde(alias = "op_stop")]
     pub op_stop: Option<f64>,
+    #[serde(alias = "ed_start")]
     pub ed_start: Option<f64>,
+    #[serde(alias = "ed_stop")]
     pub ed_stop: Option<f64>,
 }
 
@@ -226,6 +233,12 @@ fn player_init(state: State<'_, AppState>, hwnd: Option<usize>) -> Result<(), St
         .unwrap_or_else(|| state.app_dir.join("shaders/anime4k"));
 
     let core = MpvCore::new(&dll_path, &shaders_dir, hwnd)?;
+    let initial_vol = if let Ok(Some(val)) = state.db.get_setting("volume") {
+        val.parse::<f64>().unwrap_or(80.0)
+    } else {
+        80.0
+    };
+    let _ = core.set_volume(initial_vol);
     let mut p = state.player.lock().map_err(|e| e.to_string())?;
     *p = Some(core);
     Ok(())
@@ -283,15 +296,12 @@ fn player_seek_relative(state: State<'_, AppState>, offset: f64) -> Result<(), S
 
 #[tauri::command]
 fn player_set_volume(state: State<'_, AppState>, volume: f64) -> Result<(), String> {
+    let _ = state.db.save_setting("volume", &format!("{:.1}", volume));
     let p = state.player.lock().map_err(|e| e.to_string())?;
     if let Some(core) = p.as_ref() {
-        core.set_volume(volume)?;
-        // Save to SQLite
-        let _ = state.db.save_setting("volume", &format!("{:.1}", volume));
-        Ok(())
-    } else {
-        Err("Player not initialized".to_string())
+        let _ = core.set_volume(volume);
     }
+    Ok(())
 }
 
 #[tauri::command]

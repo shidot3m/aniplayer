@@ -106,3 +106,13 @@ export const getInitialHotkeys = (): PlayerHotkeysConfig => {
   }
   return DEFAULT_HOTKEYS;
 };
+
+export const getInitialAnime4kEnabled = (): boolean => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("aniplayer_anime4k_enabled");
+    if (saved !== null) {
+      return saved === "true";
+    }
+  }
+  return true;
+};

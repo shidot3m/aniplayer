@@ -45,11 +45,9 @@ interface ReleaseHeroProps {
   currentCategory: BookmarkCategory | null;
   lastWatchedItem: HistoryItem | null;
   startEpisode: EpisodeItem | null;
-  isDownloadingAll: boolean;
   onPlay: (ep: EpisodeItem) => void;
   onBookmarkChange: (cat: BookmarkCategory) => void;
   onRemoveBookmark: () => void;
-  onDownloadAll: () => void;
 }
 
 function ReleaseHero({
@@ -57,11 +55,9 @@ function ReleaseHero({
   currentCategory,
   lastWatchedItem,
   startEpisode,
-  isDownloadingAll,
   onPlay,
   onBookmarkChange,
   onRemoveBookmark,
-  onDownloadAll,
 }: ReleaseHeroProps) {
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [canExpand, setCanExpand] = useState(false);
@@ -198,17 +194,6 @@ function ReleaseHero({
             </Button>
           )}
 
-          <Button
-            variant="outline"
-            size="lg"
-            disabled={isDownloadingAll || !release.episodes || release.episodes.length === 0}
-            onClick={onDownloadAll}
-            className="gap-2.5 px-5 border-white/10 bg-[#12131A] text-slate-200 hover:border-white/20 hover:text-white cursor-pointer"
-          >
-            <Download className="h-4 w-4 text-sky-400" />
-            <span>{isDownloadingAll ? "Загрузка..." : "Скачать всё аниме"}</span>
-          </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger>
               <div
@@ -262,7 +247,7 @@ function useFranchises(releaseId: number) {
         if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
           try {
             data = await invoke<FranchiseItem[]>("api_get_release_franchises", {
-              release_id: releaseId,
+              releaseId,
             });
           } catch (_err) {
             const res = await fetch(`${API_BASE_URL}/anime/franchises/release/${releaseId}`);
@@ -409,15 +394,15 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         return;
       }
       await invoke("downloader_start_episode", {
-        episode_id: ep.id,
-        release_id: release.id,
+        episodeId: ep.id,
+        releaseId: release.id,
         ordinal: ep.ordinal,
-        m3u8_url: hlsUrl,
+        m3u8Url: hlsUrl,
         quality: "1080p",
-        op_start: ep.opening?.start || null,
-        op_stop: ep.opening?.stop || null,
-        ed_start: ep.ending?.start || null,
-        ed_stop: ep.ending?.stop || null,
+        opStart: ep.opening?.start ?? null,
+        opStop: ep.opening?.stop ?? null,
+        edStart: ep.ending?.start ?? null,
+        edStop: ep.ending?.stop ?? null,
       });
       alert(`Загрузка эпизода ${ep.ordinal} начата. Опенинг и эндинг сохранены.`);
     } catch (err) {
@@ -439,18 +424,18 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
     try {
       setIsDownloadingAll(true);
       const payload = downloadable.map((ep) => ({
-        episode_id: ep.id,
+        episodeId: ep.id,
         ordinal: ep.ordinal,
-        m3u8_url: ep.hls_1080 || ep.hls_720 || ep.hls_480 || "",
+        m3u8Url: ep.hls_1080 || ep.hls_720 || ep.hls_480 || "",
         quality: ep.hls_1080 ? "1080p" : ep.hls_720 ? "720p" : "480p",
-        op_start: ep.opening?.start || null,
-        op_stop: ep.opening?.stop || null,
-        ed_start: ep.ending?.start || null,
-        ed_stop: ep.ending?.stop || null,
+        opStart: ep.opening?.start ?? null,
+        opStop: ep.opening?.stop ?? null,
+        edStart: ep.ending?.start ?? null,
+        edStop: ep.ending?.stop ?? null,
       }));
 
       await invoke("downloader_start_release", {
-        release_id: release.id,
+        releaseId: release.id,
         episodes: payload,
       });
 
@@ -489,11 +474,9 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         currentCategory={currentCategory}
         lastWatchedItem={lastWatchedItem}
         startEpisode={startEpisode}
-        isDownloadingAll={isDownloadingAll}
         onPlay={(ep) => playEpisode(release, ep)}
         onBookmarkChange={(cat) => setBookmark(release.id, cat, release)}
         onRemoveBookmark={() => removeBookmark(release.id)}
-        onDownloadAll={handleDownloadAll}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

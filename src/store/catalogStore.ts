@@ -77,7 +77,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       let releases: Release[] = [];
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
         try {
-          releases = await invoke<Release[]>("api_get_genre_releases", { genre_id: genre.id });
+          releases = await invoke<Release[]>("api_get_genre_releases", { genreId: genre.id });
         } catch (err) {
           console.warn("Tauri api_get_genre_releases failed, falling back to fetch:", err);
           const res = await fetch(`${API_BASE_URL}/anime/genres/${genre.id}/releases?limit=30`);
@@ -107,7 +107,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
         try {
           fullRelease = await invoke<Release>("api_get_release", {
-            id_or_alias: String(release.id),
+            idOrAlias: String(release.id),
           });
         } catch (err) {
           console.warn("Tauri api_get_release failed, falling back to fetch:", err);
@@ -281,7 +281,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   removeBookmark: async (releaseId) => {
     try {
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-        await invoke("db_delete_bookmark", { release_id: releaseId });
+        await invoke("db_delete_bookmark", { releaseId });
       } else if (typeof window !== "undefined") {
         const raw = localStorage.getItem("aniplayer_bookmarks");
         const list: BookmarkItem[] = raw ? JSON.parse(raw) : [];
