@@ -58,7 +58,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
         type="button"
         aria-label={`Открыть ${release.name.main}`}
         onClick={onClick}
-        className="absolute inset-0 z-0 h-full w-full cursor-pointer bg-transparent border-0 p-0 text-left focus:outline-none"
+        className="absolute inset-0 z-0 h-full w-full cursor-pointer rounded-xl bg-transparent border-0 p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       />
 
       {/* Poster Image */}
@@ -100,9 +100,9 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       </div>
 
       {/* Quick Bookmark Action Menu */}
-      <div className="absolute right-2 top-8 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute right-2 top-8 z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger className="focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg">
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-lg backdrop-blur-md transition-colors ${
                 currentCategory

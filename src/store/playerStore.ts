@@ -52,12 +52,25 @@ interface PlayerState {
   syncWithBackend: () => Promise<void>;
 }
 
+const getInitialVolume = (): number => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("aniplayer_volume");
+    if (saved !== null) {
+      const parsed = Number(saved);
+      if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+        return parsed;
+      }
+    }
+  }
+  return 80;
+};
+
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   isPlayerOpen: false,
   isPlaying: false,
   currentTime: 0,
   duration: 0,
-  volume: 80,
+  volume: getInitialVolume(),
   isMuted: false,
   speed: 1.0,
   anime4kPreset: "Mode A+A (HQ)",
@@ -163,8 +176,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setVolume: async (volume: number) => {
     const clamped = Math.max(0, Math.min(100, volume));
     set({ volume: clamped, isMuted: clamped === 0 });
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aniplayer_volume", String(clamped));
+    }
     try {
       await invoke("player_set_volume", { volume: clamped });
+      await invoke("db_save_setting", { key: "volume", value: String(clamped) });
     } catch (e) {
       console.error(e);
     }

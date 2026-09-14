@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import {
   ArrowLeft,
   Bookmark,
@@ -305,7 +306,6 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
   const handleDownload = async (ep: EpisodeItem) => {
     try {
       setDownloadingEpIds((prev) => ({ ...prev, [ep.id]: true }));
-      const { invoke } = await import("@tauri-apps/api/core");
       const hlsUrl = ep.hls_1080 || ep.hls_720 || ep.hls_480;
       if (!hlsUrl) {
         alert("Поток для скачивания не найден");

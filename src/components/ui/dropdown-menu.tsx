@@ -35,9 +35,11 @@ export function DropdownMenu({ children }: { children: React.ReactNode }) {
 
 export function DropdownMenuTrigger({
   children,
+  className,
 }: {
   children: React.ReactNode;
   asChild?: boolean;
+  className?: string;
 }) {
   const context = React.useContext(DropdownContext);
   if (!context) throw new Error("DropdownMenuTrigger must be used within DropdownMenu");
@@ -49,7 +51,10 @@ export function DropdownMenuTrigger({
         e.stopPropagation();
         context.setIsOpen((prev) => !prev);
       }}
-      className="inline-block cursor-pointer bg-transparent border-0 p-0 text-left focus:outline-none"
+      className={cn(
+        "inline-block cursor-pointer bg-transparent border-0 p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg",
+        className,
+      )}
     >
       {children}
     </button>
@@ -92,15 +97,17 @@ export function DropdownMenuItem({
 }) {
   const context = React.useContext(DropdownContext);
 
+  const handleSelect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick?.();
+    context?.setIsOpen(false);
+  };
+
   return (
     <button
       type="button"
       role="menuitem"
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onClick) onClick();
-        context?.setIsOpen(false);
-      }}
+      onClick={handleSelect}
       className={cn(
         "flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-left text-slate-200 hover:bg-white/10 hover:text-white transition-colors bg-transparent border-0",
         className,

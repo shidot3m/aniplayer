@@ -36,7 +36,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
         <button
           type="button"
           onClick={() => setActiveScreen("home")}
-          className="flex items-center gap-2.5 text-left group focus:outline-none cursor-pointer"
+          className="flex items-center gap-2.5 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-xl cursor-pointer"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 text-white shadow-lg shadow-rose-900/30 transition-transform group-hover:scale-105">
             <Film className="h-5 w-5" />

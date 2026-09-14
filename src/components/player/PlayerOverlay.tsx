@@ -26,7 +26,7 @@ function PlayerTopBar({ isVisible, release, onBack }: PlayerTopBarProps) {
           type="button"
           data-testid="player-back-btn"
           onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/50 text-white backdrop-blur hover:bg-white/20 transition-colors cursor-pointer"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/50 text-white backdrop-blur hover:bg-white/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
           title="Назад"
         >
           <ArrowLeft className="h-5 w-5" />

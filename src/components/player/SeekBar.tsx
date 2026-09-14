@@ -52,7 +52,7 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
 
         {/* Thumb */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-white shadow-lg transition-transform scale-0 group-hover:scale-100"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-white shadow-lg transition-transform scale-0 group-hover:scale-100 group-focus-within:scale-100"
           style={{ left: `${progressPercent}%` }}
         />
       </div>
@@ -68,7 +68,7 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
         onChange={(e) => onSeek(Number(e.target.value))}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoverPosition(null)}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 focus-visible:opacity-20 focus-visible:ring-2 focus-visible:ring-rose-500 rounded-full"
       />
     </div>
   );
