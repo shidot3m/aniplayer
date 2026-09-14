@@ -5,6 +5,7 @@ import { BookmarksView } from "./components/BookmarksView";
 import { ContinueWatching } from "./components/ContinueWatching";
 import { GenreSelector } from "./components/GenreSelector";
 import { Header } from "./components/Header";
+import { PlayerOverlay } from "./components/player/PlayerOverlay";
 import { ReleaseDetails } from "./components/ReleaseDetails";
 import { Dialog, DialogHeader, DialogTitle } from "./components/ui/dialog";
 import { Slider } from "./components/ui/slider";
@@ -26,6 +27,10 @@ export default function App() {
   } = useCatalogStore();
 
   const {
+    isPlayerOpen,
+    closePlayer,
+    currentRelease,
+    currentEpisode,
     volume,
     setVolume,
     autoSkipOpEd,
@@ -65,6 +70,28 @@ export default function App() {
           r.genres?.some((g) => g.name.toLowerCase() === selectedGenre.toLowerCase()),
         )
       : latestReleases;
+
+  if (isPlayerOpen && currentRelease && currentEpisode) {
+    return (
+      <PlayerOverlay
+        release={currentRelease}
+        episode={currentEpisode}
+        onBack={() => {
+          closePlayer();
+          if (selectedRelease) {
+            setActiveScreen("details");
+          } else {
+            setActiveScreen("home");
+          }
+        }}
+        onGoToRelease={() => {
+          setSelectedRelease(currentRelease);
+          setActiveScreen("details");
+          closePlayer();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-screen flex-col bg-[#090A0F] text-slate-100 font-sans selection:bg-rose-600 selection:text-white">

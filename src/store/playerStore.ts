@@ -14,6 +14,7 @@ interface PlayerState {
   anime4kEnabled: boolean;
   autoSkipOpening: boolean;
   autoSkipEnding: boolean;
+  autoSkipOpEd: boolean;
   autoplayNext: boolean;
   activeQuality: "1080" | "720" | "480";
   currentRelease: ReleaseDetails | null;
@@ -23,19 +24,23 @@ interface PlayerState {
 
   // Actions
   openPlayer: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;
+  playEpisode: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;
   closePlayer: () => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
   togglePlay: () => Promise<void>;
   seek: (seconds: number) => Promise<void>;
+  seekTo: (seconds: number) => Promise<void>;
   seekRelative: (offset: number) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
   toggleMute: () => Promise<void>;
   setSpeed: (speed: number) => Promise<void>;
   setPreset: (preset: string) => Promise<void>;
+  setAnime4kPreset: (preset: string) => Promise<void>;
   toggleAnime4k: () => Promise<void>;
   setAutoSkipOpening: (enabled: boolean) => void;
   setAutoSkipEnding: (enabled: boolean) => void;
+  setAutoSkipOpEd: (enabled: boolean) => void;
   setAutoplayNext: (enabled: boolean) => void;
   setQuality: (quality: "1080" | "720" | "480") => Promise<void>;
   playNextEpisode: () => Promise<void>;
@@ -44,6 +49,7 @@ interface PlayerState {
   setSettingsOpen: (open: boolean) => void;
   updateTime: (time: number, duration: number) => void;
   syncFromBackend: () => Promise<void>;
+  syncWithBackend: () => Promise<void>;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -54,10 +60,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   volume: 80,
   isMuted: false,
   speed: 1.0,
-  anime4kPreset: "A+A",
+  anime4kPreset: "Mode A+A (HQ)",
   anime4kEnabled: true,
   autoSkipOpening: true,
   autoSkipEnding: true,
+  autoSkipOpEd: true,
   autoplayNext: true,
   activeQuality: "1080",
   currentRelease: null,
@@ -89,6 +96,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     } catch (e) {
       console.error("Failed to open player in backend:", e);
     }
+  },
+
+  playEpisode: async (release, episode, startPos = 0) => {
+    await get().openPlayer(release, episode, startPos);
   },
 
   closePlayer: async () => {
@@ -133,6 +144,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     } catch (e) {
       console.error(e);
     }
+  },
+
+  seekTo: async (seconds: number) => {
+    await get().seek(seconds);
   },
 
   seekRelative: async (offset: number) => {
@@ -191,6 +206,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
 
+  setAnime4kPreset: async (preset: string) => {
+    await get().setPreset(preset);
+  },
+
   toggleAnime4k: async () => {
     const enabled = !get().anime4kEnabled;
     set({ anime4kEnabled: enabled });
@@ -204,6 +223,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setAutoSkipOpening: (enabled: boolean) => set({ autoSkipOpening: enabled }),
   setAutoSkipEnding: (enabled: boolean) => set({ autoSkipEnding: enabled }),
+  setAutoSkipOpEd: (enabled: boolean) =>
+    set({ autoSkipOpEd: enabled, autoSkipOpening: enabled, autoSkipEnding: enabled }),
   setAutoplayNext: (enabled: boolean) => set({ autoplayNext: enabled }),
 
   setQuality: async (quality: "1080" | "720" | "480") => {
@@ -301,5 +322,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     } catch (_e) {
       // Backend not ready yet or no active stream
     }
+  },
+
+  syncWithBackend: async () => {
+    await get().syncFromBackend();
   },
 }));
