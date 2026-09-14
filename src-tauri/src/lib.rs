@@ -150,6 +150,9 @@ fn player_init(state: State<'_, AppState>, hwnd: Option<usize>) -> Result<(), St
         state.app_dir.join("libmpv-2.dll"),
         PathBuf::from("bin/mpv-dev/libmpv-2.dll"),
         PathBuf::from("libmpv-2.dll"),
+        PathBuf::from("../bin/mpv-dev/libmpv-2.dll"),
+        PathBuf::from("dist_portable/libmpv-2.dll"),
+        PathBuf::from("../dist_portable/libmpv-2.dll"),
     ];
     let dll_path = dll_candidates.into_iter().find(|p| p.exists())
         .ok_or_else(|| "libmpv-2.dll not found".to_string())?;
@@ -157,6 +160,9 @@ fn player_init(state: State<'_, AppState>, hwnd: Option<usize>) -> Result<(), St
     let shaders_candidates = [
         state.app_dir.join("shaders/anime4k"),
         PathBuf::from("shaders/anime4k"),
+        PathBuf::from("../shaders/anime4k"),
+        PathBuf::from("dist_portable/shaders/anime4k"),
+        PathBuf::from("../dist_portable/shaders/anime4k"),
     ];
     let shaders_dir = shaders_candidates.into_iter().find(|p| p.exists())
         .unwrap_or_else(|| state.app_dir.join("shaders/anime4k"));
