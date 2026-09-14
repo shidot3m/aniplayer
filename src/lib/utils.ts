@@ -26,3 +26,12 @@ export function formatTotalWatchTime(episodesCount: number, avgMinutes: number):
   if (hours === 0) return `${mins} мин`;
   return `${hours} ч ${mins} мин`;
 }
+
+export function formatBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) return "0 Б";
+  const k = 1024;
+  const sizes = ["Б", "КБ", "МБ", "ГБ", "ТБ"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const val = bytes / Math.pow(k, i);
+  return `${val.toFixed(val < 10 ? 1 : 0)} ${sizes[i]}`;
+}

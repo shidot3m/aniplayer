@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { AnimeCard } from "./components/AnimeCard";
 import { BookmarksView } from "./components/BookmarksView";
 import { ContinueWatching } from "./components/ContinueWatching";
+import { DownloadFloatingWidget } from "./components/DownloadFloatingWidget";
+import { DownloadsView } from "./components/DownloadsView";
 import { GenreSelector } from "./components/GenreSelector";
 import { GenreView } from "./components/GenreView";
 import { Header } from "./components/Header";
@@ -11,6 +13,7 @@ import { ReleaseDetails } from "./components/ReleaseDetails";
 import { ReleaseSchedule } from "./components/ReleaseSchedule";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { useCatalogStore } from "./store/catalogStore";
+import { useDownloadStore } from "./store/downloadStore";
 import { usePlayerStore } from "./store/playerStore";
 import type { Release } from "./types";
 
@@ -39,13 +42,26 @@ export default function App() {
     initSettings,
   } = usePlayerStore();
 
-  const [previousScreen, setPreviousScreen] = useState<"home" | "bookmarks" | "genre">("home");
+  const { listenToProgress, fetchDownloadedEpisodes } = useDownloadStore();
+
+  const [previousScreen, setPreviousScreen] = useState<
+    "home" | "bookmarks" | "genre" | "downloads"
+  >("home");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     loadInitialData();
     initSettings();
-  }, [loadInitialData, initSettings]);
+    let unlistenFn: (() => void) | undefined;
+    async function initDownloads() {
+      unlistenFn = await listenToProgress();
+      fetchDownloadedEpisodes();
+    }
+    initDownloads();
+    return () => {
+      if (unlistenFn) unlistenFn();
+    };
+  }, [loadInitialData, initSettings, listenToProgress, fetchDownloadedEpisodes]);
 
   // Periodic player sync with backend
   useEffect(() => {
@@ -153,6 +169,8 @@ export default function App() {
 
         {activeScreen === "bookmarks" && <BookmarksView onSelectRelease={handleSelectRelease} />}
 
+        {activeScreen === "downloads" && <DownloadsView />}
+
         {activeScreen === "details" && selectedRelease && (
           <ReleaseDetails
             release={selectedRelease}
@@ -163,6 +181,9 @@ export default function App() {
 
       {/* Settings Dialog */}
       <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      {/* Floating Download Widget */}
+      <DownloadFloatingWidget />
     </div>
   );
 }

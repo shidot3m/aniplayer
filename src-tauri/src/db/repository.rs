@@ -251,6 +251,34 @@ impl Database {
         }
     }
 
+    pub fn get_all_downloaded_episodes(&self) -> Result<Vec<DownloadedEpisodeMeta>> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare(
+            r#"SELECT episode_id, release_id, episode_ordinal, file_path, file_size, quality, opening_start, opening_stop, ending_start, ending_stop, download_status 
+               FROM downloaded_episodes ORDER BY release_id ASC, episode_ordinal ASC"#
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(DownloadedEpisodeMeta {
+                episode_id: row.get(0)?,
+                release_id: row.get(1)?,
+                episode_ordinal: row.get(2)?,
+                file_path: row.get(3)?,
+                file_size: row.get(4)?,
+                quality: row.get(5)?,
+                opening_start: row.get(6)?,
+                opening_stop: row.get(7)?,
+                ending_start: row.get(8)?,
+                ending_stop: row.get(9)?,
+                download_status: row.get(10)?,
+            })
+        })?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row?);
+        }
+        Ok(items)
+    }
+
     pub fn delete_downloaded_episode(&self, episode_id: &str) -> Result<()> {
         let conn = self.lock_conn()?;
         conn.execute("DELETE FROM downloaded_episodes WHERE episode_id = ?1", params![episode_id])?;

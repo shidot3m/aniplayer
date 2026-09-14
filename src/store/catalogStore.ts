@@ -4,7 +4,7 @@ import { API_BASE_URL } from "../lib/constants";
 import type { BookmarkCategory, BookmarkItem, GenreItem, HistoryItem, Release } from "../types";
 
 interface CatalogState {
-  activeScreen: "home" | "bookmarks" | "details" | "genre";
+  activeScreen: "home" | "bookmarks" | "details" | "genre" | "downloads";
   selectedRelease: Release | null;
   selectedGenre: GenreItem | null;
   genreReleases: Release[];
@@ -19,7 +19,7 @@ interface CatalogState {
   isLoading: boolean;
 
   // Actions
-  setActiveScreen: (screen: "home" | "bookmarks" | "details" | "genre") => void;
+  setActiveScreen: (screen: "home" | "bookmarks" | "details" | "genre" | "downloads") => void;
   setSelectedRelease: (release: Release | null) => void;
   selectReleaseWithDetails: (release: Release) => Promise<void>;
   selectGenre: (genre: GenreItem | null) => Promise<void>;

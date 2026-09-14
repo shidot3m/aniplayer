@@ -50,7 +50,13 @@ export function EpisodeCard({
   const finalThumb = imgError ? fallbackPoster : primaryThumb || fallbackPoster;
 
   return (
-    <div className="group relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-2xl">
+    <div
+      className={`group relative aspect-video w-full overflow-hidden rounded-2xl border ${
+        isWatched
+          ? "border-emerald-500/35 hover:border-emerald-500/60 shadow-emerald-950/20"
+          : "border-white/10 hover:border-white/25"
+      } bg-white/[0.02] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl`}
+    >
       {/* Clickable Card Action */}
       <button
         type="button"
@@ -78,29 +84,28 @@ export function EpisodeCard({
         </div>
       )}
 
-      {/* Watched indicator icon when idle */}
+      {/* Persistent Watched Visual Indicator (Always visible) */}
       {isWatched && (
-        <div className="pointer-events-none absolute left-2.5 top-2.5 z-10 rounded-md bg-black/70 backdrop-blur-md p-1 text-emerald-400 border border-emerald-500/30 group-hover:opacity-0 transition-opacity">
-          <CheckCircle2 className="h-3.5 w-3.5" />
+        <div className="pointer-events-none absolute left-2.5 top-2.5 z-20 flex items-center gap-1 rounded-md border border-emerald-500/50 bg-emerald-950/90 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 backdrop-blur-xl shadow-lg shadow-black/40">
+          <CheckCircle2 className="h-3 w-3 shrink-0" />
+          <span>Просмотрен</span>
         </div>
+      )}
+
+      {/* Watched Bottom Accent Bar */}
+      {isWatched && (
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1 bg-emerald-500/80 z-20" />
       )}
 
       {/* Top Badges - Only visible on hover */}
       <div className="pointer-events-none absolute left-2.5 right-2.5 top-2.5 z-10 flex items-center justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
         <div className="flex items-center gap-1.5">
-          <Badge
-            variant="secondary"
-            className="backdrop-blur-xl bg-black/70 text-[10px] py-0.5 px-2 border-white/15 text-white font-medium"
-          >
-            Эпизод {ep.ordinal}
-          </Badge>
-          {isWatched && (
+          {!isWatched && (
             <Badge
-              variant="outline"
-              className="backdrop-blur-xl bg-black/70 text-[10px] py-0.5 px-2 border-emerald-500/40 text-emerald-400 flex items-center gap-1"
+              variant="secondary"
+              className="backdrop-blur-xl bg-black/70 text-[10px] py-0.5 px-2 border-white/15 text-white font-medium"
             >
-              <CheckCircle2 className="h-3 w-3" />
-              <span>Просмотрен</span>
+              Эпизод {ep.ordinal}
             </Badge>
           )}
         </div>
@@ -119,11 +124,13 @@ export function EpisodeCard({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="right"
-            className="w-52 backdrop-blur-2xl bg-black/90 border-white/15"
+            className="w-56 backdrop-blur-2xl bg-black/90 border-white/15"
           >
             <DropdownMenuItem onClick={onToggleWatched}>
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-emerald-400" />
-              <span>{isWatched ? "Снять отметку" : "Отметить просмотренным"}</span>
+              <CheckCircle2
+                className={`h-3.5 w-3.5 mr-1.5 ${isWatched ? "text-slate-400" : "text-emerald-400"}`}
+              />
+              <span>{isWatched ? "Снять отметку о просмотре" : "Отметить просмотренным"}</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDownload}>
               <Download className="h-3.5 w-3.5 mr-1.5 text-sky-400" />
@@ -143,8 +150,17 @@ export function EpisodeCard({
         <div className="mt-2 flex items-center justify-between text-[11px] text-slate-300 pt-1.5 border-t border-white/15">
           <span>{ep.duration ? formatTime(ep.duration) : ep.opening?.start ? "OP / ED" : "—"}</span>
           <span className="flex items-center gap-1.5 text-rose-400 group-hover:text-rose-300 font-medium">
-            <Play className="h-3 w-3 fill-current" />
-            Смотреть
+            {isWatched ? (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                <span className="text-emerald-300">Пересмотреть</span>
+              </>
+            ) : (
+              <>
+                <Play className="h-3 w-3 fill-current" />
+                <span>Смотреть</span>
+              </>
+            )}
           </span>
         </div>
       </div>

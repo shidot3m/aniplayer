@@ -1,5 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
-import { ArrowLeft, Bookmark, ChevronDown, Clock, Download, Film, Play } from "lucide-react";
+import {
+  ArrowLeft,
+  Bookmark,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Download,
+  Film,
+  Play,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL, CDN_BASE_URL } from "../lib/constants";
 import { formatDurationMinutes, formatTotalWatchTime } from "../lib/utils";
@@ -42,6 +51,7 @@ function formatPosterUrl(rawUrl?: string | null): string {
 
 interface ReleaseHeroProps {
   release: Release;
+  isWatched: boolean;
   currentCategory: BookmarkCategory | null;
   lastWatchedItem: HistoryItem | null;
   startEpisode: EpisodeItem | null;
@@ -52,6 +62,7 @@ interface ReleaseHeroProps {
 
 function ReleaseHero({
   release,
+  isWatched,
   currentCategory,
   lastWatchedItem,
   startEpisode,
@@ -104,6 +115,12 @@ function ReleaseHero({
             Нет постера
           </div>
         )}
+        {isWatched && (
+          <div className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-md border border-emerald-500/50 bg-emerald-950/90 px-2.5 py-1 text-xs font-semibold text-emerald-400 backdrop-blur-xl shadow-lg shadow-black/50">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>Просмотрено</span>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col justify-between">
@@ -117,6 +134,15 @@ function ReleaseHero({
           {release.name.english && <p className="text-xs text-slate-400">{release.name.english}</p>}
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
+            {isWatched && (
+              <Badge
+                variant="outline"
+                className="border-emerald-500/40 bg-emerald-950/40 text-emerald-400 flex items-center gap-1 font-semibold"
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                <span>Просмотрено</span>
+              </Badge>
+            )}
             {release.type?.description && <Badge variant="rose">{release.type.description}</Badge>}
             {release.year && <Badge variant="secondary">{release.year}</Badge>}
             <Badge variant="outline" className="border-white/10 text-slate-300">
@@ -306,12 +332,27 @@ function EpisodesTabContent({
     );
   }
 
+  const watchedCount = episodes.filter((ep) =>
+    history.some((h) => h.release_id === releaseId && h.episode_id === ep.id && h.is_completed),
+  ).length;
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-400">
-          Всего эпизодов: {episodes.length}
-        </span>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
+          <span>Всего эпизодов: {episodes.length}</span>
+          {watchedCount > 0 && (
+            <>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>
+                  Просмотрено: {watchedCount} из {episodes.length}
+                </span>
+              </span>
+            </>
+          )}
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -347,43 +388,9 @@ function EpisodesTabContent({
   );
 }
 
-export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
-  const {
-    bookmarks,
-    setBookmark,
-    removeBookmark,
-    history,
-    setEpisodeWatched,
-    selectReleaseWithDetails,
-  } = useCatalogStore();
-  const { playEpisode } = usePlayerStore();
-  const [activeTab, setActiveTab] = useState<string>("episodes");
+function useReleaseDownloader(release: Release) {
   const [downloadingEpIds, setDownloadingEpIds] = useState<Record<string, boolean>>({});
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-  const { franchises, isLoading: isLoadingFranchises } = useFranchises(release.id);
-
-  const fallbackPoster = formatPosterUrl(
-    release.poster?.preview || release.poster?.src || release.poster?.thumbnail,
-  );
-
-  let currentCategory: BookmarkCategory | null = null;
-  for (const [cat, list] of Object.entries(bookmarks)) {
-    if (list.some((b) => b.release_id === release.id)) {
-      currentCategory = cat as BookmarkCategory;
-      break;
-    }
-  }
-
-  const releaseHistory = history.filter((h) => h.release_id === release.id);
-  const lastWatchedItem = releaseHistory.length > 0 ? releaseHistory[0] : null;
-
-  const startEpisode = (() => {
-    if (lastWatchedItem) {
-      const ep = release.episodes?.find((e) => e.id === lastWatchedItem.episode_id);
-      if (ep) return ep;
-    }
-    return release.episodes?.[0] || null;
-  })();
 
   const handleDownload = async (ep: EpisodeItem) => {
     try {
@@ -450,10 +457,63 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
     }
   };
 
+  return { downloadingEpIds, isDownloadingAll, handleDownload, handleDownloadAll };
+}
+
+export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
+  const {
+    bookmarks,
+    setBookmark,
+    removeBookmark,
+    history,
+    setEpisodeWatched,
+    selectReleaseWithDetails,
+  } = useCatalogStore();
+  const { playEpisode } = usePlayerStore();
+  const [activeTab, setActiveTab] = useState<string>("episodes");
+  const { downloadingEpIds, isDownloadingAll, handleDownload, handleDownloadAll } =
+    useReleaseDownloader(release);
+  const { franchises, isLoading: isLoadingFranchises } = useFranchises(release.id);
+
+  const fallbackPoster = formatPosterUrl(
+    release.poster?.preview || release.poster?.src || release.poster?.thumbnail,
+  );
+
+  let currentCategory: BookmarkCategory | null = null;
+  for (const [cat, list] of Object.entries(bookmarks)) {
+    if (list.some((b) => b.release_id === release.id)) {
+      currentCategory = cat as BookmarkCategory;
+      break;
+    }
+  }
+
+  const releaseHistory = history.filter((h) => h.release_id === release.id);
+  const lastWatchedItem = releaseHistory.length > 0 ? releaseHistory[0] : null;
+
+  const startEpisode = (() => {
+    if (lastWatchedItem) {
+      const ep = release.episodes?.find((e) => e.id === lastWatchedItem.episode_id);
+      if (ep) return ep;
+    }
+    return release.episodes?.[0] || null;
+  })();
+
   const totalRelatedCount = franchises.reduce(
     (acc, f) => acc + (f.franchise_releases?.length || 0),
     0,
   );
+
+  const isReleaseWatched =
+    currentCategory === "WATCHED" ||
+    Boolean(
+      release.episodes &&
+        release.episodes.length > 0 &&
+        release.episodes.every((ep) =>
+          history.some(
+            (h) => h.release_id === release.id && h.episode_id === ep.id && h.is_completed,
+          ),
+        ),
+    );
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-6 text-slate-100">
@@ -471,6 +531,7 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
 
       <ReleaseHero
         release={release}
+        isWatched={isReleaseWatched}
         currentCategory={currentCategory}
         lastWatchedItem={lastWatchedItem}
         startEpisode={startEpisode}

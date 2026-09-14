@@ -1,6 +1,7 @@
-import { Bookmark, Home, Search, Settings } from "lucide-react";
+import { Bookmark, FolderDown, Home, Search, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCatalogStore } from "../store/catalogStore";
+import { useDownloadStore } from "../store/downloadStore";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -29,6 +30,7 @@ function AniplayerLogoMark() {
 export function Header({ onOpenSettings }: HeaderProps) {
   const { activeScreen, setActiveScreen, bookmarks, searchQuery, setSearchQuery, performSearch } =
     useCatalogStore();
+  const { downloadedEpisodes, activeDownloads } = useDownloadStore();
 
   const [localQuery, setLocalQuery] = useState(searchQuery);
 
@@ -44,6 +46,9 @@ export function Header({ onOpenSettings }: HeaderProps) {
   }, [localQuery, setSearchQuery, performSearch]);
 
   const totalBookmarks = Object.values(bookmarks).reduce((acc, list) => acc + list.length, 0);
+  const activeDownloadsCount = Object.values(activeDownloads).filter(
+    (d) => d.status === "DOWNLOADING",
+  ).length;
 
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full shrink-0 items-center justify-between border-b border-white/10 bg-[#090A0F]/80 px-6 backdrop-blur-xl">
@@ -86,6 +91,30 @@ export function Header({ onOpenSettings }: HeaderProps) {
               <Badge variant="rose" className="h-5 px-1.5 text-[10px]">
                 {totalBookmarks}
               </Badge>
+            )}
+          </Button>
+
+          <Button
+            variant={activeScreen === "downloads" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setActiveScreen("downloads")}
+            className="gap-2 relative"
+          >
+            <FolderDown className="h-4 w-4 text-rose-400" />
+            <span>Скачанные</span>
+            {downloadedEpisodes.length > 0 && (
+              <Badge
+                variant="secondary"
+                className="h-5 px-1.5 text-[10px] bg-white/10 text-slate-300"
+              >
+                {downloadedEpisodes.length}
+              </Badge>
+            )}
+            {activeDownloadsCount > 0 && (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+              </span>
             )}
           </Button>
         </nav>

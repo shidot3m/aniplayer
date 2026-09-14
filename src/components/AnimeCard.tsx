@@ -1,4 +1,4 @@
-import { Bookmark, Play } from "lucide-react";
+import { Bookmark, CheckCircle2, Play } from "lucide-react";
 import { CDN_BASE_URL } from "../lib/constants";
 import { useCatalogStore } from "../store/catalogStore";
 import type { BookmarkCategory, Release } from "../types";
@@ -26,7 +26,7 @@ const CATEGORY_NAMES: Record<BookmarkCategory, string> = {
 };
 
 export function AnimeCard({ release, onClick }: AnimeCardProps) {
-  const { bookmarks, setBookmark, removeBookmark } = useCatalogStore();
+  const { bookmarks, history, setBookmark, removeBookmark } = useCatalogStore();
 
   // Find current bookmark status
   let currentCategory: BookmarkCategory | null = null;
@@ -36,6 +36,18 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       break;
     }
   }
+
+  const isWatched =
+    currentCategory === "WATCHED" ||
+    Boolean(
+      release.episodes &&
+        release.episodes.length > 0 &&
+        release.episodes.every((ep) =>
+          history.some(
+            (h) => h.release_id === release.id && h.episode_id === ep.id && h.is_completed,
+          ),
+        ),
+    );
 
   const posterUrl =
     release.poster?.src || release.poster?.preview || release.poster?.thumbnail || "";
@@ -53,7 +65,13 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       : "Онгоинг";
 
   return (
-    <div className="group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-2xl">
+    <div
+      className={`group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border ${
+        isWatched
+          ? "border-emerald-500/30 hover:border-emerald-500/60 shadow-emerald-950/20"
+          : "border-white/10 hover:border-white/25"
+      } bg-white/[0.02] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl`}
+    >
       {/* Clickable Card Action */}
       <button
         type="button"
@@ -80,9 +98,22 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
         </div>
       )}
 
+      {/* Persistent Watched Visual Indicator (Always visible) */}
+      {isWatched && (
+        <div className="absolute left-2.5 top-2.5 z-20 flex items-center gap-1 rounded-md border border-emerald-500/50 bg-emerald-950/85 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 backdrop-blur-xl shadow-lg shadow-black/40">
+          <CheckCircle2 className="h-3 w-3 shrink-0" />
+          <span>Просмотрено</span>
+        </div>
+      )}
+
+      {/* Watched Bottom Accent Bar */}
+      {isWatched && (
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1 bg-emerald-500/80 z-20" />
+      )}
+
       {/* Top Badges - Only visible on hover */}
       <div className="absolute left-2.5 right-2.5 top-2.5 flex items-center justify-between pointer-events-none z-10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300">
-        {release.type?.description ? (
+        {!isWatched && release.type?.description ? (
           <Badge
             variant="secondary"
             className="backdrop-blur-xl bg-black/70 text-[10px] py-0.5 px-2 border-white/15 text-white"
@@ -153,8 +184,17 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-300 pt-2 border-t border-white/15">
           <span>{release.year || "—"}</span>
           <span className="flex items-center gap-1.5 text-rose-400 group-hover:text-rose-300 font-medium">
-            <Play className="h-3 w-3 fill-current" />
-            Смотреть
+            {isWatched ? (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                <span className="text-emerald-300">Пересмотреть</span>
+              </>
+            ) : (
+              <>
+                <Play className="h-3 w-3 fill-current" />
+                <span>Смотреть</span>
+              </>
+            )}
           </span>
         </div>
       </div>

@@ -123,6 +123,18 @@ export interface DownloadedEpisodeMeta {
   download_status: "PENDING" | "DOWNLOADING" | "COMPLETED" | "FAILED";
 }
 
+export interface DownloadProgressEvent {
+  episodeId: string;
+  releaseId: number;
+  episodeOrdinal: number;
+  totalSegments: number;
+  downloadedSegments: number;
+  totalBytes: number;
+  percent: number;
+  status: "DOWNLOADING" | "COMPLETED" | "FAILED";
+  error?: string | null;
+}
+
 export interface FranchiseReleaseItem {
   id?: string;
   sort_order?: number;

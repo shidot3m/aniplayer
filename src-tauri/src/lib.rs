@@ -72,6 +72,16 @@ fn db_get_download_meta(state: State<'_, AppState>, episode_id: String) -> Resul
     state.db.get_downloaded_episode(&episode_id).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn db_get_all_downloaded_episodes(state: State<'_, AppState>) -> Result<Vec<DownloadedEpisodeMeta>, String> {
+    state.db.get_all_downloaded_episodes().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn db_delete_download_meta(state: State<'_, AppState>, episode_id: String) -> Result<(), String> {
+    state.db.delete_downloaded_episode(&episode_id).map_err(|e| e.to_string())
+}
+
 // API IPC commands
 #[tauri::command]
 async fn api_get_status(state: State<'_, AppState>) -> Result<ApiStatus, String> {
@@ -140,6 +150,7 @@ pub struct DownloadEpisodeItem {
 // Downloader IPC commands
 #[tauri::command]
 async fn downloader_start_episode(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     episode_id: String,
     release_id: i64,
@@ -166,6 +177,7 @@ async fn downloader_start_episode(
             op_stop,
             ed_start,
             ed_stop,
+            Some(app),
         ).await;
     });
 
@@ -174,6 +186,7 @@ async fn downloader_start_episode(
 
 #[tauri::command]
 async fn downloader_start_release(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     release_id: i64,
     episodes: Vec<DownloadEpisodeItem>,
@@ -200,11 +213,55 @@ async fn downloader_start_release(
                 ep.op_stop,
                 ep.ed_start,
                 ep.ed_stop,
+                Some(app.clone()),
             ).await;
         }
     });
 
     Ok(count)
+}
+
+#[tauri::command]
+async fn downloader_delete_episode(
+    state: State<'_, AppState>,
+    episode_id: String,
+    delete_file: Option<bool>,
+) -> Result<(), String> {
+    if delete_file.unwrap_or(true) {
+        if let Ok(Some(meta)) = state.db.get_downloaded_episode(&episode_id) {
+            let path = PathBuf::from(&meta.file_path);
+            if path.exists() {
+                let _ = tokio::fs::remove_file(&path).await;
+            }
+        }
+    }
+    state.db.delete_downloaded_episode(&episode_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn downloader_open_folder(
+    state: State<'_, AppState>,
+    release_id: Option<i64>,
+) -> Result<(), String> {
+    let folder = if let Some(id) = release_id {
+        state.app_dir.join("downloads").join(id.to_string())
+    } else {
+        state.app_dir.join("downloads")
+    };
+    std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&folder)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = folder;
+    }
+    Ok(())
 }
 
 // Player IPC commands
@@ -415,6 +472,8 @@ pub fn run() {
             db_get_setting,
             db_save_download_meta,
             db_get_download_meta,
+            db_get_all_downloaded_episodes,
+            db_delete_download_meta,
             api_get_status,
             api_get_latest_releases,
             api_get_schedule_week,
@@ -426,6 +485,8 @@ pub fn run() {
             api_search_releases,
             downloader_start_episode,
             downloader_start_release,
+            downloader_delete_episode,
+            downloader_open_folder,
             player_init,
             player_load_video,
             player_play,
