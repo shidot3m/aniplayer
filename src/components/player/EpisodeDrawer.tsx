@@ -56,11 +56,12 @@ export function EpisodeDrawer({
             const isWatched = watchedEpIds.has(ep.id);
 
             const rawThumb =
-              ep.preview?.optimized?.thumbnail ||
+              ep.preview?.optimized?.src ||
+              ep.preview?.src ||
               ep.preview?.optimized?.preview ||
-              ep.preview?.thumbnail ||
               ep.preview?.preview ||
-              ep.preview?.src;
+              ep.preview?.optimized?.thumbnail ||
+              ep.preview?.thumbnail;
             const fallbackPoster =
               release.poster?.preview || release.poster?.src || release.poster?.thumbnail;
             const targetThumb = rawThumb || fallbackPoster;

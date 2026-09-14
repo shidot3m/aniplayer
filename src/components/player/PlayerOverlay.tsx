@@ -32,10 +32,11 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     playEpisode,
     autoSkipOpEd,
     autoplayNext,
+    activeQuality,
+    setQuality,
   } = usePlayerStore();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [currentQuality, setCurrentQuality] = useState<"1080p" | "720p" | "480p">("1080p");
   const { isVisible, handleUserActivity } = useAutoHide(isPlaying, isDrawerOpen);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -128,7 +129,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         hasPrev={hasPrev}
         hasNext={hasNext}
         isFullscreen={isFullscreen}
-        currentQuality={currentQuality}
+        currentQuality={activeQuality}
         onSeek={seekTo}
         onTogglePlay={togglePlay}
         onPrev={handlePrev}
@@ -137,7 +138,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         onToggleFullscreen={toggleFullscreen}
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onGoToRelease={onGoToRelease}
-        onSelectQuality={setCurrentQuality}
+        onSelectQuality={setQuality}
       />
 
       <EpisodeDrawer

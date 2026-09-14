@@ -137,3 +137,18 @@ export interface FranchiseItem {
   total_releases?: number;
   franchise_releases?: FranchiseReleaseItem[];
 }
+
+export type VideoQuality = "1080p" | "720p" | "480p";
+
+export interface PlayerHotkeysConfig {
+  togglePlay: string;
+  seekBack: string;
+  seekForward: string;
+  volumeUp: string;
+  volumeDown: string;
+  toggleMute: string;
+  toggleFullscreen: string;
+  skipOpEd: string;
+  nextEpisode: string;
+  prevEpisode: string;
+}

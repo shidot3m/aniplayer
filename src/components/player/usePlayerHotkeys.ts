@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { usePlayerStore } from "../../store/playerStore";
+import type { PlayerHotkeysConfig } from "../../types";
 
 export interface UsePlayerHotkeysProps {
   onUserActivity: () => void;
@@ -26,7 +28,7 @@ const PRESET_HOTKEYS: Record<string, string> = {
   Digit0: "Off",
 };
 
-function handlePlayerKey(e: KeyboardEvent, p: UsePlayerHotkeysProps) {
+function handlePlayerKey(e: KeyboardEvent, p: UsePlayerHotkeysProps, hk: PlayerHotkeysConfig) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
   p.onUserActivity();
@@ -37,60 +39,51 @@ function handlePlayerKey(e: KeyboardEvent, p: UsePlayerHotkeysProps) {
     return;
   }
 
-  switch (e.code) {
-    case "Space":
-    case "KeyK":
-      e.preventDefault();
-      p.togglePlay();
-      break;
-    case "ArrowLeft":
-      e.preventDefault();
-      p.seekRelative(e.shiftKey ? -30 : -5);
-      break;
-    case "ArrowRight":
-      e.preventDefault();
-      p.seekRelative(e.shiftKey ? 30 : 5);
-      break;
-    case "ArrowUp":
-      e.preventDefault();
-      p.setVolume(Math.min(100, p.volume + 5));
-      break;
-    case "ArrowDown":
-      e.preventDefault();
-      p.setVolume(Math.max(0, p.volume - 5));
-      break;
-    case "KeyM":
-      e.preventDefault();
-      p.toggleMute();
-      break;
-    case "KeyF":
-    case "F11":
-      e.preventDefault();
-      p.toggleFullscreen();
-      break;
-    case "KeyS":
-      e.preventDefault();
-      if (p.isInsideOpening && p.openingStop != null) {
-        p.seekTo(p.openingStop + 0.5);
-      } else if (p.isInsideEnding && p.endingStop != null) {
-        p.seekTo(p.endingStop + 0.5);
-      }
-      break;
-    case "KeyN":
-      e.preventDefault();
-      p.onNext();
-      break;
-    case "KeyP":
-      e.preventDefault();
-      p.onPrev();
-      break;
+  const code = e.code;
+
+  if (code === hk.togglePlay || (hk.togglePlay === "Space" && code === "KeyK")) {
+    e.preventDefault();
+    p.togglePlay();
+  } else if (code === hk.seekBack) {
+    e.preventDefault();
+    p.seekRelative(e.shiftKey ? -30 : -5);
+  } else if (code === hk.seekForward) {
+    e.preventDefault();
+    p.seekRelative(e.shiftKey ? 30 : 5);
+  } else if (code === hk.volumeUp) {
+    e.preventDefault();
+    p.setVolume(Math.min(100, p.volume + 5));
+  } else if (code === hk.volumeDown) {
+    e.preventDefault();
+    p.setVolume(Math.max(0, p.volume - 5));
+  } else if (code === hk.toggleMute) {
+    e.preventDefault();
+    p.toggleMute();
+  } else if (code === hk.toggleFullscreen || (hk.toggleFullscreen === "KeyF" && code === "F11")) {
+    e.preventDefault();
+    p.toggleFullscreen();
+  } else if (code === hk.skipOpEd) {
+    e.preventDefault();
+    if (p.isInsideOpening && p.openingStop != null) {
+      p.seekTo(p.openingStop + 0.5);
+    } else if (p.isInsideEnding && p.endingStop != null) {
+      p.seekTo(p.endingStop + 0.5);
+    }
+  } else if (code === hk.nextEpisode) {
+    e.preventDefault();
+    p.onNext();
+  } else if (code === hk.prevEpisode) {
+    e.preventDefault();
+    p.onPrev();
   }
 }
 
 export function usePlayerHotkeys(p: UsePlayerHotkeysProps) {
+  const hotkeys = usePlayerStore((s) => s.hotkeys);
+
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => handlePlayerKey(e, p);
+    const onKeyDown = (e: KeyboardEvent) => handlePlayerKey(e, p, hotkeys);
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [p]);
+  }, [p, hotkeys]);
 }

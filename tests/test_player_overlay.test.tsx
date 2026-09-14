@@ -37,7 +37,7 @@ describe("PlayerOverlay Layout", () => {
         episode={mockEpisode}
         onBack={() => {}}
         onGoToRelease={() => {}}
-      />
+      />,
     );
 
     // Check back arrow top-left

@@ -1,69 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import type { EpisodeItem, ReleaseDetails } from "../types";
+import type { PlayerHotkeysConfig, VideoQuality } from "../types";
+import {
+  DEFAULT_HOTKEYS,
+  getInitialHotkeys,
+  getInitialQuality,
+  getInitialVolume,
+  type PlayerState,
+} from "./playerStoreDefaults";
 
-interface PlayerState {
-  isPlayerOpen: boolean;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  volume: number;
-  isMuted: boolean;
-  speed: number;
-  anime4kPreset: string;
-  anime4kEnabled: boolean;
-  autoSkipOpening: boolean;
-  autoSkipEnding: boolean;
-  autoSkipOpEd: boolean;
-  autoplayNext: boolean;
-  activeQuality: "1080" | "720" | "480";
-  currentRelease: ReleaseDetails | null;
-  currentEpisode: EpisodeItem | null;
-  isDrawerOpen: boolean;
-  isSettingsOpen: boolean;
-
-  // Actions
-  openPlayer: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;
-  playEpisode: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;
-  closePlayer: () => Promise<void>;
-  play: () => Promise<void>;
-  pause: () => Promise<void>;
-  togglePlay: () => Promise<void>;
-  seek: (seconds: number) => Promise<void>;
-  seekTo: (seconds: number) => Promise<void>;
-  seekRelative: (offset: number) => Promise<void>;
-  setVolume: (volume: number) => Promise<void>;
-  toggleMute: () => Promise<void>;
-  setSpeed: (speed: number) => Promise<void>;
-  setPreset: (preset: string) => Promise<void>;
-  setAnime4kPreset: (preset: string) => Promise<void>;
-  toggleAnime4k: () => Promise<void>;
-  setAutoSkipOpening: (enabled: boolean) => void;
-  setAutoSkipEnding: (enabled: boolean) => void;
-  setAutoSkipOpEd: (enabled: boolean) => void;
-  setAutoplayNext: (enabled: boolean) => void;
-  setQuality: (quality: "1080" | "720" | "480") => Promise<void>;
-  playNextEpisode: () => Promise<void>;
-  playPrevEpisode: () => Promise<void>;
-  setDrawerOpen: (open: boolean) => void;
-  setSettingsOpen: (open: boolean) => void;
-  updateTime: (time: number, duration: number) => void;
-  syncFromBackend: () => Promise<void>;
-  syncWithBackend: () => Promise<void>;
-}
-
-const getInitialVolume = (): number => {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("aniplayer_volume");
-    if (saved !== null) {
-      const parsed = Number(saved);
-      if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 100) {
-        return parsed;
-      }
-    }
-  }
-  return 80;
-};
+export { DEFAULT_HOTKEYS };
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   isPlayerOpen: false,
@@ -79,15 +25,41 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   autoSkipEnding: true,
   autoSkipOpEd: true,
   autoplayNext: true,
-  activeQuality: "1080",
+  activeQuality: "1080p",
+  preferredQuality: getInitialQuality(),
+  hotkeys: getInitialHotkeys(),
   currentRelease: null,
   currentEpisode: null,
   isDrawerOpen: false,
   isSettingsOpen: false,
 
   openPlayer: async (release, episode, startPos = 0) => {
-    // Select video stream URL based on quality
-    const url = episode.hls_1080 || episode.hls_720 || episode.hls_480 || "";
+    // Select video stream URL based on preferred quality with fallback
+    const pref = get().preferredQuality;
+    let url = "";
+    let resolvedQuality: VideoQuality = "1080p";
+
+    if (pref === "1080p" && episode.hls_1080) {
+      url = episode.hls_1080;
+      resolvedQuality = "1080p";
+    } else if (pref === "720p" && episode.hls_720) {
+      url = episode.hls_720;
+      resolvedQuality = "720p";
+    } else if (pref === "480p" && episode.hls_480) {
+      url = episode.hls_480;
+      resolvedQuality = "480p";
+    } else {
+      if (episode.hls_1080) {
+        url = episode.hls_1080;
+        resolvedQuality = "1080p";
+      } else if (episode.hls_720) {
+        url = episode.hls_720;
+        resolvedQuality = "720p";
+      } else if (episode.hls_480) {
+        url = episode.hls_480;
+        resolvedQuality = "480p";
+      }
+    }
 
     set({
       isPlayerOpen: true,
@@ -96,6 +68,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       currentTime: startPos,
       duration: episode.duration || 0,
       isPlaying: true,
+      activeQuality: resolvedQuality,
     });
 
     try {
@@ -244,14 +217,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ autoSkipOpEd: enabled, autoSkipOpening: enabled, autoSkipEnding: enabled }),
   setAutoplayNext: (enabled: boolean) => set({ autoplayNext: enabled }),
 
-  setQuality: async (quality: "1080" | "720" | "480") => {
+  setQuality: async (quality: VideoQuality) => {
     set({ activeQuality: quality });
     const ep = get().currentEpisode;
     if (!ep) return;
 
     let url = ep.hls_1080;
-    if (quality === "720" && ep.hls_720) url = ep.hls_720;
-    if (quality === "480" && ep.hls_480) url = ep.hls_480;
+    if (quality === "720p" && ep.hls_720) url = ep.hls_720;
+    else if (quality === "480p" && ep.hls_480) url = ep.hls_480;
+    else if (quality === "1080p" && ep.hls_1080) url = ep.hls_1080;
+    else url = ep.hls_1080 || ep.hls_720 || ep.hls_480;
 
     if (url) {
       const cur = get().currentTime;
@@ -260,6 +235,75 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       } catch (e) {
         console.error(e);
       }
+    }
+  },
+
+  setPreferredQuality: async (quality: VideoQuality) => {
+    set({ preferredQuality: quality });
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aniplayer_preferred_quality", quality);
+    }
+    try {
+      await invoke("db_save_setting", { key: "preferred_quality", value: quality });
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  setHotkey: async (action: keyof PlayerHotkeysConfig, code: string) => {
+    const updated = { ...get().hotkeys, [action]: code };
+    set({ hotkeys: updated });
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aniplayer_hotkeys", JSON.stringify(updated));
+    }
+    try {
+      await invoke("db_save_setting", { key: "hotkeys", value: JSON.stringify(updated) });
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  resetHotkeys: async () => {
+    set({ hotkeys: DEFAULT_HOTKEYS });
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aniplayer_hotkeys", JSON.stringify(DEFAULT_HOTKEYS));
+    }
+    try {
+      await invoke("db_save_setting", { key: "hotkeys", value: JSON.stringify(DEFAULT_HOTKEYS) });
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  initSettings: async () => {
+    if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
+    try {
+      const vol = await invoke<string | null>("db_get_setting", { key: "volume" });
+      if (vol) {
+        const parsed = parseFloat(vol);
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+          set({ volume: parsed, isMuted: parsed === 0 });
+        }
+      }
+      const preset = await invoke<string | null>("db_get_setting", { key: "anime4k_preset" });
+      if (preset) {
+        set({ anime4kPreset: preset });
+      }
+      const qual = await invoke<string | null>("db_get_setting", { key: "preferred_quality" });
+      if (qual === "1080p" || qual === "720p" || qual === "480p") {
+        set({ preferredQuality: qual });
+      }
+      const hk = await invoke<string | null>("db_get_setting", { key: "hotkeys" });
+      if (hk) {
+        try {
+          const parsed = JSON.parse(hk);
+          set({ hotkeys: { ...DEFAULT_HOTKEYS, ...parsed } });
+        } catch (_e) {
+          // Ignore invalid stored hotkey json
+        }
+      }
+    } catch (_e) {
+      // Backend not yet ready or table empty
     }
   },
 

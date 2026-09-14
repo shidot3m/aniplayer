@@ -9,8 +9,7 @@ import { Header } from "./components/Header";
 import { PlayerOverlay } from "./components/player/PlayerOverlay";
 import { ReleaseDetails } from "./components/ReleaseDetails";
 import { ReleaseSchedule } from "./components/ReleaseSchedule";
-import { Dialog, DialogHeader, DialogTitle } from "./components/ui/dialog";
-import { Slider } from "./components/ui/slider";
+import { SettingsDialog } from "./components/SettingsDialog";
 import { useCatalogStore } from "./store/catalogStore";
 import { usePlayerStore } from "./store/playerStore";
 import type { Release } from "./types";
@@ -36,15 +35,8 @@ export default function App() {
     closePlayer,
     currentRelease,
     currentEpisode,
-    volume,
-    setVolume,
-    autoSkipOpEd,
-    setAutoSkipOpEd,
-    autoplayNext,
-    setAutoplayNext,
-    anime4kPreset,
-    setAnime4kPreset,
     syncWithBackend,
+    initSettings,
   } = usePlayerStore();
 
   const [previousScreen, setPreviousScreen] = useState<"home" | "bookmarks" | "genre">("home");
@@ -52,7 +44,8 @@ export default function App() {
 
   useEffect(() => {
     loadInitialData();
-  }, [loadInitialData]);
+    initSettings();
+  }, [loadInitialData, initSettings]);
 
   // Periodic player sync with backend
   useEffect(() => {
@@ -168,90 +161,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Quick Settings Dialog */}
-      <Dialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}>
-        <DialogHeader>
-          <DialogTitle>Настройки воспроизведения</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-5 text-xs text-slate-300">
-          {/* Volume */}
-          <div>
-            <div className="flex justify-between mb-2 font-medium">
-              <span>Громкость по умолчанию</span>
-              <span className="text-rose-400 font-bold">{volume}%</span>
-            </div>
-            <Slider value={volume} min={0} max={100} step={1} onChange={setVolume} />
-          </div>
-
-          {/* Anime4K Preset */}
-          <div>
-            <span className="block mb-2 font-medium">Пресет Anime4K</span>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: "Mode A+A (HQ)", label: "Mode A+A (HQ)" },
-                { id: "Mode A (Fast)", label: "Mode A (Fast)" },
-                { id: "Mode B+B (HQ)", label: "Mode B+B (HQ)" },
-                { id: "Mode C+A (HQ)", label: "Mode C+A (HQ)" },
-                { id: "Off", label: "Отключено" },
-              ].map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setAnime4kPreset(p.id)}
-                  className={`rounded-xl px-3 py-2.5 text-left border transition-all cursor-pointer ${
-                    anime4kPreset === p.id
-                      ? "border-rose-500 bg-rose-500/15 text-white font-semibold shadow-sm"
-                      : "border-white/10 bg-white/[0.03] backdrop-blur-md text-slate-300 hover:text-white hover:bg-white/[0.08]"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* GPU Hardware Acceleration Status */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 backdrop-blur-md flex items-center justify-between">
-            <div>
-              <div className="font-semibold text-white">Аппаратное декодирование (GPU)</div>
-              <div className="text-[11px] text-slate-400">
-                Direct3D 11 (d3d11va) • Zero-copy playback
-              </div>
-            </div>
-            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
-              Активно
-            </span>
-          </div>
-
-          {/* Toggles */}
-          <div className="space-y-3 pt-2 border-t border-white/10">
-            <label className="flex items-center justify-between cursor-pointer group">
-              <span className="group-hover:text-white transition-colors">
-                Автопропуск опенингов и эндингов
-              </span>
-              <input
-                type="checkbox"
-                checked={autoSkipOpEd}
-                onChange={(e) => setAutoSkipOpEd(e.target.checked)}
-                className="h-4 w-4 rounded accent-rose-500 cursor-pointer"
-              />
-            </label>
-
-            <label className="flex items-center justify-between cursor-pointer group">
-              <span className="group-hover:text-white transition-colors">
-                Автопереход к следующему эпизоду
-              </span>
-              <input
-                type="checkbox"
-                checked={autoplayNext}
-                onChange={(e) => setAutoplayNext(e.target.checked)}
-                className="h-4 w-4 rounded accent-rose-500 cursor-pointer"
-              />
-            </label>
-          </div>
-        </div>
-      </Dialog>
+      {/* Settings Dialog */}
+      <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }

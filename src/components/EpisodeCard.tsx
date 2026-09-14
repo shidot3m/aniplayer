@@ -39,12 +39,12 @@ export function EpisodeCard({
 }: EpisodeCardProps) {
   const [imgError, setImgError] = useState(false);
   const rawThumb =
-    ep.preview?.optimized?.thumbnail ||
-    ep.preview?.optimized?.preview ||
     ep.preview?.optimized?.src ||
-    ep.preview?.thumbnail ||
+    ep.preview?.src ||
+    ep.preview?.optimized?.preview ||
     ep.preview?.preview ||
-    ep.preview?.src;
+    ep.preview?.optimized?.thumbnail ||
+    ep.preview?.thumbnail;
 
   const primaryThumb = formatPosterUrl(rawThumb);
   const finalThumb = imgError ? fallbackPoster : primaryThumb || fallbackPoster;
@@ -133,13 +133,6 @@ export function EpisodeCard({
         </DropdownMenu>
       </div>
 
-      {/* Center Play Icon on Hover */}
-      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-600/90 text-white shadow-xl backdrop-blur-md transition-transform duration-300 group-hover:scale-110">
-          <Play className="h-5 w-5 fill-current ml-0.5" />
-        </div>
-      </div>
-
       {/* Hover Glass Darkening Overlay with Details */}
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent p-3.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
         <h4 className="text-xs font-bold text-white line-clamp-1 leading-tight">
@@ -153,6 +146,13 @@ export function EpisodeCard({
             <Play className="h-3 w-3 fill-current" />
             Смотреть
           </span>
+        </div>
+      </div>
+
+      {/* Center Play Icon on Hover - in front of elements (z-20) */}
+      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg backdrop-blur-md transition-transform duration-300 group-hover:scale-110">
+          <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
         </div>
       </div>
     </div>
