@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "windows-desktop-e2e": {
+      "source": "affaan-m/ecc",
+      "sourceType": "github",
+      "skillPath": "skills/windows-desktop-e2e/SKILL.md",
+      "computedHash": "9a7dad552c7ddcc29e43b65f1c05516a1905f6962fdca56ed6b14f80dad974d9"
+    },
+    "zustand": {
+      "source": "lobehub/lobehub",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/zustand/SKILL.md",
+      "computedHash": "663fbdb4f16955398f46456637aca329a9c0d65c3eba1c91bb46811064aec0cb"
+    }
+  }
+}
