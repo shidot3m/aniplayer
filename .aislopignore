@@ -1,0 +1,8 @@
+bin/
+shaders/
+target/
+src-tauri/target/
+node_modules/
+dist/
+*.7z
+*.zip
