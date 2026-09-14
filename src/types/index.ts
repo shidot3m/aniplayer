@@ -70,6 +70,8 @@ export interface ReleaseDetails extends ReleasePreview {
   episodes: EpisodeItem[];
 }
 
+export type Release = ReleaseDetails;
+
 export interface TorrentCodec {
   value: string;
   label: string;

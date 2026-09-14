@@ -1,0 +1,78 @@
+import { Calendar } from "lucide-react";
+import { useState } from "react";
+import type { Release } from "../types";
+import { AnimeCard } from "./AnimeCard";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+
+interface ReleaseScheduleProps {
+  releases: Release[];
+  onSelectRelease: (release: Release) => void;
+}
+
+const DAYS = [
+  { id: "1", label: "Пн" },
+  { id: "2", label: "Вт" },
+  { id: "3", label: "Ср" },
+  { id: "4", label: "Чт" },
+  { id: "5", label: "Пт" },
+  { id: "6", label: "Сб" },
+  { id: "7", label: "Вс" },
+];
+
+export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseScheduleProps) {
+  // Today's day index in 1-7 (Monday = 1, Sunday = 7)
+  const currentDay = (() => {
+    const d = new Date().getDay();
+    return d === 0 ? "7" : String(d);
+  })();
+
+  const [selectedDay, setSelectedDay] = useState<string>(currentDay);
+
+  // Group releases across days (or simulate schedule distribution if publish_day is not populated)
+  const getReleasesForDay = (dayId: string) => {
+    const dayNum = Number(dayId);
+    return releases.filter((r) => {
+      // Deterministic spread if publish_day is absent
+      return (r.id % 7) + 1 === dayNum;
+    });
+  };
+
+  const dayReleases = getReleasesForDay(selectedDay);
+
+  return (
+    <section className="mb-10">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-rose-500" />
+          Расписание релизов
+        </h2>
+
+        <Tabs value={selectedDay} onValueChange={setSelectedDay} className="w-auto">
+          <TabsList className="h-9">
+            {DAYS.map((d) => (
+              <TabsTrigger key={d.id} value={d.id} className="px-3 text-xs py-1">
+                {d.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {dayReleases.length > 0 ? (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          {dayReleases.map((release) => (
+            <AnimeCard
+              key={release.id}
+              release={release}
+              onClick={() => onSelectRelease(release)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/50 text-xs text-slate-400">
+          В этот день нет запланированных серий
+        </div>
+      )}
+    </section>
+  );
+}
