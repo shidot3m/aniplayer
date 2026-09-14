@@ -118,7 +118,19 @@ async fn api_search_releases(state: State<'_, AppState>, query: String) -> Resul
     state.api.search_releases(&query).await
 }
 
-// Downloader IPC command
+#[derive(Debug, serde::Deserialize)]
+pub struct DownloadEpisodeItem {
+    pub episode_id: String,
+    pub ordinal: f64,
+    pub m3u8_url: String,
+    pub quality: Option<String>,
+    pub op_start: Option<f64>,
+    pub op_stop: Option<f64>,
+    pub ed_start: Option<f64>,
+    pub ed_stop: Option<f64>,
+}
+
+// Downloader IPC commands
 #[tauri::command]
 async fn downloader_start_episode(
     state: State<'_, AppState>,
@@ -132,19 +144,60 @@ async fn downloader_start_episode(
     ed_start: Option<f64>,
     ed_stop: Option<f64>,
 ) -> Result<String, String> {
-    let path = state.downloader.download_episode(
-        &state.app_dir,
-        &episode_id,
-        release_id,
-        ordinal,
-        &m3u8_url,
-        &quality,
-        op_start,
-        op_stop,
-        ed_start,
-        ed_stop,
-    ).await?;
-    Ok(path.to_string_lossy().to_string())
+    let downloader = state.downloader.clone();
+    let app_dir = state.app_dir.clone();
+
+    tokio::spawn(async move {
+        let _ = downloader.download_episode(
+            &app_dir,
+            &episode_id,
+            release_id,
+            ordinal,
+            &m3u8_url,
+            &quality,
+            op_start,
+            op_stop,
+            ed_start,
+            ed_stop,
+        ).await;
+    });
+
+    Ok(format!("Started downloading episode {}", ordinal))
+}
+
+#[tauri::command]
+async fn downloader_start_release(
+    state: State<'_, AppState>,
+    release_id: i64,
+    episodes: Vec<DownloadEpisodeItem>,
+) -> Result<usize, String> {
+    if episodes.is_empty() {
+        return Err("No episodes provided for download".to_string());
+    }
+
+    let count = episodes.len();
+    let downloader = state.downloader.clone();
+    let app_dir = state.app_dir.clone();
+
+    tokio::spawn(async move {
+        for ep in episodes {
+            let quality = ep.quality.unwrap_or_else(|| "1080p".to_string());
+            let _ = downloader.download_episode(
+                &app_dir,
+                &ep.episode_id,
+                release_id,
+                ep.ordinal,
+                &ep.m3u8_url,
+                &quality,
+                ep.op_start,
+                ep.op_stop,
+                ep.ed_start,
+                ep.ed_stop,
+            ).await;
+        }
+    });
+
+    Ok(count)
 }
 
 // Player IPC commands
@@ -362,6 +415,7 @@ pub fn run() {
             api_get_release_franchises,
             api_search_releases,
             downloader_start_episode,
+            downloader_start_release,
             player_init,
             player_load_video,
             player_play,

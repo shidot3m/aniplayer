@@ -1,23 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
-import {
-  ArrowLeft,
-  Bookmark,
-  CheckCircle2,
-  ChevronDown,
-  Clock,
-  Download,
-  Film,
-  Loader2,
-  MoreVertical,
-  Play,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Bookmark, ChevronDown, Clock, Download, Film, Play } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL, CDN_BASE_URL } from "../lib/constants";
-import { formatDurationMinutes, formatTime, formatTotalWatchTime } from "../lib/utils";
+import { formatDurationMinutes, formatTotalWatchTime } from "../lib/utils";
 import { useCatalogStore } from "../store/catalogStore";
 import { usePlayerStore } from "../store/playerStore";
 import type { BookmarkCategory, EpisodeItem, FranchiseItem, HistoryItem, Release } from "../types";
-import { AnimeCard } from "./AnimeCard";
+import { EpisodeCard } from "./EpisodeCard";
+import { RelatedTab } from "./RelatedTab";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -46,7 +36,8 @@ const CATEGORY_NAMES: Record<BookmarkCategory, string> = {
 function formatPosterUrl(rawUrl?: string | null): string {
   if (!rawUrl) return "";
   if (rawUrl.startsWith("http") || rawUrl.startsWith("data:")) return rawUrl;
-  return `${CDN_BASE_URL}${rawUrl}`;
+  const cleanPath = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
+  return `${CDN_BASE_URL}${cleanPath}`;
 }
 
 interface ReleaseHeroProps {
@@ -54,9 +45,11 @@ interface ReleaseHeroProps {
   currentCategory: BookmarkCategory | null;
   lastWatchedItem: HistoryItem | null;
   startEpisode: EpisodeItem | null;
+  isDownloadingAll: boolean;
   onPlay: (ep: EpisodeItem) => void;
   onBookmarkChange: (cat: BookmarkCategory) => void;
   onRemoveBookmark: () => void;
+  onDownloadAll: () => void;
 }
 
 function ReleaseHero({
@@ -64,11 +57,36 @@ function ReleaseHero({
   currentCategory,
   lastWatchedItem,
   startEpisode,
+  isDownloadingAll,
   onPlay,
   onBookmarkChange,
   onRemoveBookmark,
+  onDownloadAll,
 }: ReleaseHeroProps) {
   const [isDescExpanded, setIsDescExpanded] = useState(false);
+  const [canExpand, setCanExpand] = useState(false);
+  const descRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = descRef.current;
+    if (!el) return;
+
+    const checkOverflow = () => {
+      if (!el) return;
+      if (el.scrollHeight > el.clientHeight + 1) {
+        setCanExpand(true);
+      }
+    };
+
+    checkOverflow();
+    const timer = setTimeout(checkOverflow, 80);
+    window.addEventListener("resize", checkOverflow);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", checkOverflow);
+    };
+  }, [release.description]);
+
   const formattedPoster = formatPosterUrl(
     release.poster?.src || release.poster?.preview || release.poster?.thumbnail,
   );
@@ -134,13 +152,14 @@ function ReleaseHero({
           {release.description && (
             <div className="mt-5 max-w-3xl">
               <p
+                ref={descRef}
                 className={`text-sm leading-relaxed text-slate-300 transition-all ${
                   isDescExpanded ? "" : "line-clamp-4"
                 }`}
               >
                 {release.description}
               </p>
-              {release.description.length > 200 && (
+              {canExpand && (
                 <button
                   type="button"
                   onClick={() => setIsDescExpanded(!isDescExpanded)}
@@ -179,6 +198,17 @@ function ReleaseHero({
             </Button>
           )}
 
+          <Button
+            variant="outline"
+            size="lg"
+            disabled={isDownloadingAll || !release.episodes || release.episodes.length === 0}
+            onClick={onDownloadAll}
+            className="gap-2.5 px-5 border-white/10 bg-[#12131A] text-slate-200 hover:border-white/20 hover:text-white cursor-pointer"
+          >
+            <Download className="h-4 w-4 text-sky-400" />
+            <span>{isDownloadingAll ? "Загрузка..." : "Скачать всё аниме"}</span>
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger>
               <div
@@ -215,205 +245,6 @@ function ReleaseHero({
           </DropdownMenu>
         </div>
       </div>
-    </div>
-  );
-}
-
-interface EpisodeCardProps {
-  ep: EpisodeItem;
-  isWatched: boolean;
-  isDownloading: boolean;
-  onPlay: () => void;
-  onToggleWatched: () => void;
-  onDownload: () => void;
-}
-
-function EpisodeCard({
-  ep,
-  isWatched,
-  isDownloading,
-  onPlay,
-  onToggleWatched,
-  onDownload,
-}: EpisodeCardProps) {
-  const thumb = formatPosterUrl(ep.preview?.thumbnail || ep.preview?.preview || ep.preview?.src);
-
-  return (
-    <div className="group relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-2xl">
-      {/* Clickable Card Action */}
-      <button
-        type="button"
-        aria-label={`Воспроизвести эпизод ${ep.ordinal}`}
-        onClick={onPlay}
-        className="absolute inset-0 z-10 h-full w-full cursor-pointer rounded-2xl border-0 bg-transparent p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-      />
-
-      {/* Preview Image */}
-      {thumb ? (
-        <img
-          src={thumb}
-          alt={`Эпизод ${ep.ordinal}`}
-          loading="lazy"
-          className="pointer-events-none h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          onError={(e) => {
-            (e.target as HTMLElement).style.display = "none";
-          }}
-        />
-      ) : (
-        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-gradient-to-br from-black to-[#121318] p-4 text-center">
-          <span className="text-xs text-slate-400">Эпизод {ep.ordinal}</span>
-        </div>
-      )}
-
-      {/* Watched indicator icon when idle */}
-      {isWatched && (
-        <div className="pointer-events-none absolute left-2.5 top-2.5 z-10 rounded-md bg-black/70 backdrop-blur-md p-1 text-emerald-400 border border-emerald-500/30 group-hover:opacity-0 transition-opacity">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-        </div>
-      )}
-
-      {/* Top Badges - Only visible on hover */}
-      <div className="pointer-events-none absolute left-2.5 right-2.5 top-2.5 z-10 flex items-center justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
-        <div className="flex items-center gap-1.5">
-          <Badge
-            variant="secondary"
-            className="backdrop-blur-xl bg-black/70 text-[10px] py-0.5 px-2 border-white/15 text-white font-medium"
-          >
-            Эпизод {ep.ordinal}
-          </Badge>
-          {isWatched && (
-            <Badge
-              variant="outline"
-              className="backdrop-blur-xl bg-black/70 text-[10px] py-0.5 px-2 border-emerald-500/40 text-emerald-400 flex items-center gap-1"
-            >
-              <CheckCircle2 className="h-3 w-3" />
-              <span>Просмотрен</span>
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      {/* Quick Actions Dropdown (Three dots) - Only visible on hover */}
-      <div className="absolute right-2.5 top-2.5 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
-        <DropdownMenu>
-          <DropdownMenuTrigger className="focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg">
-            <div
-              className="flex h-7 w-7 items-center justify-center rounded-lg backdrop-blur-xl bg-black/70 text-slate-300 hover:bg-white/20 hover:text-white border border-white/10 transition-colors cursor-pointer"
-              title="Действия с эпизодом"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="right"
-            className="w-52 backdrop-blur-2xl bg-black/90 border-white/15"
-          >
-            <DropdownMenuItem onClick={onToggleWatched}>
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-emerald-400" />
-              <span>{isWatched ? "Снять отметку" : "Отметить просмотренным"}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDownload}>
-              <Download className="h-3.5 w-3.5 mr-1.5 text-sky-400" />
-              <span>{isDownloading ? "Загрузка..." : "Скачать эпизод (HLS)"}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Center Play Icon on Hover */}
-      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-600/90 text-white shadow-xl backdrop-blur-md transition-transform duration-300 group-hover:scale-110">
-          <Play className="h-5 w-5 fill-current ml-0.5" />
-        </div>
-      </div>
-
-      {/* Hover Glass Darkening Overlay with Details */}
-      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent p-3.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
-        <h4 className="text-xs font-bold text-white line-clamp-1 leading-tight">
-          Эпизод {ep.ordinal}
-        </h4>
-        {ep.name && <p className="mt-0.5 text-[11px] text-slate-300 line-clamp-1">{ep.name}</p>}
-
-        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-300 pt-1.5 border-t border-white/15">
-          <span>{ep.duration ? formatTime(ep.duration) : ep.opening?.start ? "OP / ED" : "—"}</span>
-          <span className="flex items-center gap-1.5 text-rose-400 group-hover:text-rose-300 font-medium">
-            <Play className="h-3 w-3 fill-current" />
-            Смотреть
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface RelatedTabProps {
-  isLoading: boolean;
-  franchises: FranchiseItem[];
-  currentReleaseId: number;
-  onSelectRelease: (r: Release) => void;
-}
-
-function RelatedTab({ isLoading, franchises, currentReleaseId, onSelectRelease }: RelatedTabProps) {
-  if (isLoading) {
-    return (
-      <div className="flex h-48 flex-col items-center justify-center gap-3">
-        <Loader2 className="h-7 w-7 animate-spin text-rose-500" />
-        <p className="text-xs text-slate-400">Загрузка связанных релизов...</p>
-      </div>
-    );
-  }
-
-  const hasReleases = franchises.some((f) => (f.franchise_releases?.length || 0) > 0);
-  if (!hasReleases) {
-    return (
-      <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/40 p-6 text-center text-slate-400">
-        <Film className="mb-2 h-10 w-10 text-slate-600" />
-        <h4 className="text-sm font-semibold text-slate-300">Нет связанных сезонов</h4>
-        <p className="mt-1 text-xs text-slate-500">
-          Для этого аниме нет других частей или фильмов в базе
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      {franchises.map((f) => (
-        <div key={f.id || f.name} className="space-y-4">
-          {f.name && (
-            <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-              <Film className="h-4 w-4 text-rose-500" />
-              <h3 className="text-sm font-bold text-white">{f.name}</h3>
-              {f.name_english && <span className="text-xs text-slate-400">({f.name_english})</span>}
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {f.franchise_releases?.map((fr) => {
-              if (!fr.release) return null;
-              const isCurrent = fr.release.id === currentReleaseId;
-              return (
-                <div key={fr.id || fr.release.id} className="relative">
-                  <AnimeCard
-                    release={fr.release}
-                    onClick={() => {
-                      if (!isCurrent && fr.release) {
-                        onSelectRelease(fr.release);
-                      }
-                    }}
-                  />
-                  {isCurrent && (
-                    <div className="pointer-events-none absolute left-2 top-2 z-20">
-                      <Badge variant="rose" className="text-[10px] shadow-lg">
-                        Текущий
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -460,21 +291,27 @@ function useFranchises(releaseId: number) {
 interface EpisodesTabContentProps {
   episodes?: EpisodeItem[];
   releaseId: number;
+  fallbackPoster?: string;
   history: HistoryItem[];
   downloadingEpIds: Record<string, boolean>;
+  isDownloadingAll: boolean;
   onPlay: (ep: EpisodeItem) => void;
   onToggleWatched: (episodeId: string, ordinal: number, completed: boolean) => void;
   onDownload: (ep: EpisodeItem) => void;
+  onDownloadAll: () => void;
 }
 
 function EpisodesTabContent({
   episodes,
   releaseId,
+  fallbackPoster,
   history,
   downloadingEpIds,
+  isDownloadingAll,
   onPlay,
   onToggleWatched,
   onDownload,
+  onDownloadAll,
 }: EpisodesTabContentProps) {
   if (!episodes || episodes.length === 0) {
     return (
@@ -485,21 +322,42 @@ function EpisodesTabContent({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-      {episodes.map((ep) => {
-        const epHistory = history.find((h) => h.release_id === releaseId && h.episode_id === ep.id);
-        return (
-          <EpisodeCard
-            key={ep.id}
-            ep={ep}
-            isWatched={!!epHistory?.is_completed}
-            isDownloading={!!downloadingEpIds[ep.id]}
-            onPlay={() => onPlay(ep)}
-            onToggleWatched={() => onToggleWatched(ep.id, ep.ordinal, !epHistory?.is_completed)}
-            onDownload={() => onDownload(ep)}
-          />
-        );
-      })}
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <span className="text-xs font-medium text-slate-400">
+          Всего эпизодов: {episodes.length}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isDownloadingAll}
+          onClick={onDownloadAll}
+          className="gap-2 text-xs text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 cursor-pointer"
+        >
+          <Download className="h-3.5 w-3.5" />
+          <span>{isDownloadingAll ? "Загрузка..." : "Скачать все"}</span>
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {episodes.map((ep) => {
+          const epHistory = history.find(
+            (h) => h.release_id === releaseId && h.episode_id === ep.id,
+          );
+          return (
+            <EpisodeCard
+              key={ep.id}
+              ep={ep}
+              fallbackPoster={fallbackPoster}
+              isWatched={!!epHistory?.is_completed}
+              isDownloading={!!downloadingEpIds[ep.id]}
+              onPlay={() => onPlay(ep)}
+              onToggleWatched={() => onToggleWatched(ep.id, ep.ordinal, !epHistory?.is_completed)}
+              onDownload={() => onDownload(ep)}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -516,7 +374,12 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
   const { playEpisode } = usePlayerStore();
   const [activeTab, setActiveTab] = useState<string>("episodes");
   const [downloadingEpIds, setDownloadingEpIds] = useState<Record<string, boolean>>({});
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const { franchises, isLoading: isLoadingFranchises } = useFranchises(release.id);
+
+  const fallbackPoster = formatPosterUrl(
+    release.poster?.preview || release.poster?.src || release.poster?.thumbnail,
+  );
 
   let currentCategory: BookmarkCategory | null = null;
   for (const [cat, list] of Object.entries(bookmarks)) {
@@ -545,19 +408,16 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         alert("Поток для скачивания не найден");
         return;
       }
-      await invoke("downloader_start_hls", {
-        request: {
-          release_id: release.id,
-          episode_id: ep.id,
-          episode_ordinal: ep.ordinal,
-          hls_url: hlsUrl,
-          quality: "1080p",
-          output_dir: null,
-          opening_start: ep.opening?.start || null,
-          opening_stop: ep.opening?.stop || null,
-          ending_start: ep.ending?.start || null,
-          ending_stop: ep.ending?.stop || null,
-        },
+      await invoke("downloader_start_episode", {
+        episode_id: ep.id,
+        release_id: release.id,
+        ordinal: ep.ordinal,
+        m3u8_url: hlsUrl,
+        quality: "1080p",
+        op_start: ep.opening?.start || null,
+        op_stop: ep.opening?.stop || null,
+        ed_start: ep.ending?.start || null,
+        ed_stop: ep.ending?.stop || null,
       });
       alert(`Загрузка эпизода ${ep.ordinal} начата. Опенинг и эндинг сохранены.`);
     } catch (err) {
@@ -565,6 +425,43 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
       alert(`Ошибка: ${err}`);
     } finally {
       setDownloadingEpIds((prev) => ({ ...prev, [ep.id]: false }));
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    const eps = release.episodes || [];
+    const downloadable = eps.filter((ep) => ep.hls_1080 || ep.hls_720 || ep.hls_480);
+    if (downloadable.length === 0) {
+      alert("Нет доступных видеопотоков для скачивания этого тайтла");
+      return;
+    }
+
+    try {
+      setIsDownloadingAll(true);
+      const payload = downloadable.map((ep) => ({
+        episode_id: ep.id,
+        ordinal: ep.ordinal,
+        m3u8_url: ep.hls_1080 || ep.hls_720 || ep.hls_480 || "",
+        quality: ep.hls_1080 ? "1080p" : ep.hls_720 ? "720p" : "480p",
+        op_start: ep.opening?.start || null,
+        op_stop: ep.opening?.stop || null,
+        ed_start: ep.ending?.start || null,
+        ed_stop: ep.ending?.stop || null,
+      }));
+
+      await invoke("downloader_start_release", {
+        release_id: release.id,
+        episodes: payload,
+      });
+
+      alert(
+        `Загрузка всех эпизодов (${payload.length} шт.) начата в фоновом режиме. Файлы сохраняются в папку downloads.`,
+      );
+    } catch (err) {
+      console.error("Failed to start batch download:", err);
+      alert(`Ошибка при запуске загрузки: ${err}`);
+    } finally {
+      setIsDownloadingAll(false);
     }
   };
 
@@ -592,9 +489,11 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         currentCategory={currentCategory}
         lastWatchedItem={lastWatchedItem}
         startEpisode={startEpisode}
+        isDownloadingAll={isDownloadingAll}
         onPlay={(ep) => playEpisode(release, ep)}
         onBookmarkChange={(cat) => setBookmark(release.id, cat, release)}
         onRemoveBookmark={() => removeBookmark(release.id)}
+        onDownloadAll={handleDownloadAll}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -611,13 +510,16 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
           <EpisodesTabContent
             episodes={release.episodes}
             releaseId={release.id}
+            fallbackPoster={fallbackPoster}
             history={history}
             downloadingEpIds={downloadingEpIds}
+            isDownloadingAll={isDownloadingAll}
             onPlay={(ep) => playEpisode(release, ep)}
             onToggleWatched={(episodeId, ordinal, completed) =>
               setEpisodeWatched(release.id, episodeId, ordinal, completed)
             }
             onDownload={handleDownload}
+            onDownloadAll={handleDownloadAll}
           />
         </TabsContent>
 

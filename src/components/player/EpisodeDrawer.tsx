@@ -55,11 +55,19 @@ export function EpisodeDrawer({
             const isCurrent = ep.id === currentEpisode.id;
             const isWatched = watchedEpIds.has(ep.id);
 
-            const thumb = ep.preview?.thumbnail || ep.preview?.preview || ep.preview?.src;
-            const formattedThumb = thumb?.startsWith("http")
-              ? thumb
-              : thumb
-                ? `${CDN_BASE_URL}${thumb}`
+            const rawThumb =
+              ep.preview?.optimized?.thumbnail ||
+              ep.preview?.optimized?.preview ||
+              ep.preview?.thumbnail ||
+              ep.preview?.preview ||
+              ep.preview?.src;
+            const fallbackPoster =
+              release.poster?.preview || release.poster?.src || release.poster?.thumbnail;
+            const targetThumb = rawThumb || fallbackPoster;
+            const formattedThumb = targetThumb?.startsWith("http")
+              ? targetThumb
+              : targetThumb
+                ? `${CDN_BASE_URL}${targetThumb.startsWith("/") ? targetThumb : `/${targetThumb}`}`
                 : "";
 
             return (
