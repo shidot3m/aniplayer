@@ -57,7 +57,7 @@ export function PlayerBottomBar({
           data-testid="player-episode-badge-above-timeline"
           className="flex items-center gap-2 rounded-lg bg-black/40 px-2.5 py-1 text-xs text-rose-400 backdrop-blur"
         >
-          <span>Серия {episode.ordinal}</span>
+          <span>Эпизод {episode.ordinal}</span>
           {episode.name && (
             <span className="text-slate-400 font-normal truncate max-w-xs">— {episode.name}</span>
           )}

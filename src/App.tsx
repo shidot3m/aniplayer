@@ -240,7 +240,7 @@ export default function App() {
 
             <label className="flex items-center justify-between cursor-pointer group">
               <span className="group-hover:text-white transition-colors">
-                Автопереход к следующей серии
+                Автопереход к следующему эпизоду
               </span>
               <input
                 type="checkbox"

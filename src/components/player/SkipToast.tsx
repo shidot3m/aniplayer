@@ -28,7 +28,7 @@ export function SkipToast({ type, countdownSeconds, onSkip }: SkipToastProps) {
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-rose-500/40 bg-black/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
         <span className="text-xs font-semibold text-slate-200">
-          Следующая серия через{" "}
+          Следующий эпизод через{" "}
           <span className="text-rose-400 font-bold">{countdownSeconds ?? 0}</span> с
         </span>
         <Button

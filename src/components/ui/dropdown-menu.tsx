@@ -1,9 +1,12 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { cn } from "../../lib/utils";
 
 interface DropdownContextValue {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const DropdownContext = React.createContext<DropdownContextValue | null>(null);
@@ -11,21 +14,39 @@ const DropdownContext = React.createContext<DropdownContextValue | null>(null);
 export function DropdownMenu({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        contentRef.current &&
+        !contentRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      window.addEventListener("keydown", handleKeyDown);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen]);
 
   return (
-    <DropdownContext.Provider value={{ isOpen, setIsOpen }}>
+    <DropdownContext.Provider value={{ isOpen, setIsOpen, containerRef, contentRef }}>
       <div ref={containerRef} className="relative inline-block text-left">
         {children}
       </div>
@@ -71,19 +92,77 @@ export function DropdownMenuContent({
   className?: string;
 }) {
   const context = React.useContext(DropdownContext);
-  if (!context?.isOpen) return null;
+  const [coords, setCoords] = React.useState<{
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  }>({});
 
-  return (
+  const isOpen = context?.isOpen ?? false;
+  const containerRef = context?.containerRef;
+  const contentRef = context?.contentRef;
+
+  React.useLayoutEffect(() => {
+    if (!isOpen || !containerRef?.current) return;
+
+    const updatePosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpwards = spaceBelow < 220 && rect.top > 220;
+
+      const newCoords: { top?: number; bottom?: number; left?: number; right?: number } = {};
+
+      if (openUpwards) {
+        newCoords.bottom = Math.max(8, window.innerHeight - rect.top + 6);
+      } else {
+        newCoords.top = Math.max(8, rect.bottom + 6);
+      }
+
+      if (align === "right") {
+        newCoords.right = Math.max(8, window.innerWidth - rect.right);
+      } else {
+        newCoords.left = Math.max(8, rect.left);
+      }
+
+      setCoords(newCoords);
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen, containerRef, align]);
+
+  if (!isOpen) return null;
+
+  const content = (
     <div
+      ref={contentRef}
+      style={{
+        position: "fixed",
+        top: coords.top !== undefined ? `${coords.top}px` : undefined,
+        bottom: coords.bottom !== undefined ? `${coords.bottom}px` : undefined,
+        left: coords.left !== undefined ? `${coords.left}px` : undefined,
+        right: coords.right !== undefined ? `${coords.right}px` : undefined,
+        zIndex: 99999,
+      }}
       className={cn(
-        "absolute z-50 mt-2 min-w-[12rem] rounded-xl border border-white/15 bg-[#090A0F]/90 p-1.5 shadow-2xl backdrop-blur-2xl transition-all text-slate-200",
-        align === "right" ? "right-0" : "left-0",
+        "min-w-[12rem] rounded-xl border border-white/15 bg-[#090A0F]/95 p-1.5 shadow-2xl backdrop-blur-2xl transition-all text-slate-200",
         className,
       )}
     >
       {children}
     </div>
   );
+
+  if (typeof document === "undefined") return content;
+  return createPortal(content, document.body);
 }
 
 export function DropdownMenuItem({
@@ -109,7 +188,7 @@ export function DropdownMenuItem({
       role="menuitem"
       onClick={handleSelect}
       className={cn(
-        "flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-left text-slate-200 hover:bg-white/10 hover:text-white transition-colors bg-transparent border-0",
+        "flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-left text-slate-200 hover:bg-white/10 hover:text-white transition-colors bg-transparent border-0 focus:outline-none focus-visible:bg-white/10",
         className,
       )}
     >

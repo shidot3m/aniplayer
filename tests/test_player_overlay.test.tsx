@@ -49,7 +49,7 @@ describe("PlayerOverlay Layout", () => {
     // Episode number MUST be above timeline
     const epBadge = screen.getByTestId("player-episode-badge-above-timeline");
     expect(epBadge).toBeDefined();
-    expect(epBadge.textContent).toContain("Серия 1");
+    expect(epBadge.textContent).toContain("Эпизод 1");
 
     // Timecodes above timeline right
     expect(screen.getByTestId("player-timecodes-above-timeline")).toBeDefined();

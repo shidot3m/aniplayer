@@ -27,7 +27,7 @@ export function EpisodeDrawer({
       {/* Backdrop */}
       <button
         type="button"
-        aria-label="Закрыть список серий"
+        aria-label="Закрыть список эпизодов"
         onClick={onClose}
         className="fixed inset-0 bg-black/60 backdrop-blur-sm cursor-default"
       />
@@ -36,7 +36,7 @@ export function EpisodeDrawer({
       <div className="relative z-50 flex h-full w-80 md:w-96 flex-col border-l border-white/10 bg-[#12131A]/95 p-5 shadow-2xl backdrop-blur-md">
         <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
           <div>
-            <h3 className="text-sm font-bold text-white">Список серий</h3>
+            <h3 className="text-sm font-bold text-white">Список эпизодов</h3>
             <span className="text-xs text-slate-400">Всего: {release.episodes?.length || 0}</span>
           </div>
           <button
@@ -81,7 +81,7 @@ export function EpisodeDrawer({
                   {formattedThumb ? (
                     <img
                       src={formattedThumb}
-                      alt={`Серия ${ep.ordinal}`}
+                      alt={`Эпизод ${ep.ordinal}`}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -106,7 +106,7 @@ export function EpisodeDrawer({
                 {/* Details */}
                 <div className="flex-1 overflow-hidden">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-white">Серия {ep.ordinal}</span>
+                    <span className="text-xs font-semibold text-white">Эпизод {ep.ordinal}</span>
                     {ep.duration ? (
                       <span className="text-[10px] text-slate-400">{formatTime(ep.duration)}</span>
                     ) : null}

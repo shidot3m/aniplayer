@@ -96,7 +96,7 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
                   >
                     {title}
                   </button>
-                  <p className="mt-0.5 text-[11px] text-rose-400">Серия {item.episode_ordinal}</p>
+                  <p className="mt-0.5 text-[11px] text-rose-400">Эпизод {item.episode_ordinal}</p>
                 </div>
 
                 <div className="mt-2">

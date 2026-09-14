@@ -79,7 +79,7 @@ export function ControlsBar({
           className="flex items-center gap-1.5 rounded-xl bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
         >
           <ListVideo className="h-3.5 w-3.5" />
-          <span>Список серий</span>
+          <span>Список эпизодов</span>
         </button>
       </div>
 
@@ -90,7 +90,7 @@ export function ControlsBar({
           data-testid="player-prev-btn"
           disabled={!hasPrev}
           onClick={onPrev}
-          title="Предыдущая серия"
+          title="Предыдущий эпизод"
           className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
         >
           <SkipBack className="h-4 w-4 fill-current" />
@@ -115,7 +115,7 @@ export function ControlsBar({
           data-testid="player-next-btn"
           disabled={!hasNext}
           onClick={onNext}
-          title="Следующая серия"
+          title="Следующий эпизод"
           className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
         >
           <SkipForward className="h-4 w-4 fill-current" />

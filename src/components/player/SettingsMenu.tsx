@@ -130,7 +130,7 @@ export function SettingsMenu({ currentQuality, onSelectQuality }: SettingsMenuPr
           </label>
 
           <label className="flex items-center justify-between cursor-pointer text-slate-300 hover:text-white">
-            <span>Автопереход к след. серии</span>
+            <span>Автопереход к след. эпизоду</span>
             <input
               type="checkbox"
               checked={autoplayNext}

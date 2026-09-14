@@ -70,7 +70,7 @@ export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseSchedulePr
         </div>
       ) : (
         <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-md text-xs text-slate-400">
-          В этот день нет запланированных серий
+          В этот день нет запланированных эпизодов
         </div>
       )}
     </section>
