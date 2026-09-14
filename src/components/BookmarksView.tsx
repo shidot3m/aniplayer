@@ -117,7 +117,7 @@ export function BookmarksView({ onSelectRelease }: BookmarksViewProps) {
 
       {/* Grid of releases */}
       {filteredReleases.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {filteredReleases.map((release) => (
             <AnimeCard
               key={release.id}
@@ -127,7 +127,7 @@ export function BookmarksView({ onSelectRelease }: BookmarksViewProps) {
           ))}
         </div>
       ) : (
-        <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#12131A]/40 p-8 text-center">
+        <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-md p-8 text-center">
           <FolderHeart className="h-12 w-12 text-slate-600 mb-3" />
           <h3 className="text-sm font-semibold text-slate-200">
             В категории «{CATEGORIES.find((c) => c.id === activeCategory)?.label}» пока пусто

@@ -1,4 +1,5 @@
 import { CheckCircle2, Play, X } from "lucide-react";
+import { CDN_BASE_URL } from "../../lib/constants";
 import { formatTime } from "../../lib/utils";
 import type { EpisodeItem, Release } from "../../types";
 
@@ -58,7 +59,7 @@ export function EpisodeDrawer({
             const formattedThumb = thumb?.startsWith("http")
               ? thumb
               : thumb
-                ? `https://aniliberty.top${thumb}`
+                ? `${CDN_BASE_URL}${thumb}`
                 : "";
 
             return (

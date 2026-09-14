@@ -3,17 +3,21 @@ import {
   ArrowLeft,
   Bookmark,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Download,
   Film,
+  Loader2,
   MoreVertical,
   Play,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { API_BASE_URL, CDN_BASE_URL } from "../lib/constants";
 import { formatDurationMinutes, formatTotalWatchTime } from "../lib/utils";
 import { useCatalogStore } from "../store/catalogStore";
 import { usePlayerStore } from "../store/playerStore";
-import type { BookmarkCategory, EpisodeItem, HistoryItem, Release } from "../types";
+import type { BookmarkCategory, EpisodeItem, FranchiseItem, HistoryItem, Release } from "../types";
+import { AnimeCard } from "./AnimeCard";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -42,7 +46,7 @@ const CATEGORY_NAMES: Record<BookmarkCategory, string> = {
 function formatPosterUrl(rawUrl?: string | null): string {
   if (!rawUrl) return "";
   if (rawUrl.startsWith("http") || rawUrl.startsWith("data:")) return rawUrl;
-  return `https://aniliberty.top${rawUrl}`;
+  return `${CDN_BASE_URL}${rawUrl}`;
 }
 
 interface ReleaseHeroProps {
@@ -64,6 +68,7 @@ function ReleaseHero({
   onBookmarkChange,
   onRemoveBookmark,
 }: ReleaseHeroProps) {
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
   const formattedPoster = formatPosterUrl(
     release.poster?.src || release.poster?.preview || release.poster?.thumbnail,
   );
@@ -127,8 +132,28 @@ function ReleaseHero({
           )}
 
           {release.description && (
-            <div className="mt-5 text-sm leading-relaxed text-slate-300 max-w-3xl line-clamp-5 hover:line-clamp-none transition-all">
-              {release.description}
+            <div className="mt-5 max-w-3xl">
+              <p
+                className={`text-sm leading-relaxed text-slate-300 transition-all ${
+                  isDescExpanded ? "" : "line-clamp-4"
+                }`}
+              >
+                {release.description}
+              </p>
+              {release.description.length > 200 && (
+                <button
+                  type="button"
+                  onClick={() => setIsDescExpanded(!isDescExpanded)}
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-400 hover:text-rose-300 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-md py-0.5"
+                >
+                  <span>{isDescExpanded ? "Свернуть" : "Развернуть описание"}</span>
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                      isDescExpanded ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -278,11 +303,177 @@ function EpisodeCard({
   );
 }
 
+interface RelatedTabProps {
+  isLoading: boolean;
+  franchises: FranchiseItem[];
+  currentReleaseId: number;
+  onSelectRelease: (r: Release) => void;
+}
+
+function RelatedTab({ isLoading, franchises, currentReleaseId, onSelectRelease }: RelatedTabProps) {
+  if (isLoading) {
+    return (
+      <div className="flex h-48 flex-col items-center justify-center gap-3">
+        <Loader2 className="h-7 w-7 animate-spin text-rose-500" />
+        <p className="text-xs text-slate-400">Загрузка связанных релизов...</p>
+      </div>
+    );
+  }
+
+  const hasReleases = franchises.some((f) => (f.franchise_releases?.length || 0) > 0);
+  if (!hasReleases) {
+    return (
+      <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/40 p-6 text-center text-slate-400">
+        <Film className="mb-2 h-10 w-10 text-slate-600" />
+        <h4 className="text-sm font-semibold text-slate-300">Нет связанных сезонов</h4>
+        <p className="mt-1 text-xs text-slate-500">
+          Для этого аниме нет других частей или фильмов в базе
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {franchises.map((f) => (
+        <div key={f.id || f.name} className="space-y-4">
+          {f.name && (
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+              <Film className="h-4 w-4 text-rose-500" />
+              <h3 className="text-sm font-bold text-white">{f.name}</h3>
+              {f.name_english && <span className="text-xs text-slate-400">({f.name_english})</span>}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {f.franchise_releases?.map((fr) => {
+              if (!fr.release) return null;
+              const isCurrent = fr.release.id === currentReleaseId;
+              return (
+                <div key={fr.id || fr.release.id} className="relative">
+                  <AnimeCard
+                    release={fr.release}
+                    onClick={() => {
+                      if (!isCurrent && fr.release) {
+                        onSelectRelease(fr.release);
+                      }
+                    }}
+                  />
+                  {isCurrent && (
+                    <div className="pointer-events-none absolute left-2 top-2 z-20">
+                      <Badge variant="rose" className="text-[10px] shadow-lg">
+                        Текущий
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function useFranchises(releaseId: number) {
+  const [franchises, setFranchises] = useState<FranchiseItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadFranchises() {
+      setIsLoading(true);
+      try {
+        let data: FranchiseItem[] = [];
+        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+          try {
+            data = await invoke<FranchiseItem[]>("api_get_release_franchises", {
+              release_id: releaseId,
+            });
+          } catch (_err) {
+            const res = await fetch(`${API_BASE_URL}/anime/franchises/release/${releaseId}`);
+            if (res.ok) data = await res.json();
+          }
+        } else {
+          const res = await fetch(`${API_BASE_URL}/anime/franchises/release/${releaseId}`);
+          if (res.ok) data = await res.json();
+        }
+        if (isMounted) setFranchises(data || []);
+      } catch (e) {
+        console.error("Failed to load franchises:", e);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    loadFranchises();
+    return () => {
+      isMounted = false;
+    };
+  }, [releaseId]);
+
+  return { franchises, isLoading };
+}
+
+interface EpisodesTabContentProps {
+  episodes?: EpisodeItem[];
+  releaseId: number;
+  history: HistoryItem[];
+  downloadingEpIds: Record<string, boolean>;
+  onPlay: (ep: EpisodeItem) => void;
+  onToggleWatched: (episodeId: string, ordinal: number, completed: boolean) => void;
+  onDownload: (ep: EpisodeItem) => void;
+}
+
+function EpisodesTabContent({
+  episodes,
+  releaseId,
+  history,
+  downloadingEpIds,
+  onPlay,
+  onToggleWatched,
+  onDownload,
+}: EpisodesTabContentProps) {
+  if (!episodes || episodes.length === 0) {
+    return (
+      <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/50 text-xs text-slate-400">
+        Список эпизодов пуст или еще загружается
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {episodes.map((ep) => {
+        const epHistory = history.find((h) => h.release_id === releaseId && h.episode_id === ep.id);
+        return (
+          <EpisodeCard
+            key={ep.id}
+            ep={ep}
+            isWatched={!!epHistory?.is_completed}
+            isDownloading={!!downloadingEpIds[ep.id]}
+            onPlay={() => onPlay(ep)}
+            onToggleWatched={() => onToggleWatched(ep.id, ep.ordinal, !epHistory?.is_completed)}
+            onDownload={() => onDownload(ep)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
-  const { bookmarks, setBookmark, removeBookmark, history, setEpisodeWatched } = useCatalogStore();
+  const {
+    bookmarks,
+    setBookmark,
+    removeBookmark,
+    history,
+    setEpisodeWatched,
+    selectReleaseWithDetails,
+  } = useCatalogStore();
   const { playEpisode } = usePlayerStore();
   const [activeTab, setActiveTab] = useState<string>("episodes");
   const [downloadingEpIds, setDownloadingEpIds] = useState<Record<string, boolean>>({});
+  const { franchises, isLoading: isLoadingFranchises } = useFranchises(release.id);
 
   let currentCategory: BookmarkCategory | null = null;
   for (const [cat, list] of Object.entries(bookmarks)) {
@@ -334,6 +525,11 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
     }
   };
 
+  const totalRelatedCount = franchises.reduce(
+    (acc, f) => acc + (f.franchise_releases?.length || 0),
+    0,
+  );
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-6 text-slate-100">
       <div className="mb-6 flex items-center justify-between">
@@ -364,44 +560,31 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
             Эпизоды ({release.episodes?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="related" className="px-5">
-            Связанное
+            Связанное {totalRelatedCount > 0 ? `(${totalRelatedCount})` : ""}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="episodes">
-          {release.episodes && release.episodes.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {release.episodes.map((ep) => {
-                const epHistory = history.find(
-                  (h) => h.release_id === release.id && h.episode_id === ep.id,
-                );
-                return (
-                  <EpisodeCard
-                    key={ep.id}
-                    ep={ep}
-                    isWatched={!!epHistory?.is_completed}
-                    isDownloading={!!downloadingEpIds[ep.id]}
-                    onPlay={() => playEpisode(release, ep)}
-                    onToggleWatched={() =>
-                      setEpisodeWatched(release.id, ep.id, ep.ordinal, !epHistory?.is_completed)
-                    }
-                    onDownload={() => handleDownload(ep)}
-                  />
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/50 text-xs text-slate-400">
-              Список эпизодов пуст или еще загружается
-            </div>
-          )}
+          <EpisodesTabContent
+            episodes={release.episodes}
+            releaseId={release.id}
+            history={history}
+            downloadingEpIds={downloadingEpIds}
+            onPlay={(ep) => playEpisode(release, ep)}
+            onToggleWatched={(episodeId, ordinal, completed) =>
+              setEpisodeWatched(release.id, episodeId, ordinal, completed)
+            }
+            onDownload={handleDownload}
+          />
         </TabsContent>
 
         <TabsContent value="related">
-          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/40 p-6 text-center text-slate-400">
-            <Film className="h-10 w-10 text-slate-600 mb-2" />
-            <p className="text-xs">Связанные сезоны и франшизы будут отображаться здесь</p>
-          </div>
+          <RelatedTab
+            isLoading={isLoadingFranchises}
+            franchises={franchises}
+            currentReleaseId={release.id}
+            onSelectRelease={selectReleaseWithDetails}
+          />
         </TabsContent>
       </Tabs>
     </div>

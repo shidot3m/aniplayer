@@ -1,145 +1,13 @@
-import { ArrowLeft } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { formatTime } from "../../lib/utils";
+import { useCallback, useEffect, useState } from "react";
+import { useCatalogStore } from "../../store/catalogStore";
 import { usePlayerStore } from "../../store/playerStore";
 import type { EpisodeItem, Release } from "../../types";
-import { ControlsBar } from "./ControlsBar";
 import { EpisodeDrawer } from "./EpisodeDrawer";
-import { SeekBar } from "./SeekBar";
+import { PlayerBottomBar } from "./PlayerBottomBar";
+import { PlayerTopBar } from "./PlayerTopBar";
 import { SkipToast } from "./SkipToast";
-
-interface PlayerTopBarProps {
-  isVisible: boolean;
-  release: Release;
-  onBack: () => void;
-}
-
-function PlayerTopBar({ isVisible, release, onBack }: PlayerTopBarProps) {
-  return (
-    <div
-      className={`absolute left-0 right-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent p-6 transition-opacity duration-300 ${
-        isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      }`}
-    >
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          data-testid="player-back-btn"
-          onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/50 text-white backdrop-blur hover:bg-white/20 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-          title="Назад"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div>
-          <h2 className="text-base font-bold text-white leading-tight">{release.name.main}</h2>
-          {(release.name.alternative || release.name.english) && (
-            <p className="text-xs text-slate-300">
-              {release.name.alternative || release.name.english}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface PlayerBottomBarProps {
-  isVisible: boolean;
-  episode: EpisodeItem;
-  currentTime: number;
-  duration: number;
-  isPlaying: boolean;
-  volume: number;
-  hasPrev: boolean;
-  hasNext: boolean;
-  isFullscreen: boolean;
-  currentQuality: "1080p" | "720p" | "480p";
-  onSeek: (seconds: number) => void;
-  onTogglePlay: () => void;
-  onPrev: () => void;
-  onNext: () => void;
-  onVolumeChange: (vol: number) => void;
-  onToggleFullscreen: () => void;
-  onOpenDrawer: () => void;
-  onGoToRelease: () => void;
-  onSelectQuality: (q: "1080p" | "720p" | "480p") => void;
-}
-
-function PlayerBottomBar({
-  isVisible,
-  episode,
-  currentTime,
-  duration,
-  isPlaying,
-  volume,
-  hasPrev,
-  hasNext,
-  isFullscreen,
-  currentQuality,
-  onSeek,
-  onTogglePlay,
-  onPrev,
-  onNext,
-  onVolumeChange,
-  onToggleFullscreen,
-  onOpenDrawer,
-  onGoToRelease,
-  onSelectQuality,
-}: PlayerBottomBarProps) {
-  return (
-    <div
-      className={`absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-6 pb-6 pt-12 transition-opacity duration-300 ${
-        isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      }`}
-    >
-      {/* Above Timeline: Episode number on LEFT, Timecodes on RIGHT */}
-      <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-200">
-        <div
-          data-testid="player-episode-badge-above-timeline"
-          className="flex items-center gap-2 rounded-lg bg-black/40 px-2.5 py-1 text-xs text-rose-400 backdrop-blur"
-        >
-          <span>Серия {episode.ordinal}</span>
-          {episode.name && (
-            <span className="text-slate-400 font-normal truncate max-w-xs">— {episode.name}</span>
-          )}
-        </div>
-
-        <div
-          data-testid="player-timecodes-above-timeline"
-          className="rounded-lg bg-black/40 px-2.5 py-1 text-xs text-slate-300 backdrop-blur"
-        >
-          <span>{formatTime(currentTime)}</span>
-          <span className="text-slate-500 mx-1">/</span>
-          <span>{formatTime(duration)}</span>
-        </div>
-      </div>
-
-      {/* Seekbar */}
-      <div className="mb-3">
-        <SeekBar currentTime={currentTime} duration={duration} onSeek={onSeek} />
-      </div>
-
-      {/* Controls */}
-      <ControlsBar
-        isPlaying={isPlaying}
-        volume={volume}
-        hasPrev={hasPrev}
-        hasNext={hasNext}
-        isFullscreen={isFullscreen}
-        currentQuality={currentQuality}
-        onTogglePlay={onTogglePlay}
-        onPrev={onPrev}
-        onNext={onNext}
-        onVolumeChange={onVolumeChange}
-        onToggleFullscreen={onToggleFullscreen}
-        onOpenDrawer={onOpenDrawer}
-        onGoToRelease={onGoToRelease}
-        onSelectQuality={onSelectQuality}
-      />
-    </div>
-  );
-}
+import { usePlayerHotkeys } from "./usePlayerHotkeys";
+import { useAutoHide, useFullscreen } from "./usePlayerOverlayState";
 
 interface PlayerOverlayProps {
   release: Release;
@@ -149,6 +17,7 @@ interface PlayerOverlayProps {
 }
 
 export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: PlayerOverlayProps) {
+  const { history } = useCatalogStore();
   const {
     isPlaying,
     currentTime,
@@ -157,76 +26,30 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     setVolume,
     togglePlay,
     seekTo,
+    seekRelative,
+    toggleMute,
+    setAnime4kPreset,
     playEpisode,
     autoSkipOpEd,
     autoplayNext,
   } = usePlayerStore();
 
-  const [isVisible, setIsVisible] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentQuality, setCurrentQuality] = useState<"1080p" | "720p" | "480p">("1080p");
-  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const scheduleAutoHide = useCallback(() => {
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    if (!isDrawerOpen && isPlaying) {
-      hideTimerRef.current = setTimeout(() => {
-        setIsVisible(false);
-      }, 2500);
-    }
-  }, [isDrawerOpen, isPlaying]);
-
-  const handleUserActivity = useCallback(() => {
-    setIsVisible(true);
-    scheduleAutoHide();
-  }, [scheduleAutoHide]);
-
-  useEffect(() => {
-    scheduleAutoHide();
-    return () => {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    };
-  }, [scheduleAutoHide]);
-
-  useEffect(() => {
-    window.addEventListener("pointermove", handleUserActivity);
-    window.addEventListener("click", handleUserActivity);
-    return () => {
-      window.removeEventListener("pointermove", handleUserActivity);
-      window.removeEventListener("click", handleUserActivity);
-    };
-  }, [handleUserActivity]);
-
-  const handleToggleFullscreen = useCallback(async () => {
-    try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const appWindow = getCurrentWindow();
-      const current = await appWindow.isFullscreen();
-      await appWindow.setFullscreen(!current);
-      setIsFullscreen(!current);
-    } catch (_e) {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-        setIsFullscreen(true);
-      } else {
-        document.exitFullscreen().catch(() => {});
-        setIsFullscreen(false);
-      }
-    }
-  }, []);
+  const { isVisible, handleUserActivity } = useAutoHide(isPlaying, isDrawerOpen);
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   const currentIndex = release.episodes.findIndex((e) => e.id === episode.id);
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex >= 0 && currentIndex < release.episodes.length - 1;
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (hasPrev) playEpisode(release, release.episodes[currentIndex - 1]);
-  };
+  }, [hasPrev, playEpisode, release, currentIndex]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (hasNext) playEpisode(release, release.episodes[currentIndex + 1]);
-  };
+  }, [hasNext, playEpisode, release, currentIndex]);
 
   const isInsideOpening =
     episode.opening?.start != null &&
@@ -250,8 +73,30 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     }
   }, [autoSkipOpEd, isInsideOpening, isInsideEnding, episode.opening, episode.ending, seekTo]);
 
+  usePlayerHotkeys({
+    onUserActivity: handleUserActivity,
+    togglePlay,
+    seekRelative,
+    seekTo,
+    setVolume,
+    volume,
+    toggleMute,
+    toggleFullscreen,
+    isInsideOpening,
+    isInsideEnding,
+    openingStop: episode.opening?.stop,
+    endingStop: episode.ending?.stop,
+    onNext: handleNext,
+    onPrev: handlePrev,
+    setPreset: setAnime4kPreset,
+  });
+
   const timeLeft = duration > 0 ? duration - currentTime : 999;
   const isAutoplayCountdown = autoplayNext && hasNext && timeLeft <= 15 && timeLeft > 0;
+
+  const watchedEpIds = new Set(
+    history.filter((h) => h.release_id === release.id && h.is_completed).map((h) => h.episode_id),
+  );
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black select-none font-sans">
@@ -289,7 +134,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         onPrev={handlePrev}
         onNext={handleNext}
         onVolumeChange={setVolume}
-        onToggleFullscreen={handleToggleFullscreen}
+        onToggleFullscreen={toggleFullscreen}
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onGoToRelease={onGoToRelease}
         onSelectQuality={setCurrentQuality}
@@ -300,7 +145,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         onClose={() => setIsDrawerOpen(false)}
         release={release}
         currentEpisode={episode}
-        watchedEpIds={new Set()}
+        watchedEpIds={watchedEpIds}
         onSelectEpisode={(ep) => playEpisode(release, ep)}
       />
     </div>

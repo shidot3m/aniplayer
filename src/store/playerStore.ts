@@ -342,6 +342,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   syncWithBackend: async () => {
+    if (!get().isPlayerOpen) return;
     await get().syncFromBackend();
   },
 }));

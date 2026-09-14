@@ -30,12 +30,12 @@ export function Dialog({
       <button
         type="button"
         aria-label="Закрыть"
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity cursor-default"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity cursor-default"
         onClick={onClose}
       />
       <div
         className={cn(
-          "relative z-50 w-full max-w-lg rounded-2xl border border-white/10 bg-[#12131A] p-6 shadow-2xl transition-all text-slate-100",
+          "relative z-50 w-full max-w-lg rounded-2xl border border-white/15 bg-[#090A0F]/90 backdrop-blur-2xl p-6 shadow-2xl transition-all text-slate-100",
           className,
         )}
       >

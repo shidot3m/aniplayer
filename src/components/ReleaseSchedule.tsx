@@ -59,7 +59,7 @@ export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseSchedulePr
       </div>
 
       {dayReleases.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {dayReleases.map((release) => (
             <AnimeCard
               key={release.id}
@@ -69,7 +69,7 @@ export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseSchedulePr
           ))}
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/50 text-xs text-slate-400">
+        <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-md text-xs text-slate-400">
           В этот день нет запланированных серий
         </div>
       )}

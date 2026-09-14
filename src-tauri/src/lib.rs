@@ -109,6 +109,11 @@ async fn api_get_release_torrents(state: State<'_, AppState>, release_id: i64) -
 }
 
 #[tauri::command]
+async fn api_get_release_franchises(state: State<'_, AppState>, release_id: i64) -> Result<Vec<FranchiseItem>, String> {
+    state.api.get_release_franchises(release_id).await
+}
+
+#[tauri::command]
 async fn api_search_releases(state: State<'_, AppState>, query: String) -> Result<Vec<ReleasePreview>, String> {
     state.api.search_releases(&query).await
 }
@@ -241,6 +246,8 @@ fn player_get_volume(state: State<'_, AppState>) -> Result<f64, String> {
     let p = state.player.lock().map_err(|e| e.to_string())?;
     if let Some(core) = p.as_ref() {
         core.get_volume()
+    } else if let Ok(Some(val)) = state.db.get_setting("volume") {
+        Ok(val.parse::<f64>().unwrap_or(80.0))
     } else {
         Ok(80.0)
     }
@@ -352,6 +359,7 @@ pub fn run() {
             api_get_genre_releases,
             api_get_release,
             api_get_release_torrents,
+            api_get_release_franchises,
             api_search_releases,
             downloader_start_episode,
             player_init,

@@ -76,7 +76,7 @@ export function DropdownMenuContent({
   return (
     <div
       className={cn(
-        "absolute z-50 mt-2 min-w-[12rem] rounded-xl border border-white/10 bg-[#12131A]/95 p-1 shadow-2xl backdrop-blur-md transition-all text-slate-200",
+        "absolute z-50 mt-2 min-w-[12rem] rounded-xl border border-white/15 bg-[#090A0F]/90 p-1.5 shadow-2xl backdrop-blur-2xl transition-all text-slate-200",
         align === "right" ? "right-0" : "left-0",
         className,
       )}

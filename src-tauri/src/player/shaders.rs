@@ -14,15 +14,23 @@ pub enum Anime4kPreset {
 
 impl Anime4kPreset {
     pub fn from_str(s: &str) -> Self {
-        match s.to_uppercase().as_str() {
-            "A+A" | "AA" | "MODE_AA" => Anime4kPreset::ModeAA,
-            "A" | "MODE_A" => Anime4kPreset::ModeA,
-            "B" | "MODE_B" => Anime4kPreset::ModeB,
-            "B+B" | "BB" | "MODE_BB" => Anime4kPreset::ModeBB,
-            "C" | "MODE_C" => Anime4kPreset::ModeC,
-            "C+A" | "CA" | "MODE_CA" => Anime4kPreset::ModeCA,
-            "FAST" | "APU" => Anime4kPreset::ModeFast,
-            _ => Anime4kPreset::Off,
+        let upper = s.to_uppercase();
+        if upper.contains("A+A") || upper.contains("AA") {
+            Anime4kPreset::ModeAA
+        } else if upper.contains("B+B") || upper.contains("BB") {
+            Anime4kPreset::ModeBB
+        } else if upper.contains("C+A") || upper.contains("CA") {
+            Anime4kPreset::ModeCA
+        } else if upper.contains("FAST") || upper.contains("APU") {
+            Anime4kPreset::ModeFast
+        } else if upper.contains("MODE A") || upper == "A" {
+            Anime4kPreset::ModeA
+        } else if upper.contains("MODE B") || upper == "B" {
+            Anime4kPreset::ModeB
+        } else if upper.contains("MODE C") || upper == "C" {
+            Anime4kPreset::ModeC
+        } else {
+            Anime4kPreset::Off
         }
     }
 

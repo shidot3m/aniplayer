@@ -1,4 +1,5 @@
 import { Play } from "lucide-react";
+import { CDN_BASE_URL } from "../lib/constants";
 import { formatTime } from "../lib/utils";
 import { useCatalogStore } from "../store/catalogStore";
 import { usePlayerStore } from "../store/playerStore";
@@ -45,7 +46,7 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
             poster.startsWith("http") || poster.startsWith("data:")
               ? poster
               : poster
-                ? `https://aniliberty.top${poster}`
+                ? `${CDN_BASE_URL}${poster}`
                 : "";
 
           return (
@@ -71,13 +72,13 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
                   aria-label="Продолжить воспроизведение"
                   onClick={() => {
                     if (release) {
-                      const ep = release.episodes.find((e) => e.id === item.episode_id);
+                      const ep = release.episodes?.find((e) => e.id === item.episode_id);
                       if (ep) {
                         playEpisode(release, ep);
                         return;
                       }
+                      onSelectRelease(release);
                     }
-                    if (release) onSelectRelease(release);
                   }}
                   className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
                 >

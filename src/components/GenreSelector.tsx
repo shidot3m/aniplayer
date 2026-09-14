@@ -1,23 +1,24 @@
-import { Layers, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { CDN_BASE_URL } from "../lib/constants";
 import { useCatalogStore } from "../store/catalogStore";
 import type { GenreItem } from "../types";
 
 interface GenreSelectorProps {
-  selectedGenre: string | null;
-  onSelectGenre: (genre: string | null) => void;
+  selectedGenre: GenreItem | null;
+  onSelectGenre: (genre: GenreItem | null) => void;
 }
 
 function formatGenreImageUrl(rawUrl?: string | null): string {
   if (!rawUrl) return "";
   if (rawUrl.startsWith("http") || rawUrl.startsWith("data:")) return rawUrl;
-  return `https://aniliberty.top${rawUrl}`;
+  return `${CDN_BASE_URL}${rawUrl}`;
 }
 
 export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorProps) {
   const genres = useCatalogStore((state) => state.genres);
 
   return (
-    <section className="mb-10 pt-4 border-t border-white/5">
+    <section className="mb-12 pt-6 border-t border-white/5">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
@@ -33,37 +34,14 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
             onClick={() => onSelectGenre(null)}
             className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
           >
-            Сбросить фильтр ({selectedGenre})
+            Сбросить фильтр ({selectedGenre.name})
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-        {/* All Releases Card */}
-        <button
-          type="button"
-          aria-label="Все жанры"
-          onClick={() => onSelectGenre(null)}
-          className={`group relative flex h-24 w-full flex-col justify-end overflow-hidden rounded-xl border p-3 text-left transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 ${
-            selectedGenre === null
-              ? "border-rose-500 bg-[#1A131F]"
-              : "border-white/5 bg-[#12131A] hover:border-white/20 hover:-translate-y-0.5"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-rose-400">
-              <Layers className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-white leading-tight">Все жанры</div>
-              <div className="text-[10px] text-slate-400 mt-0.5">Полный каталог</div>
-            </div>
-          </div>
-        </button>
-
-        {/* API Genre Cards */}
+      <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
         {genres.map((g: GenreItem) => {
-          const isSelected = selectedGenre?.toLowerCase() === g.name.toLowerCase();
+          const isSelected = selectedGenre?.id === g.id;
           const imgUrl = formatGenreImageUrl(
             g.image?.optimized?.preview || g.image?.preview || g.image?.thumbnail,
           );
@@ -73,40 +51,42 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
               key={g.id}
               type="button"
               aria-label={`Жанр ${g.name}`}
-              onClick={() => onSelectGenre(isSelected ? null : g.name)}
-              className={`group relative flex h-24 w-full flex-col justify-end overflow-hidden rounded-xl border p-3 text-left transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 ${
+              onClick={() => onSelectGenre(isSelected ? null : g)}
+              className={`group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 hover:-translate-y-1 hover:shadow-2xl ${
                 isSelected
-                  ? "border-rose-500 bg-[#1A131F]"
-                  : "border-white/5 bg-[#12131A] hover:border-white/20 hover:-translate-y-0.5"
+                  ? "border-rose-500 bg-rose-500/20 ring-2 ring-rose-500/40"
+                  : "border-white/10 bg-white/[0.02] backdrop-blur-md hover:border-white/25 hover:shadow-rose-950/30"
               }`}
             >
-              {/* Genre Background Image */}
-              {imgUrl && (
+              {/* Genre Background Image with exact 2:3 vertical poster proportions */}
+              {imgUrl ? (
                 <img
                   src={imgUrl}
                   alt={g.name}
                   loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover opacity-35 transition-transform duration-500 group-hover:scale-105 group-hover:opacity-45"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = "none";
                   }}
                 />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-black to-[#121318]" />
               )}
 
-              {/* Dark subtle gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#090A0F]/95 via-[#090A0F]/60 to-transparent" />
+              {/* Dark subtle gradient overlay to keep text readable */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
 
-              {/* Genre info */}
-              <div className="relative z-10">
+              {/* Genre info at bottom */}
+              <div className="relative z-10 flex h-full flex-col justify-end">
                 <span
-                  className={`block text-xs font-bold leading-tight truncate ${
+                  className={`block text-sm font-bold leading-tight truncate drop-shadow ${
                     isSelected ? "text-rose-400" : "text-white group-hover:text-rose-300"
                   }`}
                 >
                   {g.name}
                 </span>
                 {g.total_releases != null && (
-                  <span className="block text-[10px] text-slate-400 mt-0.5">
+                  <span className="block text-[11px] text-slate-300 mt-1 font-medium">
                     {g.total_releases} {getReleasesDeclension(g.total_releases)}
                   </span>
                 )}

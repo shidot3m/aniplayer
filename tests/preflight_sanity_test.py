@@ -80,52 +80,46 @@ def test_anilibria_api():
     print("[3/4] Testing AniLiberty live API...")
     headers = {"User-Agent": "Aniplayer-Test/1.0 (Windows NT 10.0; Win64; x64)"}
 
+    def fetch_json(url: str, retries: int = 2):
+        for attempt in range(retries + 1):
+            try:
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=25) as res:
+                    return json.loads(res.read().decode("utf-8"))
+            except Exception as ex:
+                if attempt == retries:
+                    raise
+                time.sleep(1.0)
+
     # 1. Check API Status
-    req = urllib.request.Request(
-        "https://aniliberty.top/api/v1/app/status", headers=headers
-    )
-    with urllib.request.urlopen(req, timeout=10) as res:
-        data = json.loads(res.read().decode("utf-8"))
-        if not data.get("is_alive"):
-            raise RuntimeError("AniLiberty API reports not alive!")
-        print(f"  -> API alive status: {data.get('is_alive')}")
+    data = fetch_json("https://aniliberty.top/api/v1/app/status")
+    if not data.get("is_alive"):
+        raise RuntimeError("AniLiberty API reports not alive!")
+    print(f"  -> API alive status: {data.get('is_alive')}")
 
     # 2. Fetch Latest Releases
-    req = urllib.request.Request(
-        "https://aniliberty.top/api/v1/anime/releases/latest?limit=3", headers=headers
-    )
-    with urllib.request.urlopen(req, timeout=10) as res:
-        releases = json.loads(res.read().decode("utf-8"))
-        if not releases:
-            raise RuntimeError("Empty latest releases!")
-        rel_id = releases[0]["id"]
-        title = releases[0].get("name", {}).get("main")
-        print(f"  -> Fetched latest release: #{rel_id} '{title}'")
+    releases = fetch_json("https://aniliberty.top/api/v1/anime/releases/latest?limit=3")
+    if not releases:
+        raise RuntimeError("Empty latest releases!")
+    rel_id = releases[0]["id"]
+    title = releases[0].get("name", {}).get("main")
+    print(f"  -> Fetched latest release: #{rel_id} '{title}'")
 
     # 3. Fetch Full Release with Episodes, HLS & OP/ED Skips
-    req = urllib.request.Request(
-        f"https://aniliberty.top/api/v1/anime/releases/{rel_id}", headers=headers
-    )
-    with urllib.request.urlopen(req, timeout=10) as res:
-        full_rel = json.loads(res.read().decode("utf-8"))
-        episodes = full_rel.get("episodes", [])
-        print(f"  -> Release has {len(episodes)} episodes")
-        if episodes:
-            ep = episodes[0]
-            print(f"     Ep 1: '{ep.get('name')}', duration: {ep.get('duration')}s")
-            print(f"     HLS 1080: {ep.get('hls_1080')[:45]}...")
-            print(f"     Opening: {ep.get('opening')}, Ending: {ep.get('ending')}")
+    full_rel = fetch_json(f"https://aniliberty.top/api/v1/anime/releases/{rel_id}")
+    episodes = full_rel.get("episodes", [])
+    print(f"  -> Release has {len(episodes)} episodes")
+    if episodes:
+        ep = episodes[0]
+        print(f"     Ep 1: '{ep.get('name')}', duration: {ep.get('duration')}s")
+        print(f"     HLS 1080: {ep.get('hls_1080')[:45]}...")
+        print(f"     Opening: {ep.get('opening')}, Ending: {ep.get('ending')}")
 
     # 4. Fetch Torrents for Release & verify HEVC presence
-    req = urllib.request.Request(
-        f"https://aniliberty.top/api/v1/anime/torrents/release/{rel_id}",
-        headers=headers,
-    )
-    with urllib.request.urlopen(req, timeout=10) as res:
-        torrents = json.loads(res.read().decode("utf-8"))
-        print(f"  -> Release has {len(torrents)} torrents")
-        codecs = [t.get("codec", {}).get("label") for t in torrents]
-        print(f"     Available codecs: {codecs}")
+    torrents = fetch_json(f"https://aniliberty.top/api/v1/anime/torrents/release/{rel_id}")
+    print(f"  -> Release has {len(torrents)} torrents")
+    codecs = [t.get("codec", {}).get("label") for t in torrents]
+    print(f"     Available codecs: {codecs}")
 
     print("  -> Live API connectivity and data schemas verified. PASS!\n")
 

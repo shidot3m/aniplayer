@@ -122,3 +122,18 @@ export interface DownloadedEpisodeMeta {
   ending_stop?: number | null;
   download_status: "PENDING" | "DOWNLOADING" | "COMPLETED" | "FAILED";
 }
+
+export interface FranchiseReleaseItem {
+  id?: string;
+  sort_order?: number;
+  release_id?: number;
+  release?: Release;
+}
+
+export interface FranchiseItem {
+  id?: string;
+  name?: string;
+  name_english?: string;
+  total_releases?: number;
+  franchise_releases?: FranchiseReleaseItem[];
+}

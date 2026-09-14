@@ -73,6 +73,14 @@ pub struct ReleasePreview {
     pub poster: Option<ImageSource>,
     pub description: Option<String>,
     pub is_ongoing: Option<bool>,
+    pub genres: Option<Vec<GenreItem>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GenreReleasesResponse {
+    Wrapped { data: Vec<ReleasePreview> },
+    Direct(Vec<ReleasePreview>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,4 +117,21 @@ pub struct TorrentItem {
     pub seeders: Option<i64>,
     pub leechers: Option<i64>,
     pub magnet: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FranchiseReleaseItem {
+    pub id: Option<String>,
+    pub sort_order: Option<i64>,
+    pub release_id: Option<i64>,
+    pub release: Option<ReleasePreview>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FranchiseItem {
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub name_english: Option<String>,
+    pub total_releases: Option<i64>,
+    pub franchise_releases: Option<Vec<FranchiseReleaseItem>>,
 }

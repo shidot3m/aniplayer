@@ -70,9 +70,13 @@ impl AnilibriaClient {
     }
 
     pub async fn get_genre_releases(&self, genre_id: i64) -> Result<Vec<ReleasePreview>, String> {
-        let url = format!("{}/anime/genres/{}/releases", self.config.base_url, genre_id);
+        let url = format!("{}/anime/genres/{}/releases?limit=30", self.config.base_url, genre_id);
         let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        resp.json::<Vec<ReleasePreview>>().await.map_err(|e| e.to_string())
+        let result = resp.json::<GenreReleasesResponse>().await.map_err(|e| e.to_string())?;
+        match result {
+            GenreReleasesResponse::Wrapped { data } => Ok(data),
+            GenreReleasesResponse::Direct(items) => Ok(items),
+        }
     }
 
     pub async fn get_release(&self, id_or_alias: &str) -> Result<ReleaseDetails, String> {
@@ -85,6 +89,12 @@ impl AnilibriaClient {
         let url = format!("{}/anime/torrents/release/{}", self.config.base_url, release_id);
         let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
         resp.json::<Vec<TorrentItem>>().await.map_err(|e| e.to_string())
+    }
+
+    pub async fn get_release_franchises(&self, release_id: i64) -> Result<Vec<FranchiseItem>, String> {
+        let url = format!("{}/anime/franchises/release/{}", self.config.base_url, release_id);
+        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
+        resp.json::<Vec<FranchiseItem>>().await.map_err(|e| e.to_string())
     }
 
     pub async fn search_releases(&self, query: &str) -> Result<Vec<ReleasePreview>, String> {

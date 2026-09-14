@@ -44,4 +44,18 @@ async fn test_api_fetch_genres() {
     assert!(!genres.is_empty(), "Genres list should not be empty");
     let has_releases_count = genres.iter().any(|g| g.total_releases.unwrap_or(0) > 0);
     assert!(has_releases_count, "Expected at least one genre to have total_releases");
+
+    // Test fetch releases for first genre
+    let first_id = genres[0].id;
+    let releases = client.get_genre_releases(first_id).await.expect("Get genre releases failed");
+    assert!(!releases.is_empty(), "Expected genre releases to not be empty");
+}
+
+#[tokio::test]
+async fn test_api_fetch_franchises() {
+    let client = AnilibriaClient::new();
+    // Test known release with franchise (10128)
+    let franchises = client.get_release_franchises(10128).await.expect("Get franchises failed");
+    assert!(!franchises.is_empty(), "Expected franchise list for release 10128");
+    assert!(franchises[0].franchise_releases.as_ref().map(|r| !r.is_empty()).unwrap_or(false));
 }
