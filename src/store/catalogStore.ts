@@ -1,164 +1,161 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import type {
-  BookmarkCategory,
-  BookmarkItem,
-  HistoryItem,
-  ReleaseDetails,
-  ReleasePreview,
-} from "../types";
+import type { BookmarkCategory, BookmarkItem, HistoryItem, Release } from "../types";
 
 interface CatalogState {
-  activeView: "home" | "bookmarks" | "details" | "genre";
-  selectedReleaseId: number | null;
-  selectedRelease: ReleaseDetails | null;
-  selectedGenreId: number | null;
-  selectedGenreName: string | null;
+  activeScreen: "home" | "bookmarks" | "details";
+  selectedRelease: Release | null;
   searchQuery: string;
-  searchResults: ReleasePreview[];
-  latestReleases: ReleasePreview[];
-  continueWatching: HistoryItem[];
-  bookmarks: BookmarkItem[];
-  activeBookmarkCategory: BookmarkCategory;
+  searchResults: Release[];
+  latestReleases: Release[];
+  history: HistoryItem[];
+  bookmarks: Record<BookmarkCategory, BookmarkItem[]>;
+  isSearching: boolean;
   isLoading: boolean;
 
   // Actions
-  navigateToHome: () => void;
-  navigateToDetails: (releaseId: number) => Promise<void>;
-  navigateToBookmarks: (category?: BookmarkCategory) => Promise<void>;
-  navigateToGenre: (genreId: number, genreName: string) => void;
+  setActiveScreen: (screen: "home" | "bookmarks" | "details") => void;
+  setSelectedRelease: (release: Release | null) => void;
   setSearchQuery: (query: string) => void;
-  search: (query: string) => Promise<void>;
-  fetchHomeData: () => Promise<void>;
-  fetchBookmarks: (category?: BookmarkCategory) => Promise<void>;
-  setBookmark: (
-    release: ReleasePreview | ReleaseDetails,
-    category: BookmarkCategory,
+  performSearch: (query: string) => Promise<void>;
+  loadInitialData: () => Promise<void>;
+  fetchAllBookmarks: () => Promise<void>;
+  setBookmark: (releaseId: number, category: BookmarkCategory, release: Release) => Promise<void>;
+  removeBookmark: (releaseId: number) => Promise<void>;
+  setEpisodeWatched: (
+    releaseId: number,
+    episodeId: string,
+    episodeOrdinal: number,
+    isCompleted: boolean,
   ) => Promise<void>;
-  deleteBookmark: (releaseId: number) => Promise<void>;
 }
 
+const INITIAL_BOOKMARKS: Record<BookmarkCategory, BookmarkItem[]> = {
+  WATCHING: [],
+  PLANNED: [],
+  POSTPONED: [],
+  ABANDONED: [],
+  NOT_INTERESTED: [],
+  FAVORITES: [],
+  WATCHED: [],
+};
+
 export const useCatalogStore = create<CatalogState>((set, get) => ({
-  activeView: "home",
-  selectedReleaseId: null,
+  activeScreen: "home",
   selectedRelease: null,
-  selectedGenreId: null,
-  selectedGenreName: null,
   searchQuery: "",
   searchResults: [],
   latestReleases: [],
-  continueWatching: [],
-  bookmarks: [],
-  activeBookmarkCategory: "WATCHING",
+  history: [],
+  bookmarks: INITIAL_BOOKMARKS,
+  isSearching: false,
   isLoading: false,
 
-  navigateToHome: () => {
-    set({ activeView: "home", searchQuery: "", searchResults: [] });
-    get().fetchHomeData();
-  },
+  setActiveScreen: (screen) => set({ activeScreen: screen }),
+  setSelectedRelease: (release) => set({ selectedRelease: release }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
 
-  navigateToDetails: async (releaseId: number) => {
-    set({ activeView: "details", selectedReleaseId: releaseId, isLoading: true });
-    try {
-      const details = await invoke<ReleaseDetails>("api_get_release", {
-        idOrAlias: releaseId.toString(),
-      });
-      set({ selectedRelease: details, isLoading: false });
-    } catch (e) {
-      console.error("Failed to load release details:", e);
-      set({ isLoading: false });
-    }
-  },
-
-  navigateToBookmarks: async (category = "WATCHING") => {
-    set({ activeView: "bookmarks", activeBookmarkCategory: category });
-    await get().fetchBookmarks(category);
-  },
-
-  navigateToGenre: (genreId: number, genreName: string) => {
-    set({
-      activeView: "genre",
-      selectedGenreId: genreId,
-      selectedGenreName: genreName,
-    });
-  },
-
-  setSearchQuery: (query: string) => {
-    set({ searchQuery: query });
+  performSearch: async (query: string) => {
     if (!query.trim()) {
-      set({ searchResults: [] });
-    }
-  },
-
-  search: async (query: string) => {
-    if (!query.trim()) {
-      set({ searchResults: [] });
+      set({ searchResults: [], isSearching: false });
       return;
     }
-    set({ isLoading: true });
+    set({ isSearching: true });
     try {
-      const results = await invoke<ReleasePreview[]>("api_search_releases", { query });
-      set({ searchResults: results, isLoading: false });
+      const results = await invoke<Release[]>("api_search_releases", { query });
+      set({ searchResults: results, isSearching: false });
     } catch (e) {
       console.error("Search failed:", e);
-      set({ searchResults: [], isLoading: false });
+      set({ searchResults: [], isSearching: false });
     }
   },
 
-  fetchHomeData: async () => {
+  fetchAllBookmarks: async () => {
+    try {
+      const bms = await invoke<BookmarkItem[]>("db_get_bookmarks", {
+        category: null,
+      });
+      const grouped: Record<BookmarkCategory, BookmarkItem[]> = {
+        WATCHING: [],
+        PLANNED: [],
+        POSTPONED: [],
+        ABANDONED: [],
+        NOT_INTERESTED: [],
+        FAVORITES: [],
+        WATCHED: [],
+      };
+      for (const b of bms) {
+        if (grouped[b.category]) {
+          grouped[b.category].push(b);
+        }
+      }
+      set({ bookmarks: grouped });
+    } catch (e) {
+      console.error("Failed to load bookmarks:", e);
+    }
+  },
+
+  loadInitialData: async () => {
     set({ isLoading: true });
     try {
-      const latest = await invoke<ReleasePreview[]>("api_get_latest_releases", { limit: 24 });
-      const continueWatching = await invoke<HistoryItem[]>("db_get_continue_watching");
+      const latest = await invoke<Release[]>("api_get_latest_releases", {
+        limit: 24,
+      });
+      const historyItems = await invoke<HistoryItem[]>("db_get_history", {
+        limit: 20,
+      });
       set({
         latestReleases: latest,
-        continueWatching: continueWatching,
+        history: historyItems,
         isLoading: false,
       });
+      await get().fetchAllBookmarks();
     } catch (e) {
-      console.error("Failed to fetch home data:", e);
+      console.error("Failed to load initial data:", e);
       set({ isLoading: false });
     }
   },
 
-  fetchBookmarks: async (category?: BookmarkCategory) => {
-    try {
-      const bms = await invoke<BookmarkItem[]>("db_get_bookmarks", {
-        category: category || null,
-      });
-      set({ bookmarks: bms });
-    } catch (e) {
-      console.error("Failed to fetch bookmarks:", e);
-    }
-  },
-
-  setBookmark: async (release, category) => {
+  setBookmark: async (releaseId, category, release) => {
     const item: BookmarkItem = {
-      release_id: release.id,
+      release_id: releaseId,
       category,
-      release_data_json: JSON.stringify({
-        id: release.id,
-        name: release.name,
-        type: release.type,
-        year: release.year,
-        episodes_total: release.episodes_total,
-        poster: release.poster,
-      }),
+      release_data_json: JSON.stringify(release),
     };
     try {
-      await invoke("db_save_bookmark", { item });
-      await get().fetchBookmarks(get().activeBookmarkCategory);
+      await invoke("db_set_bookmark", { item });
+      await get().fetchAllBookmarks();
     } catch (e) {
       console.error("Failed to save bookmark:", e);
     }
   },
 
-  deleteBookmark: async (releaseId: number) => {
+  removeBookmark: async (releaseId) => {
     try {
-      await invoke("db_delete_bookmark", { releaseId });
-      await get().fetchBookmarks(get().activeBookmarkCategory);
+      await invoke("db_remove_bookmark", { releaseId });
+      await get().fetchAllBookmarks();
     } catch (e) {
-      console.error("Failed to delete bookmark:", e);
+      console.error("Failed to remove bookmark:", e);
+    }
+  },
+
+  setEpisodeWatched: async (releaseId, episodeId, episodeOrdinal, isCompleted) => {
+    const item: HistoryItem = {
+      release_id: releaseId,
+      episode_id: episodeId,
+      episode_ordinal: episodeOrdinal,
+      last_position: isCompleted ? 1440 : 0,
+      duration: 1440,
+      is_completed: isCompleted,
+    };
+    try {
+      await invoke("db_update_history", { item });
+      const historyItems = await invoke<HistoryItem[]>("db_get_history", {
+        limit: 20,
+      });
+      set({ history: historyItems });
+    } catch (e) {
+      console.error("Failed to update history:", e);
     }
   },
 }));
