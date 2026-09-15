@@ -9,13 +9,8 @@ const QUALITY_OPTIONS: { id: VideoQuality; title: string; desc: string }[] = [
   { id: "480p", title: "480p (SD)", desc: "Экономия трафика" },
 ];
 
-const SHADER_PRESETS = [
-  { id: "Mode A+A (HQ)", label: "Mode A+A (HQ)" },
-  { id: "Mode A (Fast)", label: "Mode A (Fast)" },
-  { id: "Mode B+B (HQ)", label: "Mode B+B (HQ)" },
-  { id: "Mode C+A (HQ)", label: "Mode C+A (HQ)" },
-  { id: "Off", label: "Отключено" },
-];
+import { ANIME4K_PRESETS } from "../../store/playerStoreDefaults";
+
 
 export function PlaybackTab() {
   const {
@@ -100,23 +95,35 @@ export function PlaybackTab() {
           {anime4kEnabled ? "Включен (активен выбранный шейдер)" : "Выключен"}
         </div>
         <div
-          className={`grid grid-cols-2 gap-2 transition-opacity duration-200 ${
+          className={`grid grid-cols-1 sm:grid-cols-2 gap-2 transition-opacity duration-200 ${
             anime4kEnabled ? "opacity-100" : "opacity-40 pointer-events-none"
           }`}
         >
-          {SHADER_PRESETS.filter((p) => p.id !== "Off").map((p) => (
+          {ANIME4K_PRESETS.map((p) => (
             <button
               key={p.id}
               type="button"
               disabled={!anime4kEnabled}
               onClick={() => setAnime4kPreset(p.id)}
-              className={`rounded-xl px-3 py-2 text-left border transition-all cursor-pointer ${
+              className={`rounded-xl p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                 anime4kPreset === p.id
-                  ? "border-rose-500 bg-rose-500/15 text-white font-semibold"
+                  ? "border-rose-500 bg-rose-500/15 text-white shadow-sm ring-1 ring-rose-500/30"
                   : "border-white/10 bg-white/[0.02] backdrop-blur-md text-slate-300 hover:text-white hover:bg-white/[0.06]"
               }`}
             >
-              {p.label}
+              <div className="flex items-center justify-between gap-1.5 mb-1">
+                <span className="font-bold text-[11px] text-white leading-tight">{p.label}</span>
+                <span
+                  className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-md ${
+                    p.tier === "Fast"
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                      : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                  }`}
+                >
+                  {p.tier}
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-snug">{p.description}</p>
             </button>
           ))}
         </div>

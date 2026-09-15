@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { PlaybackTab } from "../src/components/settings/PlaybackTab";
+import { usePlayerStore } from "../src/store/playerStore";
 import { ANIME4K_PRESETS } from "../src/store/playerStoreDefaults";
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn().mockResolvedValue(null),
+}));
 
 describe("Anime4K Presets Specification", () => {
   it("contains all 7 official Anime4K v4 presets with labels and descriptions", () => {
@@ -19,4 +26,29 @@ describe("Anime4K Presets Specification", () => {
       expect(["HQ", "Fast"]).toContain(preset.tier);
     }
   });
+
+  it("renders all 7 presets with descriptions in PlaybackTab and selects preset", () => {
+    usePlayerStore.setState({
+      anime4kEnabled: true,
+      anime4kPreset: "Mode A+A (HQ)",
+    });
+
+    render(<PlaybackTab />);
+
+    expect(screen.getByText("Mode A+A (HQ)")).toBeDefined();
+    expect(screen.getByText("Mode A (HQ)")).toBeDefined();
+    expect(screen.getByText("Mode B (HQ)")).toBeDefined();
+    expect(screen.getByText("Mode B+B (HQ)")).toBeDefined();
+    expect(screen.getByText("Mode C (HQ)")).toBeDefined();
+    expect(screen.getByText("Mode C+A (HQ)")).toBeDefined();
+    expect(screen.getByText("Mode Fast (APU)")).toBeDefined();
+
+    // Click Mode Fast (APU)
+    const fastBtn = screen.getByText("Mode Fast (APU)").closest("button");
+    expect(fastBtn).toBeDefined();
+    fireEvent.click(fastBtn!);
+
+    expect(usePlayerStore.getState().anime4kPreset).toBe("Mode Fast (APU)");
+  });
 });
+
