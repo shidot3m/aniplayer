@@ -1,5 +1,56 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { EpisodeItem, PlayerHotkeysConfig, ReleaseDetails, VideoQuality } from "../types";
+import type {
+  Anime4kPresetItem,
+  EpisodeItem,
+  PlayerHotkeysConfig,
+  ReleaseDetails,
+  VideoQuality,
+} from "../types";
+
+export const ANIME4K_PRESETS: Anime4kPresetItem[] = [
+  {
+    id: "Mode A (HQ)",
+    label: "Mode A (HQ)",
+    description: "Восстановление четких контуров и апскейл. Идеально для качественного 1080p.",
+    tier: "HQ",
+  },
+  {
+    id: "Mode A+A (HQ)",
+    label: "Mode A+A (HQ)",
+    description: "Максимальная четкость: двухпроходная CNN-реконструкция линий. Рекомендуется для мощных GPU.",
+    tier: "HQ",
+  },
+  {
+    id: "Mode B (HQ)",
+    label: "Mode B (HQ)",
+    description: "Шумоподавление и сглаживание артефактов компрессии. Идеально для 720p/1080p с дефектами.",
+    tier: "HQ",
+  },
+  {
+    id: "Mode B+B (HQ)",
+    label: "Mode B+B (HQ)",
+    description: "Усиленное подавление сильных артефактов и мягкая реконструкция контуров.",
+    tier: "HQ",
+  },
+  {
+    id: "Mode C (HQ)",
+    label: "Mode C (HQ)",
+    description: "Глубокое удаление шумов и артефактов. Для старых аниме, DVD-рипов и 480p.",
+    tier: "HQ",
+  },
+  {
+    id: "Mode C+A (HQ)",
+    label: "Mode C+A (HQ)",
+    description: "Удаление тяжелых шумов с последующим резким восстановлением контуров Mode A.",
+    tier: "HQ",
+  },
+  {
+    id: "Mode Fast (APU)",
+    label: "Mode Fast (APU)",
+    description: "Облегченный быстрый режим для встроенной графики (iGPU / APU) и слабых видеокарт.",
+    tier: "Fast",
+  },
+];
 
 export const DEFAULT_HOTKEYS: PlayerHotkeysConfig = {
   togglePlay: "Space",
