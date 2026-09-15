@@ -1,4 +1,4 @@
-import { Check, Settings, Sparkles, Zap } from "lucide-react";
+import { Settings, Sparkles, Zap } from "lucide-react";
 import { usePlayerStore } from "../../store/playerStore";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
@@ -9,21 +9,12 @@ interface SettingsMenuProps {
 
 const SPEEDS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
-const SHADER_PRESETS = [
-  { id: "Mode A+A (HQ)", label: "Mode A+A (HQ - Ультра 4K)" },
-  { id: "Mode A (Fast)", label: "Mode A (Быстрый)" },
-  { id: "Mode B+B (HQ)", label: "Mode B+B (HQ)" },
-  { id: "Mode C+A (HQ)", label: "Mode C+A (HQ)" },
-  { id: "Off", label: "Отключено" },
-];
-
 export function SettingsMenu({ currentQuality, onSelectQuality }: SettingsMenuProps) {
   const {
     speed,
     setSpeed,
-    anime4kPreset,
-    setAnime4kPreset,
     anime4kEnabled,
+    anime4kPreset,
     toggleAnime4k,
     autoSkipOpEd,
     setAutoSkipOpEd,
@@ -43,51 +34,33 @@ export function SettingsMenu({ currentQuality, onSelectQuality }: SettingsMenuPr
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="right" className="w-72 p-3 space-y-3">
-        {/* Anime4K Preset */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
+        {/* Upscaler Toggle Only (No presets dropdown in player, preset chosen in App Settings) */}
+        <div className="flex items-center justify-between py-1">
+          <div>
             <span className="flex items-center gap-1.5 text-xs font-semibold text-rose-400">
               <Sparkles className="h-3.5 w-3.5" />
-              Апскейлер Anime4K
+              Апскейлер 4K
             </span>
-            <button
-              type="button"
-              role="switch"
-              aria-label="Переключить апскейлер Anime4K"
-              aria-checked={anime4kEnabled}
-              onClick={toggleAnime4k}
-              className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors cursor-pointer ${
-                anime4kEnabled ? "bg-rose-600" : "bg-white/20"
-              }`}
-            >
-              <span
-                className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${
-                  anime4kEnabled ? "translate-x-3.5" : "translate-x-0.5"
-                }`}
-              />
-            </button>
+            <span className="block text-[10px] text-slate-400 mt-0.5">
+              {anime4kEnabled ? "Включен" : "Выключен"}
+            </span>
           </div>
-          {anime4kEnabled ? (
-            <div className="space-y-1">
-              {SHADER_PRESETS.filter((p) => p.id !== "Off").map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setAnime4kPreset(p.id)}
-                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] transition-colors cursor-pointer ${
-                    anime4kPreset === p.id
-                      ? "bg-rose-600/20 text-rose-300 font-semibold"
-                      : "hover:bg-white/5 text-slate-300"
-                  }`}
-                >
-                  <span>{p.label}</span>
-                  {anime4kPreset === p.id && <Check className="h-3.5 w-3.5" />}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-[11px] text-slate-500 italic py-1">Выключен</div>
-          )}
+          <button
+            type="button"
+            role="switch"
+            aria-label="Переключить апскейлер 4K"
+            aria-checked={anime4kEnabled}
+            onClick={toggleAnime4k}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+              anime4kEnabled ? "bg-rose-600" : "bg-white/20"
+            }`}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                anime4kEnabled ? "translate-x-4.5" : "translate-x-1"
+              }`}
+            />
+          </button>
         </div>
 
         <div className="h-[1px] bg-white/10" />
