@@ -86,18 +86,18 @@ export default function App() {
       <PlayerOverlay
         release={currentRelease}
         episode={currentEpisode}
-        onBack={() => {
-          closePlayer();
+        onBack={async () => {
+          await closePlayer();
           if (selectedRelease) {
             setActiveScreen("details");
           } else {
             setActiveScreen("home");
           }
         }}
-        onGoToRelease={() => {
+        onGoToRelease={async () => {
           setSelectedRelease(currentRelease);
           setActiveScreen("details");
-          closePlayer();
+          await closePlayer();
         }}
       />
     );

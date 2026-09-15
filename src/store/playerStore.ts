@@ -92,6 +92,21 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   closePlayer: async () => {
+    try {
+      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+        await invoke("app_set_fullscreen", { fullscreen: false });
+      }
+    } catch (_e) {
+      // ignore
+    }
+    try {
+      if (typeof document !== "undefined" && document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => {});
+      }
+    } catch (_e) {
+      // ignore
+    }
+
     set({
       isPlayerOpen: false,
       isPlaying: false,

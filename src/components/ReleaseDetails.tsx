@@ -9,7 +9,7 @@ import {
   Film,
   Play,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL, CDN_BASE_URL } from "../lib/constants";
 import { formatDurationMinutes, formatTotalWatchTime } from "../lib/utils";
 import { useCatalogStore } from "../store/catalogStore";
@@ -54,8 +54,8 @@ interface ReleaseHeroProps {
   release: Release;
   isWatched: boolean;
   currentCategory: BookmarkCategory | null;
-  lastWatchedItem: HistoryItem | null;
   startEpisode: EpisodeItem | null;
+  playButtonText: string;
   onPlay: (ep: EpisodeItem) => void;
   onBookmarkChange: (cat: BookmarkCategory) => void;
   onRemoveBookmark: () => void;
@@ -66,8 +66,8 @@ function ReleaseHero({
   release,
   isWatched,
   currentCategory,
-  lastWatchedItem,
   startEpisode,
+  playButtonText,
   onPlay,
   onBookmarkChange,
   onRemoveBookmark,
@@ -77,9 +77,10 @@ function ReleaseHero({
   const [canExpand, setCanExpand] = useState(false);
   const descRef = useRef<HTMLParagraphElement>(null);
 
+  const descText = release.description;
   useEffect(() => {
     const el = descRef.current;
-    if (!el) return;
+    if (!el || !descText) return;
 
     const checkOverflow = () => {
       if (!el) return;
@@ -95,7 +96,7 @@ function ReleaseHero({
       clearTimeout(timer);
       window.removeEventListener("resize", checkOverflow);
     };
-  }, [release.description]);
+  }, [descText]);
 
   const formattedPoster = formatPosterUrl(
     release.poster?.src || release.poster?.preview || release.poster?.thumbnail,
@@ -211,11 +212,7 @@ function ReleaseHero({
               className="gap-2.5 px-6"
             >
               <Play className="h-5 w-5 fill-current" />
-              <span>
-                {lastWatchedItem
-                  ? `Продолжить с ${lastWatchedItem.episode_ordinal} эпизода`
-                  : "Смотреть с 1 эпизода"}
-              </span>
+              <span>{playButtonText}</span>
             </Button>
           ) : (
             <Button disabled variant="secondary" size="lg">
@@ -503,15 +500,77 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
   }
 
   const releaseHistory = history.filter((h) => h.release_id === release.id);
-  const lastWatchedItem = releaseHistory.length > 0 ? releaseHistory[0] : null;
 
-  const startEpisode = (() => {
-    if (lastWatchedItem) {
-      const ep = release.episodes?.find((e) => e.id === lastWatchedItem.episode_id);
-      if (ep) return ep;
+  const sortedEpisodes = useMemo(() => {
+    return [...(release.episodes || [])].sort((a, b) => a.ordinal - b.ordinal);
+  }, [release.episodes]);
+
+  const { startEpisode, playButtonText } = useMemo(() => {
+    if (!sortedEpisodes.length) {
+      return { startEpisode: null, playButtonText: "Эпизоды недоступны" };
     }
-    return release.episodes?.[0] || null;
-  })();
+
+    const completedEpIds = new Set(
+      releaseHistory.filter((h) => h.is_completed).map((h) => h.episode_id),
+    );
+
+    // 1. If there is an in-progress episode (!is_completed && last_position > 0), continue it
+    const inProgress = releaseHistory.find((h) => !h.is_completed && h.last_position > 0);
+    if (inProgress) {
+      const ep = sortedEpisodes.find((e) => e.id === inProgress.episode_id);
+      if (ep) {
+        return {
+          startEpisode: ep,
+          playButtonText: `Продолжить с ${ep.ordinal} эпизода`,
+        };
+      }
+    }
+
+    // 2. If the user has watched / completed episodes
+    if (releaseHistory.length > 0) {
+      const lastWatched = releaseHistory[0];
+      if (lastWatched) {
+        if (lastWatched.is_completed) {
+          // Find next unwatched episode with higher ordinal
+          const nextUnwatched = sortedEpisodes.find(
+            (e) => e.ordinal > lastWatched.episode_ordinal && !completedEpIds.has(e.id),
+          );
+          if (nextUnwatched) {
+            return {
+              startEpisode: nextUnwatched,
+              playButtonText: `Продолжить с ${nextUnwatched.ordinal} эпизода`,
+            };
+          }
+          // Check for any remaining unwatched episode
+          const anyUnwatched = sortedEpisodes.find((e) => !completedEpIds.has(e.id));
+          if (anyUnwatched) {
+            return {
+              startEpisode: anyUnwatched,
+              playButtonText: `Продолжить с ${anyUnwatched.ordinal} эпизода`,
+            };
+          }
+          // All episodes completed
+          return {
+            startEpisode: sortedEpisodes[0],
+            playButtonText: "Пересмотреть с 1 эпизода",
+          };
+        } else {
+          const ep =
+            sortedEpisodes.find((e) => e.id === lastWatched.episode_id) || sortedEpisodes[0];
+          return {
+            startEpisode: ep,
+            playButtonText: `Продолжить с ${ep.ordinal} эпизода`,
+          };
+        }
+      }
+    }
+
+    // 3. No watch history yet
+    return {
+      startEpisode: sortedEpisodes[0],
+      playButtonText: "Смотреть с 1 эпизода",
+    };
+  }, [sortedEpisodes, releaseHistory]);
 
   const totalRelatedCount = franchises.reduce(
     (acc, f) => acc + (f.franchise_releases?.length || 0),
@@ -548,8 +607,8 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         release={release}
         isWatched={isReleaseWatched}
         currentCategory={currentCategory}
-        lastWatchedItem={lastWatchedItem}
         startEpisode={startEpisode}
+        playButtonText={playButtonText}
         onPlay={(ep) => playEpisode(release, ep)}
         onBookmarkChange={(cat) => setBookmark(release.id, cat, release)}
         onRemoveBookmark={() => removeBookmark(release.id)}

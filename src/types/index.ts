@@ -116,6 +116,9 @@ export interface DownloadProgressEvent {
   percent: number;
   status: "DOWNLOADING" | "COMPLETED" | "FAILED" | "CANCELLED";
   error?: string | null;
+  speed?: number;
+  peers?: number;
+  downloadedBytes?: number;
 }
 
 export interface TorrentCodec {

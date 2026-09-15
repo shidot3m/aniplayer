@@ -1,4 +1,5 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { useCatalogStore } from "../../store/catalogStore";
 import type { EpisodeItem, Release, VideoQuality } from "../../types";
 import { useHlsVideo } from "./useHlsVideo";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";
@@ -27,6 +28,9 @@ interface UsePlayerControllersOptions {
   updateTime: (cur: number, dur: number) => void;
   handleUserActivity: () => void;
   toggleFullscreen: () => void;
+  exitFullscreen?: () => void | Promise<void>;
+  isFullscreen?: boolean;
+  onBack?: () => void;
 }
 
 export function usePlayerControllers({
@@ -53,6 +57,9 @@ export function usePlayerControllers({
   updateTime,
   handleUserActivity,
   toggleFullscreen,
+  exitFullscreen,
+  isFullscreen,
+  onBack,
 }: UsePlayerControllersOptions) {
   const currentIndex = release.episodes.findIndex((e) => e.id === episode.id);
   const hasPrev = currentIndex > 0;
@@ -75,6 +82,17 @@ export function usePlayerControllers({
     episode.hls_480 ||
     "";
 
+  const lastSavedTimeRef = useRef<number>(0);
+  const saveProgress = useCallback(
+    (cur: number, dur: number) => {
+      if (dur > 0 && cur >= 0) {
+        useCatalogStore.getState().saveWatchProgress(release, episode, cur, dur);
+        lastSavedTimeRef.current = cur;
+      }
+    },
+    [release, episode],
+  );
+
   const {
     videoRef,
     seek: videoSeek,
@@ -88,14 +106,35 @@ export function usePlayerControllers({
     isMuted,
     speed,
     initialTime: currentTime,
-    onTimeUpdate: (cur, dur) => updateTime(cur, dur),
+    onTimeUpdate: (cur, dur) => {
+      updateTime(cur, dur);
+      if (Math.abs(cur - lastSavedTimeRef.current) >= 4) {
+        saveProgress(cur, dur);
+      }
+    },
     onLoadedMetadata: (dur) => updateTime(currentTime, dur),
     onPlay: play,
-    onPause: pause,
+    onPause: () => {
+      pause();
+      if (videoRef.current) {
+        saveProgress(videoRef.current.currentTime, videoRef.current.duration || 0);
+      }
+    },
     onEnded: () => {
+      if (videoRef.current) {
+        saveProgress(videoRef.current.duration || 1440, videoRef.current.duration || 1440);
+      }
       if (hasNext) handleNext();
     },
   });
+
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        saveProgress(videoRef.current.currentTime, videoRef.current.duration || 0);
+      }
+    };
+  }, [saveProgress, videoRef]);
 
   const handleSeek = useCallback(
     (pos: number) => {
@@ -155,6 +194,9 @@ export function usePlayerControllers({
     volume,
     toggleMute,
     toggleFullscreen,
+    exitFullscreen,
+    isFullscreen,
+    onBack,
     isInsideOpening,
     isInsideEnding,
     openingStop: episode.opening?.stop,

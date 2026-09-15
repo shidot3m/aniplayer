@@ -1,7 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { API_BASE_URL } from "../lib/constants";
-import type { BookmarkCategory, BookmarkItem, GenreItem, HistoryItem, Release } from "../types";
+import type {
+  BookmarkCategory,
+  BookmarkItem,
+  EpisodeItem,
+  GenreItem,
+  HistoryItem,
+  Release,
+} from "../types";
 
 interface CatalogState {
   activeScreen: "home" | "bookmarks" | "details" | "genre" | "downloads";
@@ -14,6 +21,7 @@ interface CatalogState {
   latestReleases: Release[];
   genres: GenreItem[];
   history: HistoryItem[];
+  cachedReleases: Record<number, Release>;
   bookmarks: Record<BookmarkCategory, BookmarkItem[]>;
   isSearching: boolean;
   isLoading: boolean;
@@ -28,6 +36,14 @@ interface CatalogState {
   loadInitialData: () => Promise<void>;
   loadGenres: () => Promise<void>;
   fetchAllBookmarks: () => Promise<void>;
+  cacheReleases: (releases: Release[]) => void;
+  fetchReleaseDetails: (releaseId: number) => Promise<Release | null>;
+  saveWatchProgress: (
+    release: Release,
+    episode: EpisodeItem,
+    position: number,
+    duration: number,
+  ) => Promise<void>;
   setBookmark: (releaseId: number, category: BookmarkCategory, release: Release) => Promise<void>;
   removeBookmark: (releaseId: number) => Promise<void>;
   setEpisodeWatched: (
@@ -48,6 +64,16 @@ const INITIAL_BOOKMARKS: Record<BookmarkCategory, BookmarkItem[]> = {
   WATCHED: [],
 };
 
+function getInitialCachedReleases(): Record<number, Release> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem("aniplayer_cached_releases");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
 export const useCatalogStore = create<CatalogState>((set, get) => ({
   activeScreen: "home",
   selectedRelease: null,
@@ -59,6 +85,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   latestReleases: [],
   genres: [],
   history: [],
+  cachedReleases: getInitialCachedReleases(),
   bookmarks: INITIAL_BOOKMARKS,
   isSearching: false,
   isLoading: false,
@@ -190,6 +217,91 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     }
   },
 
+  cacheReleases: (releases: Release[]) => {
+    if (!releases || releases.length === 0) return;
+    set((state) => {
+      const updated = { ...state.cachedReleases };
+      for (const r of releases) {
+        if (r && r.id) {
+          updated[r.id] = { ...updated[r.id], ...r };
+        }
+      }
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("aniplayer_cached_releases", JSON.stringify(updated));
+        } catch {
+          // ignore quota limits
+        }
+      }
+      return { cachedReleases: updated };
+    });
+  },
+
+  fetchReleaseDetails: async (releaseId: number): Promise<Release | null> => {
+    const cached = get().cachedReleases[releaseId];
+    if (cached?.episodes && cached.episodes.length > 0) {
+      return cached;
+    }
+
+    try {
+      let fullRelease: Release | null = null;
+      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+        try {
+          fullRelease = await invoke<Release>("api_get_release", {
+            idOrAlias: String(releaseId),
+          });
+        } catch {
+          const res = await fetch(`${API_BASE_URL}/anime/releases/${releaseId}`);
+          if (res.ok) fullRelease = await res.json();
+        }
+      } else {
+        const res = await fetch(`${API_BASE_URL}/anime/releases/${releaseId}`);
+        if (res.ok) fullRelease = await res.json();
+      }
+      if (fullRelease) {
+        get().cacheReleases([fullRelease]);
+        return fullRelease;
+      }
+    } catch (e) {
+      console.error("Failed to fetch release details for id", releaseId, e);
+    }
+    return cached || null;
+  },
+
+  saveWatchProgress: async (
+    release: Release,
+    episode: EpisodeItem,
+    position: number,
+    duration: number,
+  ) => {
+    const isCompleted = duration > 0 && position / duration >= 0.9;
+    const item: HistoryItem = {
+      release_id: release.id,
+      episode_id: episode.id,
+      episode_ordinal: episode.ordinal,
+      last_position: Math.max(0, Math.round(position)),
+      duration: Math.max(0, Math.round(duration)),
+      is_completed: isCompleted,
+    };
+
+    get().cacheReleases([release]);
+
+    set((state) => {
+      const existing = state.history.filter(
+        (h) => !(h.release_id === release.id && h.episode_id === episode.id),
+      );
+      return { history: [item, ...existing] };
+    });
+
+    try {
+      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+        await invoke("db_save_history", { item });
+      }
+    } catch (e) {
+      console.error("Failed to update watch progress:", e);
+    }
+  },
+
   fetchAllBookmarks: async () => {
     try {
       let bms: BookmarkItem[] = [];
@@ -209,10 +321,21 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         FAVORITES: [],
         WATCHED: [],
       };
+      const bookmarkReleases: Release[] = [];
       for (const b of bms) {
         if (grouped[b.category]) {
           grouped[b.category].push(b);
         }
+        if (b.release_data_json) {
+          try {
+            bookmarkReleases.push(JSON.parse(b.release_data_json));
+          } catch {
+            // ignore JSON parse error
+          }
+        }
+      }
+      if (bookmarkReleases.length > 0) {
+        get().cacheReleases(bookmarkReleases);
       }
       set({ bookmarks: grouped });
     } catch (e) {
@@ -244,12 +367,23 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         }
       }
 
+      if (latest.length > 0) {
+        get().cacheReleases(latest);
+      }
+
       set({
         latestReleases: latest,
         history: historyItems,
         isLoading: false,
       });
       await Promise.all([get().fetchAllBookmarks(), get().loadGenres()]);
+
+      // Asynchronously fetch release details for recent history items missing from cache
+      for (const h of historyItems.slice(0, 10)) {
+        if (!get().cachedReleases[h.release_id]) {
+          get().fetchReleaseDetails(h.release_id);
+        }
+      }
     } catch (e) {
       console.error("Failed to load initial data:", e);
       set({ isLoading: false });

@@ -32,6 +32,6 @@ export function formatBytes(bytes: number): string {
   const k = 1024;
   const sizes = ["Б", "КБ", "МБ", "ГБ", "ТБ"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const val = bytes / Math.pow(k, i);
+  const val = bytes / k ** i;
   return `${val.toFixed(val < 10 ? 1 : 0)} ${sizes[i]}`;
 }

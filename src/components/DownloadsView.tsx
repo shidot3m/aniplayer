@@ -215,39 +215,51 @@ export function DownloadsView() {
   };
 
   const handlePlayOffline = (meta: DownloadedEpisodeMeta, foundRel: Release | null) => {
-    let localStream = meta.file_path;
-    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-      try {
-        localStream = convertFileSrc(meta.file_path);
-      } catch (_e) {
-        localStream = meta.file_path;
-      }
-    }
+    const releaseEpisodesMeta = groupedByRelease.get(meta.release_id) || [meta];
 
-    const episodeItem: EpisodeItem = {
-      id: meta.episode_id,
-      ordinal: meta.episode_ordinal,
-      duration: 1440,
-      hls_1080: localStream,
-      hls_720: localStream,
-      hls_480: localStream,
-      opening: {
-        start: meta.opening_start,
-        stop: meta.opening_stop,
-      },
-      ending: {
-        start: meta.ending_start,
-        stop: meta.ending_stop,
-      },
+    // Build EpisodeItems for all downloaded episodes of this release for offline playlist support
+    const offlineEpisodes: EpisodeItem[] = releaseEpisodesMeta
+      .slice()
+      .sort((a, b) => a.episode_ordinal - b.episode_ordinal)
+      .map((m) => {
+        let stream = m.file_path;
+        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+          try {
+            stream = convertFileSrc(m.file_path);
+          } catch (_e) {
+            stream = m.file_path;
+          }
+        }
+        return {
+          id: m.episode_id,
+          ordinal: m.episode_ordinal,
+          duration: 1440,
+          hls_1080: stream,
+          hls_720: stream,
+          hls_480: stream,
+          opening: {
+            start: m.opening_start,
+            stop: m.opening_stop,
+          },
+          ending: {
+            start: m.ending_start,
+            stop: m.ending_stop,
+          },
+        };
+      });
+
+    const currentEpisode =
+      offlineEpisodes.find((e) => e.id === meta.episode_id) || offlineEpisodes[0];
+
+    const fallbackRelease: Release = {
+      ...(foundRel || {
+        id: meta.release_id,
+        name: { main: `Аниме #${meta.release_id}` },
+      }),
+      episodes: offlineEpisodes,
     };
 
-    const fallbackRelease: Release = foundRel || {
-      id: meta.release_id,
-      name: { main: `Аниме #${meta.release_id}` },
-      episodes: [episodeItem],
-    };
-
-    openPlayer(fallbackRelease, episodeItem);
+    openPlayer(fallbackRelease, currentEpisode);
   };
 
   const watchedEpIds = useMemo(

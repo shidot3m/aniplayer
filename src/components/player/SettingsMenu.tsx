@@ -14,7 +14,6 @@ export function SettingsMenu({ currentQuality, onSelectQuality }: SettingsMenuPr
     speed,
     setSpeed,
     anime4kEnabled,
-    anime4kPreset,
     toggleAnime4k,
     autoSkipOpEd,
     setAutoSkipOpEd,

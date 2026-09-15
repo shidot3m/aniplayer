@@ -1,9 +1,22 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Check, Copy, FileDown, HardDrive, Loader2, Magnet, Sparkles, Users } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  Copy,
+  Download,
+  FileDown,
+  HardDrive,
+  Loader2,
+  Magnet,
+  Sparkles,
+  Users,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from "../lib/constants";
 import { formatBytes } from "../lib/utils";
-import type { TorrentItem } from "../types";
+import { useDownloadStore } from "../store/downloadStore";
+import type { DownloadProgressEvent, TorrentItem } from "../types";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
@@ -40,8 +53,11 @@ async function fetchReleaseTorrents(releaseId: number): Promise<TorrentItem[]> {
 
 interface TorrentCardProps {
   torrent: TorrentItem;
-  isDownloading: boolean;
+  activeDownload?: DownloadProgressEvent;
+  isDownloadingFile: boolean;
   isCopied: boolean;
+  onStartAppDownload: (torrent: TorrentItem) => void;
+  onCancelAppDownload: (torrentId: number) => void;
   onOpenMagnet: (torrent: TorrentItem) => void;
   onDownloadFile: (torrent: TorrentItem) => void;
   onCopyMagnet: (torrent: TorrentItem) => void;
@@ -49,13 +65,18 @@ interface TorrentCardProps {
 
 function TorrentCard({
   torrent,
-  isDownloading,
+  activeDownload,
+  isDownloadingFile,
   isCopied,
+  onStartAppDownload,
+  onCancelAppDownload,
   onOpenMagnet,
   onDownloadFile,
   onCopyMagnet,
 }: TorrentCardProps) {
   const isHevc = isHevcTorrent(torrent);
+  const isAppDownloading = activeDownload?.status === "DOWNLOADING";
+  const isAppCompleted = activeDownload?.status === "COMPLETED";
 
   return (
     <div
@@ -101,6 +122,32 @@ function TorrentCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {isAppCompleted ? (
+            <Badge className="bg-emerald-600/20 text-emerald-400 border-emerald-500/30 gap-1.5 py-1.5 px-2.5 text-xs font-semibold">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span>Скачано в офлайн</span>
+            </Badge>
+          ) : isAppDownloading ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onCancelAppDownload(torrent.id)}
+              className="gap-1.5 text-xs bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+              <span>Отмена ({Math.round(activeDownload?.percent || 0)}%)</span>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => onStartAppDownload(torrent)}
+              className="gap-1.5 text-xs bg-rose-600 hover:bg-rose-500 text-white font-semibold cursor-pointer shadow-md shadow-rose-950/40"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Скачать в приложение</span>
+            </Button>
+          )}
+
           <Button
             size="sm"
             onClick={() => onOpenMagnet(torrent)}
@@ -113,16 +160,16 @@ function TorrentCard({
           <Button
             variant="outline"
             size="sm"
-            disabled={isDownloading}
+            disabled={isDownloadingFile}
             onClick={() => onDownloadFile(torrent)}
             className="gap-1.5 text-xs border-white/15 text-slate-200 hover:text-white cursor-pointer"
           >
-            {isDownloading ? (
+            {isDownloadingFile ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-400" />
             ) : (
               <FileDown className="h-3.5 w-3.5 text-sky-400" />
             )}
-            <span>{isDownloading ? "Загрузка..." : ".torrent"}</span>
+            <span>{isDownloadingFile ? "Загрузка..." : ".torrent"}</span>
           </Button>
 
           <button
@@ -140,6 +187,29 @@ function TorrentCard({
           </button>
         </div>
       </div>
+
+      {isAppDownloading && activeDownload && (
+        <div className="mt-3 pt-3 border-t border-white/5">
+          <div className="flex items-center justify-between text-xs mb-1.5">
+            <span className="text-slate-300 font-medium flex items-center gap-1.5">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-rose-500" />
+              Загрузка через BitTorrent: {Math.round(activeDownload.percent)}%
+            </span>
+            <span className="text-slate-400 text-[11px]">
+              {activeDownload.speed != null && activeDownload.speed > 0
+                ? `${formatBytes(activeDownload.speed)}/s`
+                : "Поиск пиров..."}
+              {activeDownload.peers != null ? ` • ${activeDownload.peers} пиров` : ""}
+            </span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full bg-rose-500 transition-all duration-300 rounded-full"
+              style={{ width: `${Math.min(100, Math.max(0, activeDownload.percent))}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -182,8 +252,9 @@ function useReleaseTorrents(releaseId: number) {
 
 export function TorrentsTab({ releaseId }: TorrentsTabProps) {
   const { torrents, isLoading } = useReleaseTorrents(releaseId);
+  const { activeDownloads, startTorrentDownload, cancelDownload } = useDownloadStore();
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [downloadingFileId, setDownloadingFileId] = useState<number | null>(null);
   const [onlyHevc, setOnlyHevc] = useState(false);
 
   const hasHevc = useMemo(() => torrents.some(isHevcTorrent), [torrents]);
@@ -194,6 +265,15 @@ export function TorrentsTab({ releaseId }: TorrentsTabProps) {
     }
     return torrents;
   }, [torrents, onlyHevc]);
+
+  const handleStartAppDownload = async (torrent: TorrentItem) => {
+    const magnetOrUrl = torrent.magnet || `${API_BASE_URL}/anime/torrents/${torrent.id}/file`;
+    await startTorrentDownload(releaseId, torrent.id, magnetOrUrl);
+  };
+
+  const handleCancelAppDownload = async (torrentId: number) => {
+    await cancelDownload(`torrent-${torrentId}`);
+  };
 
   const handleOpenMagnet = async (torrent: TorrentItem) => {
     if (!torrent.magnet) {
@@ -214,7 +294,7 @@ export function TorrentsTab({ releaseId }: TorrentsTabProps) {
 
   const handleDownloadTorrentFile = async (torrent: TorrentItem) => {
     try {
-      setDownloadingId(torrent.id);
+      setDownloadingFileId(torrent.id);
       const filename = torrent.filename || `release_${releaseId}_${torrent.id}.torrent`;
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
         const path = await invoke<string>("downloader_download_torrent", {
@@ -230,7 +310,7 @@ export function TorrentsTab({ releaseId }: TorrentsTabProps) {
       console.error("Failed to download torrent file:", err);
       alert(`Ошибка скачивания .torrent: ${err}`);
     } finally {
-      setDownloadingId(null);
+      setDownloadingFileId(null);
     }
   };
 
@@ -302,8 +382,11 @@ export function TorrentsTab({ releaseId }: TorrentsTabProps) {
           <TorrentCard
             key={t.id}
             torrent={t}
-            isDownloading={downloadingId === t.id}
+            activeDownload={activeDownloads[`torrent-${t.id}`]}
+            isDownloadingFile={downloadingFileId === t.id}
             isCopied={copiedId === t.id}
+            onStartAppDownload={handleStartAppDownload}
+            onCancelAppDownload={handleCancelAppDownload}
             onOpenMagnet={handleOpenMagnet}
             onDownloadFile={handleDownloadTorrentFile}
             onCopyMagnet={handleCopyMagnet}

@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useAutoHide(isPlaying: boolean, isDrawerOpen: boolean) {
@@ -38,23 +39,74 @@ export function useAutoHide(isPlaying: boolean, isDrawerOpen: boolean) {
 export function useFullscreen() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  useEffect(() => {
+    let isMounted = true;
+    const checkStatus = async () => {
+      try {
+        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+          const full = await invoke<boolean>("app_is_fullscreen");
+          if (isMounted) setIsFullscreen(full);
+        } else if (typeof document !== "undefined") {
+          if (isMounted) setIsFullscreen(Boolean(document.fullscreenElement));
+        }
+      } catch {
+        if (typeof document !== "undefined" && isMounted) {
+          setIsFullscreen(Boolean(document.fullscreenElement));
+        }
+      }
+    };
+
+    checkStatus();
+
+    const handleDocChange = () => {
+      if (isMounted) setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", handleDocChange);
+
+    return () => {
+      isMounted = false;
+      document.removeEventListener("fullscreenchange", handleDocChange);
+    };
+  }, []);
+
+  const exitFullscreen = useCallback(async () => {
+    try {
+      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+        await invoke("app_set_fullscreen", { fullscreen: false });
+      }
+    } catch {}
+
+    try {
+      if (typeof document !== "undefined" && document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => {});
+      }
+    } catch {}
+
+    setIsFullscreen(false);
+  }, []);
+
   const toggleFullscreen = useCallback(async () => {
     try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const appWindow = getCurrentWindow();
-      const current = await appWindow.isFullscreen();
-      await appWindow.setFullscreen(!current);
-      setIsFullscreen(!current);
-    } catch (_e) {
+      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+        const current = await invoke<boolean>("app_is_fullscreen");
+        await invoke("app_set_fullscreen", { fullscreen: !current });
+        setIsFullscreen(!current);
+        return;
+      }
+    } catch {}
+
+    try {
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+        await document.documentElement.requestFullscreen().catch(() => {});
         setIsFullscreen(true);
       } else {
-        document.exitFullscreen().catch(() => {});
+        await document.exitFullscreen().catch(() => {});
         setIsFullscreen(false);
       }
+    } catch {
+      setIsFullscreen((prev) => !prev);
     }
   }, []);
 
-  return { isFullscreen, toggleFullscreen };
+  return { isFullscreen, toggleFullscreen, exitFullscreen };
 }

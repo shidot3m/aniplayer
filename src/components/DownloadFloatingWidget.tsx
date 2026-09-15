@@ -39,7 +39,11 @@ function DownloadItemRow({
             <Loader2 className="h-4 w-4 text-rose-400 animate-spin shrink-0" />
           )}
           <span className="text-xs font-semibold text-white truncate">
-            Эпизод {item.episodeOrdinal}
+            {item.episodeOrdinal > 0
+              ? `Эпизод ${item.episodeOrdinal}`
+              : item.episodeId.startsWith("torrent-")
+                ? "Торрент раздача"
+                : "Загрузка"}
           </span>
           <span className="text-[10px] text-slate-400">#{item.releaseId}</span>
         </div>
@@ -72,7 +76,9 @@ function DownloadItemRow({
         <span>
           {item.totalSegments > 0
             ? `${item.downloadedSegments} / ${item.totalSegments} сегментов`
-            : "Инициализация..."}
+            : item.speed != null && item.speed > 0
+              ? `${formatBytes(item.speed)}/s • ${item.peers ?? 0} пиров`
+              : "Загрузка..."}
         </span>
         <span>{formatBytes(item.totalBytes)}</span>
       </div>
@@ -112,7 +118,7 @@ export function DownloadFloatingWidget() {
           <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10">
             <div className="flex items-center gap-2">
               <Download className="h-4 w-4 text-rose-500" />
-              <span className="text-xs font-bold text-white">Загрузка эпизодов</span>
+              <span className="text-xs font-bold text-white">Загрузки</span>
               <Badge variant="rose" className="h-4 px-1.5 text-[9px]">
                 {items.length}
               </Badge>

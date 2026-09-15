@@ -1,13 +1,19 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import type { Release } from "../../types";
 
 export interface PlayerTopBarProps {
   isVisible: boolean;
   release: Release;
+  anime4kEnabled?: boolean;
   onBack: () => void;
 }
 
-export function PlayerTopBar({ isVisible, release, onBack }: PlayerTopBarProps) {
+export function PlayerTopBar({
+  isVisible,
+  release,
+  anime4kEnabled = false,
+  onBack,
+}: PlayerTopBarProps) {
   return (
     <div
       className={`absolute left-0 right-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent p-6 transition-opacity duration-300 ${
@@ -33,6 +39,13 @@ export function PlayerTopBar({ isVisible, release, onBack }: PlayerTopBarProps) 
           )}
         </div>
       </div>
+
+      {anime4kEnabled && (
+        <div className="flex items-center gap-1.5 rounded-full bg-rose-600/20 border border-rose-500/40 px-3 py-1 text-xs font-semibold text-rose-300 backdrop-blur shadow-lg shadow-rose-950/30">
+          <Sparkles className="h-3.5 w-3.5 text-rose-400" />
+          <span>4K Upscale</span>
+        </div>
+      )}
     </div>
   );
 }

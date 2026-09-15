@@ -11,6 +11,9 @@ export interface UsePlayerHotkeysProps {
   volume: number;
   toggleMute: () => void;
   toggleFullscreen: () => void;
+  exitFullscreen?: () => void | Promise<void>;
+  isFullscreen?: boolean;
+  onBack?: () => void;
   isInsideOpening: boolean;
   isInsideEnding: boolean;
   openingStop?: number | null;
@@ -62,6 +65,13 @@ function handlePlayerKey(e: KeyboardEvent, p: UsePlayerHotkeysProps, hk: PlayerH
   } else if (code === hk.toggleFullscreen || (hk.toggleFullscreen === "KeyF" && code === "F11")) {
     e.preventDefault();
     p.toggleFullscreen();
+  } else if (code === "Escape") {
+    e.preventDefault();
+    if (p.isFullscreen) {
+      p.exitFullscreen?.();
+    } else if (p.onBack) {
+      p.onBack();
+    }
   } else if (code === hk.skipOpEd) {
     e.preventDefault();
     if (p.isInsideOpening && p.openingStop != null) {

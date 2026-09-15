@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCatalogStore } from "../../store/catalogStore";
 import { usePlayerStore } from "../../store/playerStore";
 import type { EpisodeItem, Release } from "../../types";
@@ -23,7 +23,23 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { isVisible, handleUserActivity } = useAutoHide(playerStore.isPlaying, isDrawerOpen);
-  const { isFullscreen, toggleFullscreen } = useFullscreen();
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreen();
+
+  const handleBack = useCallback(async () => {
+    await exitFullscreen();
+    onBack();
+  }, [exitFullscreen, onBack]);
+
+  const handleGoToRelease = useCallback(async () => {
+    await exitFullscreen();
+    onGoToRelease();
+  }, [exitFullscreen, onGoToRelease]);
+
+  useEffect(() => {
+    return () => {
+      exitFullscreen();
+    };
+  }, [exitFullscreen]);
 
   const {
     videoRef,
@@ -64,6 +80,9 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     updateTime: playerStore.updateTime,
     handleUserActivity,
     toggleFullscreen,
+    exitFullscreen,
+    isFullscreen,
+    onBack: handleBack,
   });
 
   const watchedEpIds = useMemo(
@@ -81,13 +100,19 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
       <PlayerVideoViewport
         videoRef={videoRef}
         streamUrl={streamUrl}
+        anime4kEnabled={playerStore.anime4kEnabled}
         onTogglePlay={handleTogglePlay}
         onToggleFullscreen={toggleFullscreen}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
       />
 
-      <PlayerTopBar isVisible={isVisible} release={release} onBack={onBack} />
+      <PlayerTopBar
+        isVisible={isVisible}
+        release={release}
+        anime4kEnabled={playerStore.anime4kEnabled}
+        onBack={handleBack}
+      />
 
       <PlayerSkipToasts
         autoSkipOpEd={playerStore.autoSkipOpEd}
@@ -119,7 +144,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         onVolumeChange={playerStore.setVolume}
         onToggleFullscreen={toggleFullscreen}
         onOpenDrawer={() => setIsDrawerOpen(true)}
-        onGoToRelease={onGoToRelease}
+        onGoToRelease={handleGoToRelease}
         onSelectQuality={playerStore.setQuality}
       />
 

@@ -107,7 +107,7 @@ export function useHlsVideo({
     if (!video) return;
 
     if (isPlaying && video.paused) {
-      video.play().catch((err) => console.warn("Video play error:", err));
+      video.play()?.catch((err) => console.warn("Video play error:", err));
     } else if (!isPlaying && !video.paused) {
       video.pause();
     }
