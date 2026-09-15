@@ -13,12 +13,14 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
   const { history, latestReleases } = useCatalogStore();
   const { playEpisode } = usePlayerStore();
 
-  if (!history || history.length === 0) {
+  // Take up to 4 most recently watched in-progress items
+  const recentHistory = (history || [])
+    .filter((item) => !item.is_completed && item.last_position > 0)
+    .slice(0, 4);
+
+  if (!recentHistory.length) {
     return null;
   }
-
-  // Take up to 4 most recently watched items
-  const recentHistory = history.slice(0, 4);
 
   return (
     <section className="mb-8">

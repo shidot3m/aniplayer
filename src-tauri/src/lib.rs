@@ -10,13 +10,14 @@ use api::models::*;
 use api::AnilibriaClient;
 use db::models::*;
 use db::Database;
-use downloader::HlsDownloader;
+use downloader::{HlsDownloader, TorrentDownloader};
 use player::MpvCore;
 
 pub struct AppState {
     pub db: Arc<Database>,
     pub api: Arc<AnilibriaClient>,
     pub downloader: Arc<HlsDownloader>,
+    pub torrent_downloader: Arc<TorrentDownloader>,
     pub player: Arc<Mutex<Option<MpvCore>>>,
     pub app_dir: PathBuf,
 }
@@ -50,6 +51,11 @@ fn db_save_history(state: State<'_, AppState>, item: HistoryItem) -> Result<(), 
 #[tauri::command]
 fn db_get_continue_watching(state: State<'_, AppState>) -> Result<Vec<HistoryItem>, String> {
     state.db.get_continue_watching().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn db_get_all_history(state: State<'_, AppState>) -> Result<Vec<HistoryItem>, String> {
+    state.db.get_all_history().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -264,6 +270,46 @@ fn downloader_open_folder(
     Ok(())
 }
 
+#[tauri::command]
+fn downloader_cancel_episode(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    episode_id: String,
+) -> Result<bool, String> {
+    Ok(state.downloader.cancel_episode(&episode_id, Some(&app)))
+}
+
+#[tauri::command]
+fn downloader_cancel_all(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.downloader.cancel_all(Some(&app));
+    Ok(())
+}
+
+#[tauri::command]
+async fn downloader_download_torrent(
+    state: State<'_, AppState>,
+    torrent_id: i64,
+    filename: String,
+    auto_open: Option<bool>,
+) -> Result<String, String> {
+    let path = state
+        .torrent_downloader
+        .download_torrent_file(&state.app_dir, torrent_id, &filename)
+        .await?;
+    if auto_open.unwrap_or(true) {
+        let _ = TorrentDownloader::open_torrent_file(&path);
+    }
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn downloader_open_magnet(magnet: String) -> Result<(), String> {
+    TorrentDownloader::open_magnet(&magnet)
+}
+
 // Player IPC commands
 #[tauri::command]
 fn player_init(state: State<'_, AppState>, hwnd: Option<usize>) -> Result<(), String> {
@@ -435,6 +481,13 @@ fn player_is_paused(state: State<'_, AppState>) -> Result<bool, String> {
     }
 }
 
+#[tauri::command]
+fn player_stop(state: State<'_, AppState>) -> Result<(), String> {
+    let mut p = state.player.lock().map_err(|e| e.to_string())?;
+    *p = None;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_dir = std::env::current_exe()
@@ -450,6 +503,7 @@ pub fn run() {
     }));
     let api_client = Arc::new(AnilibriaClient::new());
     let downloader = Arc::new(HlsDownloader::new(database.clone()));
+    let torrent_downloader = Arc::new(TorrentDownloader::new());
     let player_state = Arc::new(Mutex::new(None));
 
     tauri::Builder::default()
@@ -458,6 +512,7 @@ pub fn run() {
             db: database,
             api: api_client,
             downloader,
+            torrent_downloader,
             player: player_state,
             app_dir,
         })
@@ -468,6 +523,7 @@ pub fn run() {
             db_delete_bookmark,
             db_save_history,
             db_get_continue_watching,
+            db_get_all_history,
             db_save_setting,
             db_get_setting,
             db_save_download_meta,
@@ -485,12 +541,17 @@ pub fn run() {
             api_search_releases,
             downloader_start_episode,
             downloader_start_release,
+            downloader_cancel_episode,
+            downloader_cancel_all,
             downloader_delete_episode,
             downloader_open_folder,
+            downloader_download_torrent,
+            downloader_open_magnet,
             player_init,
             player_load_video,
             player_play,
             player_pause,
+            player_stop,
             player_seek,
             player_seek_relative,
             player_set_volume,

@@ -16,13 +16,16 @@ import { Badge } from "./ui/badge";
 
 function DownloadItemRow({
   item,
+  onCancel,
   onDismiss,
 }: {
   item: DownloadProgressEvent;
+  onCancel: (id: string) => void;
   onDismiss: (id: string) => void;
 }) {
   const isCompleted = item.status === "COMPLETED";
   const isFailed = item.status === "FAILED";
+  const isDownloading = item.status === "DOWNLOADING";
 
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.03] p-2.5 transition-colors hover:bg-white/[0.06]">
@@ -45,11 +48,12 @@ function DownloadItemRow({
           <span className="text-xs font-bold text-rose-400">{Math.round(item.percent)}%</span>
           <button
             type="button"
-            aria-label="Закрыть уведомление"
-            onClick={() => onDismiss(item.episodeId)}
-            className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer rounded"
+            aria-label={isDownloading ? "Отменить загрузку" : "Закрыть уведомление"}
+            title={isDownloading ? "Отменить загрузку" : "Закрыть уведомление"}
+            onClick={() => (isDownloading ? onCancel(item.episodeId) : onDismiss(item.episodeId))}
+            className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer rounded"
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -86,6 +90,8 @@ export function DownloadFloatingWidget() {
     toggleWidgetExpanded,
     setWidgetVisible,
     dismissDownload,
+    cancelDownload,
+    cancelAllDownloads,
     clearCompletedDownloads,
   } = useDownloadStore();
 
@@ -134,7 +140,12 @@ export function DownloadFloatingWidget() {
 
           <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
             {items.map((item) => (
-              <DownloadItemRow key={item.episodeId} item={item} onDismiss={dismissDownload} />
+              <DownloadItemRow
+                key={item.episodeId}
+                item={item}
+                onCancel={cancelDownload}
+                onDismiss={dismissDownload}
+              />
             ))}
           </div>
 
@@ -151,15 +162,26 @@ export function DownloadFloatingWidget() {
               <span>Все скачанные</span>
             </button>
 
-            {items.some((i) => i.status !== "DOWNLOADING") && (
-              <button
-                type="button"
-                onClick={clearCompletedDownloads}
-                className="text-[11px] text-slate-400 hover:text-white cursor-pointer transition-colors"
-              >
-                Очистить завершённые
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {activeCount > 0 && (
+                <button
+                  type="button"
+                  onClick={cancelAllDownloads}
+                  className="text-[11px] text-rose-400 hover:text-rose-300 cursor-pointer transition-colors"
+                >
+                  Отменить все
+                </button>
+              )}
+              {items.some((i) => i.status !== "DOWNLOADING") && (
+                <button
+                  type="button"
+                  onClick={clearCompletedDownloads}
+                  className="text-[11px] text-slate-400 hover:text-white cursor-pointer transition-colors"
+                >
+                  Очистить
+                </button>
+              )}
+            </div>
           </div>
         </div>
       ) : (

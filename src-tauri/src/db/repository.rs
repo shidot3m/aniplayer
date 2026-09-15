@@ -200,6 +200,31 @@ impl Database {
         Ok(items)
     }
 
+    pub fn get_all_history(&self) -> Result<Vec<HistoryItem>> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare(
+            r#"SELECT release_id, episode_id, episode_ordinal, last_position, duration, is_completed, updated_at 
+               FROM history 
+               ORDER BY updated_at DESC"#
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(HistoryItem {
+                release_id: row.get(0)?,
+                episode_id: row.get(1)?,
+                episode_ordinal: row.get(2)?,
+                last_position: row.get(3)?,
+                duration: row.get(4)?,
+                is_completed: row.get(5)?,
+                updated_at: row.get(6)?,
+            })
+        })?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row?);
+        }
+        Ok(items)
+    }
+
     // Downloaded Episodes & Skip Codes
     pub fn save_downloaded_episode(&self, item: &DownloadedEpisodeMeta) -> Result<()> {
         let conn = self.lock_conn()?;

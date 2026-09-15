@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import type { EpisodeItem, PlayerHotkeysConfig, ReleaseDetails, VideoQuality } from "../types";
 
 export const DEFAULT_HOTKEYS: PlayerHotkeysConfig = {
@@ -116,3 +117,64 @@ export const getInitialAnime4kEnabled = (): boolean => {
   }
   return true;
 };
+
+export function resolveEpisodeQuality(episode: EpisodeItem, preferred: VideoQuality): VideoQuality {
+  if (preferred === "1080p" && episode.hls_1080) return "1080p";
+  if (preferred === "720p" && episode.hls_720) return "720p";
+  if (preferred === "480p" && episode.hls_480) return "480p";
+  if (episode.hls_1080) return "1080p";
+  if (episode.hls_720) return "720p";
+  if (episode.hls_480) return "480p";
+  return "1080p";
+}
+
+export async function fetchSettingsFromDb(): Promise<Partial<PlayerState>> {
+  if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
+    return {};
+  }
+  const patch: Partial<PlayerState> = {};
+  try {
+    const vol = await invoke<string | null>("db_get_setting", {
+      key: "volume",
+    });
+    if (vol) {
+      const parsed = parseFloat(vol);
+      if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+        patch.volume = parsed;
+        patch.isMuted = parsed === 0;
+      }
+    }
+    const preset = await invoke<string | null>("db_get_setting", {
+      key: "anime4k_preset",
+    });
+    if (preset) {
+      patch.anime4kPreset = preset;
+    }
+    const a4k = await invoke<string | null>("db_get_setting", {
+      key: "anime4k_enabled",
+    });
+    if (a4k !== null) {
+      patch.anime4kEnabled = a4k === "true";
+    }
+    const qual = await invoke<string | null>("db_get_setting", {
+      key: "preferred_quality",
+    });
+    if (qual === "1080p" || qual === "720p" || qual === "480p") {
+      patch.preferredQuality = qual;
+    }
+    const hk = await invoke<string | null>("db_get_setting", {
+      key: "hotkeys",
+    });
+    if (hk) {
+      try {
+        const parsed = JSON.parse(hk);
+        patch.hotkeys = { ...DEFAULT_HOTKEYS, ...parsed };
+      } catch (_e) {
+        // Ignore invalid stored hotkey json
+      }
+    }
+  } catch (_e) {
+    // Backend not yet ready or table empty
+  }
+  return patch;
+}

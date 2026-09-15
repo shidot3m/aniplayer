@@ -19,6 +19,8 @@ interface DownloadState {
   setWidgetExpanded: (expanded: boolean) => void;
   setWidgetVisible: (visible: boolean) => void;
   dismissDownload: (episodeId: string) => void;
+  cancelDownload: (episodeId: string) => Promise<void>;
+  cancelAllDownloads: () => Promise<void>;
   clearCompletedDownloads: () => void;
 }
 
@@ -70,6 +72,16 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
     try {
       const unlisten = await listen<DownloadProgressEvent>("download-progress", (event) => {
         const payload = event.payload;
+
+        if (payload.status === "CANCELLED") {
+          set((state) => {
+            const copy = { ...state.activeDownloads };
+            delete copy[payload.episodeId];
+            return { activeDownloads: copy };
+          });
+          return;
+        }
+
         set((state) => ({
           activeDownloads: {
             ...state.activeDownloads,
@@ -102,6 +114,34 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
       delete copy[episodeId];
       return { activeDownloads: copy };
     });
+  },
+
+  cancelDownload: async (episodeId: string) => {
+    // Immediately remove from active downloads in frontend
+    set((state) => {
+      const copy = { ...state.activeDownloads };
+      delete copy[episodeId];
+      return { activeDownloads: copy };
+    });
+
+    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+      try {
+        await invoke("downloader_cancel_episode", { episodeId });
+      } catch (err) {
+        console.error("Failed to cancel episode download:", err);
+      }
+    }
+  },
+
+  cancelAllDownloads: async () => {
+    set({ activeDownloads: {} });
+    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+      try {
+        await invoke("downloader_cancel_all");
+      } catch (err) {
+        console.error("Failed to cancel all downloads:", err);
+      }
+    }
   },
 
   clearCompletedDownloads: () => {

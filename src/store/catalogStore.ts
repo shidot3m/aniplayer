@@ -236,7 +236,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
             latest = await res.json();
           }
         }
-        historyItems = await invoke<HistoryItem[]>("db_get_continue_watching").catch(() => []);
+        historyItems = await invoke<HistoryItem[]>("db_get_all_history").catch(() => []);
       } else {
         const res = await fetch(`${API_BASE_URL}/anime/releases/latest?limit=24`);
         if (res.ok) {
@@ -303,12 +303,19 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       duration: 1440,
       is_completed: isCompleted,
     };
+
+    // Optimistically update store history immediately
+    set((state) => {
+      const existing = state.history.filter(
+        (h) => !(h.release_id === releaseId && h.episode_id === episodeId),
+      );
+      return { history: [item, ...existing] };
+    });
+
     try {
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
         await invoke("db_save_history", { item });
-        const historyItems = await invoke<HistoryItem[]>("db_get_continue_watching").catch(
-          () => [],
-        );
+        const historyItems = await invoke<HistoryItem[]>("db_get_all_history").catch(() => []);
         set({ history: historyItems });
       }
     } catch (e) {

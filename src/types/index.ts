@@ -75,23 +75,6 @@ export interface ReleaseDetails extends ReleasePreview {
 
 export type Release = ReleaseDetails;
 
-export interface TorrentCodec {
-  value: string;
-  label: string;
-}
-
-export interface TorrentItem {
-  id: number;
-  hash: string;
-  size?: number | null;
-  label?: string | null;
-  codec?: TorrentCodec | null;
-  filename?: string | null;
-  seeders?: number | null;
-  leechers?: number | null;
-  magnet?: string | null;
-}
-
 export interface BookmarkItem {
   release_id: number;
   category: BookmarkCategory;
@@ -131,8 +114,31 @@ export interface DownloadProgressEvent {
   downloadedSegments: number;
   totalBytes: number;
   percent: number;
-  status: "DOWNLOADING" | "COMPLETED" | "FAILED";
+  status: "DOWNLOADING" | "COMPLETED" | "FAILED" | "CANCELLED";
   error?: string | null;
+}
+
+export interface TorrentCodec {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+export interface TorrentItem {
+  id: number;
+  hash: string;
+  size?: number | null;
+  label?: string | null;
+  codec?: TorrentCodec | null;
+  filename?: string | null;
+  seeders?: number | null;
+  leechers?: number | null;
+  magnet?: string | null;
+  description?: string | null;
+  quality?: {
+    value: string;
+    description: string;
+  } | null;
 }
 
 export interface FranchiseReleaseItem {

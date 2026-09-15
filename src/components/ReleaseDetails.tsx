@@ -17,6 +17,7 @@ import { usePlayerStore } from "../store/playerStore";
 import type { BookmarkCategory, EpisodeItem, FranchiseItem, HistoryItem, Release } from "../types";
 import { EpisodeCard } from "./EpisodeCard";
 import { RelatedTab } from "./RelatedTab";
+import { TorrentsTab } from "./TorrentsTab";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -58,6 +59,7 @@ interface ReleaseHeroProps {
   onPlay: (ep: EpisodeItem) => void;
   onBookmarkChange: (cat: BookmarkCategory) => void;
   onRemoveBookmark: () => void;
+  onOpenTorrents?: () => void;
 }
 
 function ReleaseHero({
@@ -69,6 +71,7 @@ function ReleaseHero({
   onPlay,
   onBookmarkChange,
   onRemoveBookmark,
+  onOpenTorrents,
 }: ReleaseHeroProps) {
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [canExpand, setCanExpand] = useState(false);
@@ -254,6 +257,18 @@ function ReleaseHero({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {onOpenTorrents && (
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={onOpenTorrents}
+              className="gap-2 border-emerald-500/30 bg-emerald-950/20 text-emerald-400 hover:bg-emerald-900/30 hover:border-emerald-500/50 hover:text-emerald-300 h-11 text-xs font-semibold rounded-xl"
+            >
+              <Download className="h-4 w-4" />
+              <span>Торренты (HEVC)</span>
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -538,12 +553,16 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         onPlay={(ep) => playEpisode(release, ep)}
         onBookmarkChange={(cat) => setBookmark(release.id, cat, release)}
         onRemoveBookmark={() => removeBookmark(release.id)}
+        onOpenTorrents={() => setActiveTab("torrents")}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="episodes" className="px-5">
             Эпизоды ({release.episodes?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="torrents" className="px-5">
+            Торренты (HEVC)
           </TabsTrigger>
           <TabsTrigger value="related" className="px-5">
             Связанное {totalRelatedCount > 0 ? `(${totalRelatedCount})` : ""}
@@ -565,6 +584,10 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
             onDownload={handleDownload}
             onDownloadAll={handleDownloadAll}
           />
+        </TabsContent>
+
+        <TabsContent value="torrents">
+          <TorrentsTab releaseId={release.id} />
         </TabsContent>
 
         <TabsContent value="related">
