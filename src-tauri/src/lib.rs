@@ -5,12 +5,12 @@ pub mod player;
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use tauri::State;
+use tauri::{Manager, State};
 use api::models::*;
 use api::AnilibriaClient;
 use db::models::*;
 use db::Database;
-use downloader::{HlsDownloader, TorrentDownloader};
+use downloader::{HlsDownloader, TorrentDownloader, TorrentEngine};
 use player::MpvCore;
 
 pub struct AppState {
@@ -18,6 +18,7 @@ pub struct AppState {
     pub api: Arc<AnilibriaClient>,
     pub downloader: Arc<HlsDownloader>,
     pub torrent_downloader: Arc<TorrentDownloader>,
+    pub torrent_engine: Arc<TorrentEngine>,
     pub player: Arc<Mutex<Option<MpvCore>>>,
     pub app_dir: PathBuf,
 }
@@ -310,6 +311,26 @@ fn downloader_open_magnet(magnet: String) -> Result<(), String> {
     TorrentDownloader::open_magnet(&magnet)
 }
 
+#[tauri::command]
+async fn downloader_start_torrent(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    release_id: i64,
+    torrent_id: i64,
+    magnet_or_url: String,
+) -> Result<String, String> {
+    state.torrent_engine.start_download(app, release_id, torrent_id, &magnet_or_url).await
+}
+
+#[tauri::command]
+fn downloader_cancel_torrent(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    torrent_id: i64,
+) -> Result<(), String> {
+    state.torrent_engine.cancel_download(&app, torrent_id)
+}
+
 // Player IPC commands
 #[tauri::command]
 fn player_init(state: State<'_, AppState>, hwnd: Option<usize>) -> Result<(), String> {
@@ -488,6 +509,24 @@ fn player_stop(state: State<'_, AppState>) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn app_set_fullscreen(app: tauri::AppHandle, fullscreen: bool) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.set_fullscreen(fullscreen).map_err(|e| e.to_string())
+    } else {
+        Err("Main window not found".to_string())
+    }
+}
+
+#[tauri::command]
+fn app_is_fullscreen(app: tauri::AppHandle) -> Result<bool, String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.is_fullscreen().map_err(|e| e.to_string())
+    } else {
+        Err("Main window not found".to_string())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_dir = std::env::current_exe()
@@ -504,6 +543,10 @@ pub fn run() {
     let api_client = Arc::new(AnilibriaClient::new());
     let downloader = Arc::new(HlsDownloader::new(database.clone()));
     let torrent_downloader = Arc::new(TorrentDownloader::new());
+    let torrent_engine = tauri::async_runtime::block_on(async {
+        TorrentEngine::new(app_dir.clone(), database.clone()).await
+    }).expect("Fatal: Torrent engine initialization failed");
+    let torrent_engine = Arc::new(torrent_engine);
     let player_state = Arc::new(Mutex::new(None));
 
     tauri::Builder::default()
@@ -513,6 +556,7 @@ pub fn run() {
             api: api_client,
             downloader,
             torrent_downloader,
+            torrent_engine,
             player: player_state,
             app_dir,
         })
@@ -547,6 +591,8 @@ pub fn run() {
             downloader_open_folder,
             downloader_download_torrent,
             downloader_open_magnet,
+            downloader_start_torrent,
+            downloader_cancel_torrent,
             player_init,
             player_load_video,
             player_play,
@@ -562,6 +608,8 @@ pub fn run() {
             player_get_time_pos,
             player_get_duration,
             player_is_paused,
+            app_set_fullscreen,
+            app_is_fullscreen,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
