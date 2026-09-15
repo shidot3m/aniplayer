@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useCatalogStore } from "../../store/catalogStore";
+import { getAvailableQualities } from "../../store/playerStoreDefaults";
 import type { EpisodeItem, Release, VideoQuality } from "../../types";
 import { useHlsVideo } from "./useHlsVideo";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";
@@ -10,6 +11,7 @@ interface UsePlayerControllersOptions {
   currentTime: number;
   duration: number;
   activeQuality: VideoQuality;
+  setQuality: (q: VideoQuality) => Promise<void>;
   autoSkipOpEd: boolean;
   autoplayNext: boolean;
   isPlaying: boolean;
@@ -39,6 +41,7 @@ export function usePlayerControllers({
   currentTime,
   duration,
   activeQuality,
+  setQuality,
   autoSkipOpEd,
   autoplayNext,
   isPlaying,
@@ -65,6 +68,18 @@ export function usePlayerControllers({
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex >= 0 && currentIndex < release.episodes.length - 1;
 
+  const availableQualities = useMemo(() => getAvailableQualities(episode), [episode]);
+
+  // Ensure activeQuality matches an available stream on the episode
+  useEffect(() => {
+    if (!availableQualities.includes(activeQuality)) {
+      const best = availableQualities[0];
+      if (best) {
+        setQuality(best);
+      }
+    }
+  }, [availableQualities, activeQuality, setQuality]);
+
   const handlePrev = useCallback(() => {
     if (hasPrev) playEpisode(release, release.episodes[currentIndex - 1]);
   }, [hasPrev, playEpisode, release, currentIndex]);
@@ -73,14 +88,12 @@ export function usePlayerControllers({
     if (hasNext) playEpisode(release, release.episodes[currentIndex + 1]);
   }, [hasNext, playEpisode, release, currentIndex]);
 
-  const streamUrl =
-    (activeQuality === "1080p" && episode.hls_1080) ||
-    (activeQuality === "720p" && episode.hls_720) ||
-    (activeQuality === "480p" && episode.hls_480) ||
-    episode.hls_1080 ||
-    episode.hls_720 ||
-    episode.hls_480 ||
-    "";
+  const streamUrl = useMemo(() => {
+    if (activeQuality === "1080p" && episode.hls_1080) return episode.hls_1080;
+    if (activeQuality === "720p" && episode.hls_720) return episode.hls_720;
+    if (activeQuality === "480p" && episode.hls_480) return episode.hls_480;
+    return episode.hls_1080 || episode.hls_720 || episode.hls_480 || "";
+  }, [activeQuality, episode]);
 
   const lastSavedTimeRef = useRef<number>(0);
   const saveProgress = useCallback(
@@ -109,6 +122,32 @@ export function usePlayerControllers({
     speed,
     initialTime: currentTime,
     onTimeUpdate: (cur, dur) => {
+      // Auto-skip opening or ending if enabled
+      if (autoSkipOpEd) {
+        if (
+          episode.opening?.start != null &&
+          episode.opening?.stop != null &&
+          cur >= episode.opening.start &&
+          cur < episode.opening.stop
+        ) {
+          const target = episode.opening.stop + 0.5;
+          videoSeek(target);
+          updateTime(target, dur);
+          return;
+        }
+        if (
+          episode.ending?.start != null &&
+          episode.ending?.stop != null &&
+          cur >= episode.ending.start &&
+          cur < episode.ending.stop
+        ) {
+          const target = episode.ending.stop + 0.5;
+          videoSeek(target);
+          updateTime(target, dur);
+          return;
+        }
+      }
+
       updateTime(cur, dur);
       if (Math.abs(cur - lastSavedTimeRef.current) >= 4) {
         saveProgress(cur, dur);
@@ -131,9 +170,10 @@ export function usePlayerControllers({
   });
 
   useEffect(() => {
+    const video = videoRef.current;
     return () => {
-      if (videoRef.current) {
-        saveProgress(videoRef.current.currentTime, videoRef.current.duration || 0);
+      if (video) {
+        saveProgress(video.currentTime, video.duration || 0);
       }
     };
   }, [saveProgress, videoRef]);
@@ -187,16 +227,6 @@ export function usePlayerControllers({
     currentTime >= episode.ending.start &&
     currentTime <= episode.ending.stop;
 
-  useEffect(() => {
-    if (autoSkipOpEd) {
-      if (isInsideOpening && episode.opening?.stop != null) {
-        handleSeek(episode.opening.stop + 0.5);
-      } else if (isInsideEnding && episode.ending?.stop != null) {
-        handleSeek(episode.ending.stop + 0.5);
-      }
-    }
-  }, [autoSkipOpEd, isInsideOpening, isInsideEnding, episode.opening, episode.ending, handleSeek]);
-
   usePlayerHotkeys({
     onUserActivity: handleUserActivity,
     togglePlay: handleTogglePlay,
@@ -224,6 +254,7 @@ export function usePlayerControllers({
   return {
     videoRef,
     streamUrl,
+    availableQualities,
     hasPrev,
     hasNext,
     handlePrev,

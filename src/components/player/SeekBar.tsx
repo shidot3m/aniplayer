@@ -1,18 +1,47 @@
 import type React from "react";
 import { useState } from "react";
 import { formatTime } from "../../lib/utils";
+import type { SkipTimecode } from "../../types";
 
 interface SeekBarProps {
   currentTime: number;
   duration: number;
+  opening?: SkipTimecode | null;
+  ending?: SkipTimecode | null;
   onSeek: (seconds: number) => void;
 }
 
-export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
+export function SeekBar({ currentTime, duration, opening, ending, onSeek }: SeekBarProps) {
   const [hoverPosition, setHoverPosition] = useState<number | null>(null);
 
   const safeDuration = duration > 0 ? duration : 1;
   const progressPercent = Math.min(100, Math.max(0, (currentTime / safeDuration) * 100));
+
+  const opStartPercent =
+    duration > 0 && opening?.start != null
+      ? Math.max(0, Math.min(100, (opening.start / safeDuration) * 100))
+      : null;
+  const opStopPercent =
+    duration > 0 && opening?.stop != null
+      ? Math.max(0, Math.min(100, (opening.stop / safeDuration) * 100))
+      : null;
+  const opWidthPercent =
+    opStartPercent != null && opStopPercent != null
+      ? Math.max(0, opStopPercent - opStartPercent)
+      : 0;
+
+  const edStartPercent =
+    duration > 0 && ending?.start != null
+      ? Math.max(0, Math.min(100, (ending.start / safeDuration) * 100))
+      : null;
+  const edStopPercent =
+    duration > 0 && ending?.stop != null
+      ? Math.max(0, Math.min(100, (ending.stop / safeDuration) * 100))
+      : null;
+  const edWidthPercent =
+    edStartPercent != null && edStopPercent != null
+      ? Math.max(0, edStopPercent - edStartPercent)
+      : 0;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -22,20 +51,60 @@ export function SeekBar({ currentTime, duration, onSeek }: SeekBarProps) {
 
   const hoverPercent = hoverPosition !== null ? (hoverPosition / safeDuration) * 100 : 0;
 
+  const isHoverInOpening =
+    hoverPosition !== null &&
+    opening?.start != null &&
+    opening?.stop != null &&
+    hoverPosition >= opening.start &&
+    hoverPosition <= opening.stop;
+
+  const isHoverInEnding =
+    hoverPosition !== null &&
+    ending?.start != null &&
+    ending?.stop != null &&
+    hoverPosition >= ending.start &&
+    hoverPosition <= ending.stop;
+
   return (
     <div className="group relative flex h-6 w-full items-center">
       {/* Tooltip on Hover */}
       {hoverPosition !== null && duration > 0 && (
         <div
-          className="absolute -top-7 -translate-x-1/2 rounded bg-black/90 px-2 py-0.5 text-[11px] font-medium text-white shadow backdrop-blur pointer-events-none"
+          className="absolute -top-7 -translate-x-1/2 rounded bg-black/90 px-2 py-0.5 text-[11px] font-medium text-white shadow backdrop-blur pointer-events-none whitespace-nowrap z-30 flex items-center gap-1.5"
           style={{ left: `${Math.min(95, Math.max(5, hoverPercent))}%` }}
         >
-          {formatTime(hoverPosition)}
+          <span>{formatTime(hoverPosition)}</span>
+          {isHoverInOpening && (
+            <span className="text-amber-400 font-semibold text-[10px]">· Опенинг</span>
+          )}
+          {isHoverInEnding && (
+            <span className="text-indigo-400 font-semibold text-[10px]">· Эндинг</span>
+          )}
         </div>
       )}
 
       {/* Track Base */}
-      <div className="relative h-1.5 w-full rounded-full bg-white/20 transition-all group-hover:h-2 pointer-events-none">
+      <div className="relative h-1.5 w-full rounded-full bg-white/20 transition-all group-hover:h-2 pointer-events-none overflow-hidden">
+        {/* Opening Marker Segment */}
+        {opStartPercent != null && opWidthPercent > 0 && (
+          <div
+            data-testid="seekbar-opening-marker"
+            title="Опенинг"
+            className="absolute top-0 h-full bg-amber-400/80 shadow-sm pointer-events-none"
+            style={{ left: `${opStartPercent}%`, width: `${opWidthPercent}%` }}
+          />
+        )}
+
+        {/* Ending Marker Segment */}
+        {edStartPercent != null && edWidthPercent > 0 && (
+          <div
+            data-testid="seekbar-ending-marker"
+            title="Эндинг"
+            className="absolute top-0 h-full bg-indigo-400/80 shadow-sm pointer-events-none"
+            style={{ left: `${edStartPercent}%`, width: `${edWidthPercent}%` }}
+          />
+        )}
+
         {/* Hover Highlight */}
         {hoverPosition !== null && (
           <div

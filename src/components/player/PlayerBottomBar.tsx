@@ -14,6 +14,7 @@ export interface PlayerBottomBarProps {
   hasNext: boolean;
   isFullscreen: boolean;
   currentQuality: "1080p" | "720p" | "480p";
+  availableQualities?: ("1080p" | "720p" | "480p")[];
   onSeek: (seconds: number) => void;
   onTogglePlay: () => void;
   onPrev: () => void;
@@ -36,6 +37,7 @@ export function PlayerBottomBar({
   hasNext,
   isFullscreen,
   currentQuality,
+  availableQualities,
   onSeek,
   onTogglePlay,
   onPrev,
@@ -74,7 +76,13 @@ export function PlayerBottomBar({
       </div>
 
       <div className="mb-3">
-        <SeekBar currentTime={currentTime} duration={duration} onSeek={onSeek} />
+        <SeekBar
+          currentTime={currentTime}
+          duration={duration}
+          opening={episode.opening}
+          ending={episode.ending}
+          onSeek={onSeek}
+        />
       </div>
 
       <ControlsBar
@@ -84,6 +92,7 @@ export function PlayerBottomBar({
         hasNext={hasNext}
         isFullscreen={isFullscreen}
         currentQuality={currentQuality}
+        availableQualities={availableQualities}
         onTogglePlay={onTogglePlay}
         onPrev={onPrev}
         onNext={onNext}

@@ -21,6 +21,7 @@ interface ControlsBarProps {
   hasNext: boolean;
   isFullscreen: boolean;
   currentQuality: "1080p" | "720p" | "480p";
+  availableQualities?: ("1080p" | "720p" | "480p")[];
   onTogglePlay: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -38,6 +39,7 @@ export function ControlsBar({
   hasNext,
   isFullscreen,
   currentQuality,
+  availableQualities,
   onTogglePlay,
   onPrev,
   onNext,
@@ -144,7 +146,11 @@ export function ControlsBar({
         </div>
 
         {/* Settings */}
-        <SettingsMenu currentQuality={currentQuality} onSelectQuality={onSelectQuality} />
+        <SettingsMenu
+          currentQuality={currentQuality}
+          availableQualities={availableQualities}
+          onSelectQuality={onSelectQuality}
+        />
 
         {/* Fullscreen */}
         <button

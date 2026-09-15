@@ -55,6 +55,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     handlePlay,
     handlePause,
     handleEnded,
+    availableQualities,
     timeLeft,
     isAutoplayCountdown,
     isInsideOpening,
@@ -65,6 +66,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     currentTime: playerStore.currentTime,
     duration: playerStore.duration,
     activeQuality: playerStore.activeQuality,
+    setQuality: playerStore.setQuality,
     autoSkipOpEd: playerStore.autoSkipOpEd,
     autoplayNext: playerStore.autoplayNext,
     isPlaying: playerStore.isPlaying,
@@ -144,6 +146,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         hasNext={hasNext}
         isFullscreen={isFullscreen}
         currentQuality={playerStore.activeQuality}
+        availableQualities={availableQualities}
         onSeek={handleSeek}
         onTogglePlay={handleTogglePlay}
         onPrev={handlePrev}

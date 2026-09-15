@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { ModeA, ModeAA, ModeB, ModeBB, ModeC, ModeCA } from "anime4k-webgpu";
 
 interface Anime4kCanvasProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -6,367 +7,240 @@ interface Anime4kCanvasProps {
   preset: string;
 }
 
-const VERTEX_SHADER_SRC = `
-attribute vec2 a_position;
-varying vec2 v_texCoord;
-void main() {
-  v_texCoord = vec2((a_position.x + 1.0) * 0.5, (1.0 - a_position.y) * 0.5);
-  gl_Position = vec4(a_position, 0.0, 1.0);
-}
+const PRESET_MAP: Record<string, any> = {
+  "Mode A (HQ)": ModeA,
+  "Mode A+A (HQ)": ModeAA,
+  "Mode B (HQ)": ModeB,
+  "Mode B+B (HQ)": ModeBB,
+  "Mode C (HQ)": ModeC,
+  "Mode C+A (HQ)": ModeCA,
+  "Mode Fast (APU)": ModeA, // anime4k-webgpu uses ModeA as fallback for fast
+};
+
+const QUAD_WGSL = `
+  @vertex
+  fn vert_main(@builtin(vertex_index) VertexIndex : u32) -> @builtin(position) vec4<f32> {
+    var pos = array<vec2<f32>, 6>(
+      vec2(-1.0, -1.0), vec2( 1.0, -1.0), vec2(-1.0,  1.0),
+      vec2(-1.0,  1.0), vec2( 1.0, -1.0), vec2( 1.0,  1.0)
+    );
+    // WebGPU clip space Y is up, but textures are Y down. 
+    // We can invert Y here to display upright.
+    let p = pos[VertexIndex];
+    return vec4<f32>(p.x, p.y, 0.0, 1.0);
+  }
+
+  @group(0) @binding(0) var mySampler: sampler;
+  @group(0) @binding(1) var myTexture: texture_2d<f32>;
+
+  @fragment
+  fn frag_main(@builtin(position) coord: vec4<f32>) -> @location(0) vec4<f32> {
+    let dims = textureDimensions(myTexture);
+    let uv = vec2<f32>(coord.x / f32(dims.x), coord.y / f32(dims.y));
+    return textureSample(myTexture, mySampler, uv);
+  }
 `;
-
-const FRAGMENT_SHADER_SRC = `
-precision mediump float;
-uniform sampler2D u_texture;
-uniform vec2 u_resolution;
-uniform int u_mode;
-varying vec2 v_texCoord;
-
-float get_luma(vec3 rgb) {
-  return dot(rgb, vec3(0.299, 0.587, 0.114));
-}
-
-void main() {
-  vec2 d = 1.0 / u_resolution;
-  vec2 uv = v_texCoord;
-
-  // Sample 3x3 neighborhood
-  vec4 c = texture2D(u_texture, uv);
-  vec4 tl = texture2D(u_texture, uv + vec2(-d.x, -d.y));
-  vec4 tc = texture2D(u_texture, uv + vec2(0.0, -d.y));
-  vec4 tr = texture2D(u_texture, uv + vec2(d.x, -d.y));
-  vec4 ml = texture2D(u_texture, uv + vec2(-d.x, 0.0));
-  vec4 mr = texture2D(u_texture, uv + vec2(d.x, 0.0));
-  vec4 bl = texture2D(u_texture, uv + vec2(-d.x, d.y));
-  vec4 bc = texture2D(u_texture, uv + vec2(0.0, d.y));
-  vec4 br = texture2D(u_texture, uv + vec2(d.x, d.y));
-
-  float cL = get_luma(c.rgb);
-  float tlL = get_luma(tl.rgb);
-  float tcL = get_luma(tc.rgb);
-  float trL = get_luma(tr.rgb);
-  float mlL = get_luma(ml.rgb);
-  float mrL = get_luma(mr.rgb);
-  float blL = get_luma(bl.rgb);
-  float bcL = get_luma(bc.rgb);
-  float brL = get_luma(br.rgb);
-
-  // Clamp Highlights neighborhood min and max
-  vec3 minCol = min(c.rgb, min(min(tl.rgb, tr.rgb), min(bl.rgb, br.rgb)));
-  minCol = min(minCol, min(min(tc.rgb, bc.rgb), min(ml.rgb, mr.rgb)));
-
-  vec3 maxCol = max(c.rgb, max(max(tl.rgb, tr.rgb), max(bl.rgb, br.rgb)));
-  maxCol = max(maxCol, max(max(tc.rgb, bc.rgb), max(ml.rgb, mr.rgb)));
-
-  // Mode settings
-  float sharpenStrength = 1.35;
-  float thinStrength = 0.6;
-  float deblurStrength = 1.1;
-  bool doBilateral = false;
-
-  if (u_mode == 0) {
-    // Mode A (HQ) - Standard deblur + line thinning
-    sharpenStrength = 1.35;
-    thinStrength = 0.6;
-    deblurStrength = 1.1;
-  } else if (u_mode == 1) {
-    // Mode A+A (HQ) - Dual pass maximum crispness
-    sharpenStrength = 1.8;
-    thinStrength = 0.85;
-    deblurStrength = 1.4;
-  } else if (u_mode == 2) {
-    // Mode B (HQ) - Soft deblur for 720p/480p
-    sharpenStrength = 0.95;
-    thinStrength = 0.4;
-    deblurStrength = 0.8;
-    doBilateral = true;
-  } else if (u_mode == 3) {
-    // Mode B+B (HQ) - High deblur for SD
-    sharpenStrength = 1.4;
-    thinStrength = 0.7;
-    deblurStrength = 1.3;
-    doBilateral = true;
-  } else if (u_mode == 4) {
-    // Mode C (HQ) - Clean denoise + gentle edges
-    sharpenStrength = 0.85;
-    thinStrength = 0.3;
-    deblurStrength = 0.7;
-    doBilateral = true;
-  } else if (u_mode == 5) {
-    // Mode C+A (HQ) - Balanced denoise + line restoration
-    sharpenStrength = 1.25;
-    thinStrength = 0.55;
-    deblurStrength = 1.0;
-    doBilateral = true;
-  } else {
-    // Mode Fast (APU / iGPU) - Single pass
-    sharpenStrength = 1.0;
-    thinStrength = 0.0;
-    deblurStrength = 0.8;
-  }
-
-  // Bilateral smoothing
-  vec3 baseColor = c.rgb;
-  if (doBilateral) {
-    float weightSum = 1.0;
-    vec3 accum = c.rgb;
-    vec4 crossN[4];
-    crossN[0] = tc; crossN[1] = ml; crossN[2] = mr; crossN[3] = bc;
-    for (int i = 0; i < 4; i++) {
-      float dist = distance(c.rgb, crossN[i].rgb);
-      if (dist < 0.12) {
-        float w = 1.0 - (dist / 0.12);
-        accum += crossN[i].rgb * w;
-        weightSum += w;
-      }
-    }
-    baseColor = accum / weightSum;
-  }
-
-  // Sobel edge gradient
-  float dX = (trL + 2.0 * mrL + brL) - (tlL + 2.0 * mlL + blL);
-  float dY = (blL + 2.0 * bcL + brL) - (tlL + 2.0 * tcL + trL);
-  vec2 grad = vec2(dX, dY);
-  float edgeLen = length(grad);
-
-  // Difference of Gaussians (DoG)
-  float blurLuma = (tlL + trL + blL + brL) * 0.0625 + (tcL + mlL + mrL + bcL) * 0.125 + cL * 0.25;
-  float dog = cL - blurLuma;
-
-  // Line Thinning
-  vec3 thinColor = baseColor;
-  if (thinStrength > 0.01 && edgeLen > 0.03) {
-    vec2 norm = grad / max(edgeLen, 0.001);
-    vec4 sampleDarker = texture2D(u_texture, uv - norm * d * thinStrength);
-    float darkerL = get_luma(sampleDarker.rgb);
-    if (darkerL < cL) {
-      thinColor = mix(baseColor, sampleDarker.rgb, 0.45);
-    }
-  }
-
-  // Reconstruct with highlight clamp
-  vec3 result = thinColor + (dog * sharpenStrength * deblurStrength);
-  result = clamp(result, minCol, maxCol);
-
-  gl_FragColor = vec4(result, 1.0);
-}
-`;
-
-function getModeId(preset: string): number {
-  const p = preset.toLowerCase();
-  if (p.includes("a+a") || p === "mode-aa") return 1;
-  if (p.includes("b+b") || p === "mode-bb") return 3;
-  if (p.includes("c+a") || p === "mode-ca") return 5;
-  if (p.includes("mode-b") || p === "mode-b") return 2;
-  if (p.includes("mode-c") || p === "mode-c") return 4;
-  if (p.includes("fast") || p.includes("apu") || p === "mode-fast") return 6;
-  return 0; // Mode A by default
-}
-
-function compileShader(
-  gl: WebGLRenderingContext,
-  type: number,
-  source: string,
-): WebGLShader | null {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error("Shader compile error:", gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
 
 export function Anime4kCanvas({ videoRef, enabled, preset }: Anime4kCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
-    const canvas = canvasRef.current;
+    if (!enabled || !videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
-    if (!canvas || !video) return;
+    const canvas = canvasRef.current;
+    let isDestroyed = false;
+    let rAFId = 0;
+    let vFCId = 0;
 
-    let gl: WebGLRenderingContext | null = null;
-    try {
-      gl = canvas.getContext("webgl", {
-        alpha: false,
-        antialias: false,
-        depth: false,
-        preserveDrawingBuffer: true,
-      });
-    } catch (_e) {
-      return;
-    }
-
-    if (!gl) return;
-
-    const vs = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SRC);
-    const fs = compileShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER_SRC);
-    if (!vs || !fs) return;
-
-    const program = gl.createProgram();
-    if (!program) return;
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error("Program link error:", gl.getProgramInfoLog(program));
-      return;
-    }
-
-    gl.useProgram(program);
-
-    // Fullscreen Quad Buffer
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-      gl.STATIC_DRAW,
-    );
-
-    const aPosition = gl.getAttribLocation(program, "a_position");
-    gl.enableVertexAttribArray(aPosition);
-    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
-
-    // Video Texture
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-    const uResolution = gl.getUniformLocation(program, "u_resolution");
-    const uMode = gl.getUniformLocation(program, "u_mode");
-    const uTexture = gl.getUniformLocation(program, "u_texture");
-
-    gl.uniform1i(uTexture, 0);
-    gl.uniform1i(uMode, getModeId(preset));
-
-    let isRunning = true;
-    let videoCallbackId: number | null = null;
-    let rafId: number | null = null;
-
-    const drawFrame = () => {
-      if (!isRunning || !canvas || !video || !gl) return;
-      if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) return;
-
-      const targetWidth = video.videoWidth;
-      const targetHeight = video.videoHeight;
-
-      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        gl.viewport(0, 0, targetWidth, targetHeight);
-      }
-
-      gl.useProgram(program);
-      gl.uniform2f(uResolution, targetWidth, targetHeight);
-      gl.uniform1i(uMode, getModeId(preset));
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
+    (async () => {
       try {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      } catch (_e) {
-        // Video frame temporarily unavailable
+        if (!navigator.gpu) {
+          console.error("WebGPU is not supported by your browser/webview.");
+          return;
+        }
+
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter) return;
+
+        const device = await adapter.requestDevice();
+        if (isDestroyed) return;
+
+        const context = canvas.getContext("webgpu");
+        if (!context) return;
+
+        const format = navigator.gpu.getPreferredCanvasFormat();
+        context.configure({ device, format, alphaMode: "premultiplied" });
+
+        const PipelineClass = PRESET_MAP[preset] || ModeAA;
+
+        let inputTexture: GPUTexture | null = null;
+        let pipelineInstance: any = null;
+
+        let renderPipeline: GPURenderPipeline | null = null;
+        let bindGroup: GPUBindGroup | null = null;
+        let sampler: GPUSampler | null = null;
+
+        const setupRenderPipeline = (outTex: GPUTexture) => {
+          if (!renderPipeline) {
+            const module = device.createShaderModule({ code: QUAD_WGSL });
+            renderPipeline = device.createRenderPipeline({
+              layout: "auto",
+              vertex: { module, entryPoint: "vert_main" },
+              fragment: {
+                module,
+                entryPoint: "frag_main",
+                targets: [{ format }],
+              },
+              primitive: { topology: "triangle-list" },
+            });
+            sampler = device.createSampler({
+              magFilter: "linear",
+              minFilter: "linear",
+            });
+          }
+
+          bindGroup = device.createBindGroup({
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: sampler! },
+              { binding: 1, resource: outTex.createView() },
+            ],
+          });
+        };
+
+        let forceRender = true;
+
+        const renderWebGPU = () => {
+          if (isDestroyed) return;
+          if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+          // Initialize or resize textures
+          if (
+            !inputTexture ||
+            inputTexture.width !== video.videoWidth ||
+            inputTexture.height !== video.videoHeight
+          ) {
+            if (inputTexture) inputTexture.destroy();
+            inputTexture = device.createTexture({
+              size: [video.videoWidth, video.videoHeight, 1],
+              format: "rgba16float",
+              usage:
+                GPUTextureUsage.TEXTURE_BINDING |
+                GPUTextureUsage.COPY_DST |
+                GPUTextureUsage.RENDER_ATTACHMENT,
+            });
+
+            const nativeDimensions = { width: video.videoWidth, height: video.videoHeight };
+
+            // Calculate target dimensions based on canvas CSS size or window, falling back to native if 0
+            const displayWidth = canvas.clientWidth || window.innerWidth;
+            const displayHeight = canvas.clientHeight || window.innerHeight;
+            const dpr = window.devicePixelRatio || 1;
+
+            const targetDimensions = {
+              width: Math.max(video.videoWidth, Math.floor(displayWidth * dpr)),
+              height: Math.max(video.videoHeight, Math.floor(displayHeight * dpr)),
+            };
+
+            pipelineInstance = new PipelineClass({
+              device,
+              inputTexture,
+              nativeDimensions,
+              targetDimensions,
+            });
+            const outTex = pipelineInstance.getOutputTexture();
+
+            // Match canvas internal resolution to the upscaled output
+            canvas.width = outTex.width;
+            canvas.height = outTex.height;
+
+            setupRenderPipeline(outTex);
+          }
+
+          // 1. Copy video frame to input texture
+          device.queue.copyExternalImageToTexture({ source: video }, { texture: inputTexture }, [
+            video.videoWidth,
+            video.videoHeight,
+            1,
+          ]);
+
+          // 2. Run Anime4K compute passes
+          const encoder = device.createCommandEncoder();
+          pipelineInstance.pass(encoder);
+
+          // 3. Render final texture to canvas
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: context.getCurrentTexture().createView(),
+                clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                loadOp: "clear",
+                storeOp: "store",
+              },
+            ],
+          });
+
+          if (renderPipeline && bindGroup) {
+            pass.setPipeline(renderPipeline);
+            pass.setBindGroup(0, bindGroup);
+            pass.draw(6);
+          }
+          pass.end();
+
+          device.queue.submit([encoder.finish()]);
+          forceRender = false;
+        };
+
+        const checkFrame = () => {
+          if (isDestroyed) return;
+
+          const hasVFC = "requestVideoFrameCallback" in (video as any);
+          const shouldFallbackRender = !hasVFC && !video.paused;
+
+          if (
+            (forceRender || shouldFallbackRender) &&
+            video.videoWidth > 0 &&
+            video.videoHeight > 0
+          ) {
+            renderWebGPU();
+          }
+
+          rAFId = requestAnimationFrame(checkFrame);
+        };
+
+        const onVideoFrame = () => {
+          if (isDestroyed) return;
+          renderWebGPU();
+          if ("requestVideoFrameCallback" in video) {
+            vFCId = (video as any).requestVideoFrameCallback(onVideoFrame);
+          }
+        };
+
+        // Start loops
+        rAFId = requestAnimationFrame(checkFrame);
+        if ("requestVideoFrameCallback" in video) {
+          vFCId = (video as any).requestVideoFrameCallback(onVideoFrame);
+        }
+      } catch (err) {
+        console.error("Anime4KWebGPU Error:", err);
       }
-    };
-
-    const scheduleNextFrame = () => {
-      if (!isRunning || video.paused || video.ended) return;
-
-      if ("requestVideoFrameCallback" in video) {
-        videoCallbackId = (video as any).requestVideoFrameCallback(() => {
-          drawFrame();
-          scheduleNextFrame();
-        });
-      } else {
-        rafId = requestAnimationFrame(() => {
-          drawFrame();
-          scheduleNextFrame();
-        });
-      }
-    };
-
-    const startPlaybackLoop = () => {
-      drawFrame();
-      scheduleNextFrame();
-    };
-
-    const stopPlaybackLoop = () => {
-      if (videoCallbackId != null && "cancelVideoFrameCallback" in video) {
-        (video as any).cancelVideoFrameCallback(videoCallbackId);
-        videoCallbackId = null;
-      }
-      if (rafId != null) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
-      }
-      drawFrame();
-    };
-
-    const onPlay = () => startPlaybackLoop();
-    const onPause = () => stopPlaybackLoop();
-    const onSeeked = () => drawFrame();
-    const onLoadedData = () => drawFrame();
-    const onTimeUpdate = () => {
-      if (video.paused) {
-        drawFrame();
-      }
-    };
-
-    video.addEventListener("play", onPlay);
-    video.addEventListener("pause", onPause);
-    video.addEventListener("seeked", onSeeked);
-    video.addEventListener("loadeddata", onLoadedData);
-    video.addEventListener("canplay", onLoadedData);
-    video.addEventListener("timeupdate", onTimeUpdate);
-    window.addEventListener("resize", drawFrame);
-
-    // Render immediate frame synchronously (essential for paused video or preset switch)
-    drawFrame();
-    if (!video.paused && !video.ended) {
-      startPlaybackLoop();
-    }
+    })();
 
     return () => {
-      isRunning = false;
-      if (videoCallbackId != null && "cancelVideoFrameCallback" in video) {
-        (video as any).cancelVideoFrameCallback(videoCallbackId);
-      }
-      if (rafId != null) {
-        cancelAnimationFrame(rafId);
-      }
-      video.removeEventListener("play", onPlay);
-      video.removeEventListener("pause", onPause);
-      video.removeEventListener("seeked", onSeeked);
-      video.removeEventListener("loadeddata", onLoadedData);
-      video.removeEventListener("canplay", onLoadedData);
-      video.removeEventListener("timeupdate", onTimeUpdate);
-      window.removeEventListener("resize", drawFrame);
-
-      if (gl) {
-        if (texture) gl.deleteTexture(texture);
-        if (positionBuffer) gl.deleteBuffer(positionBuffer);
-        if (program) gl.deleteProgram(program);
-        if (vs) gl.deleteShader(vs);
-        if (fs) gl.deleteShader(fs);
+      isDestroyed = true;
+      cancelAnimationFrame(rAFId);
+      if (vFCId && "cancelVideoFrameCallback" in video) {
+        (video as any).cancelVideoFrameCallback(vFCId);
       }
     };
-  }, [enabled, preset, videoRef]);
-
-  if (!enabled) return null;
+  }, [enabled, preset]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 h-full w-full object-contain pointer-events-none"
+      className={`absolute inset-0 h-full w-full object-contain pointer-events-none transition-opacity duration-200 ${
+        enabled ? "opacity-100" : "opacity-0"
+      }`}
     />
   );
 }

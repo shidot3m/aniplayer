@@ -12,7 +12,6 @@ const QUALITY_OPTIONS: { id: VideoQuality; title: string; desc: string }[] = [
 
 import { ANIME4K_PRESETS } from "../../store/playerStoreDefaults";
 
-
 export function PlaybackTab() {
   const {
     volume,
@@ -82,7 +81,9 @@ export function PlaybackTab() {
           />
         </div>
         <div className="text-[11px] text-slate-400 mb-2.5">
-          {anime4kEnabled ? "Включен (активен выбранный шейдер)" : "Выключен (выберите пресет по умолчанию)"}
+          {anime4kEnabled
+            ? "Включен (активен выбранный шейдер)"
+            : "Выключен (выберите пресет по умолчанию)"}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {ANIME4K_PRESETS.map((p) => (
@@ -117,9 +118,7 @@ export function PlaybackTab() {
       {/* Automation Toggles */}
       <div className="space-y-3 pt-3 border-t border-white/10">
         <div className="flex items-center justify-between">
-          <span className="text-slate-300">
-            Автопропуск опенингов и эндингов
-          </span>
+          <span className="text-slate-300">Автопропуск опенингов и эндингов</span>
           <Switch
             checked={autoSkipOpEd}
             onCheckedChange={setAutoSkipOpEd}
@@ -128,9 +127,7 @@ export function PlaybackTab() {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-slate-300">
-            Автопереход к следующему эпизоду
-          </span>
+          <span className="text-slate-300">Автопереход к следующему эпизоду</span>
           <Switch
             checked={autoplayNext}
             onCheckedChange={setAutoplayNext}

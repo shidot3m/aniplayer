@@ -17,13 +17,15 @@ export const ANIME4K_PRESETS: Anime4kPresetItem[] = [
   {
     id: "Mode A+A (HQ)",
     label: "Mode A+A (HQ)",
-    description: "Максимальная четкость: двухпроходная CNN-реконструкция линий. Рекомендуется для мощных GPU.",
+    description:
+      "Максимальная четкость: двухпроходная CNN-реконструкция линий. Рекомендуется для мощных GPU.",
     tier: "HQ",
   },
   {
     id: "Mode B (HQ)",
     label: "Mode B (HQ)",
-    description: "Шумоподавление и сглаживание артефактов компрессии. Идеально для 720p/1080p с дефектами.",
+    description:
+      "Шумоподавление и сглаживание артефактов компрессии. Идеально для 720p/1080p с дефектами.",
     tier: "HQ",
   },
   {
@@ -47,7 +49,8 @@ export const ANIME4K_PRESETS: Anime4kPresetItem[] = [
   {
     id: "Mode Fast (APU)",
     label: "Mode Fast (APU)",
-    description: "Облегченный быстрый режим для встроенной графики (iGPU / APU) и слабых видеокарт.",
+    description:
+      "Облегченный быстрый режим для встроенной графики (iGPU / APU) и слабых видеокарт.",
     tier: "Fast",
   },
 ];
@@ -179,14 +182,21 @@ export const getInitialAnime4kPreset = (): string => {
   return "Mode A+A (HQ)";
 };
 
+export function getAvailableQualities(episode: EpisodeItem | null | undefined): VideoQuality[] {
+  if (!episode) return ["1080p", "720p", "480p"];
+  const list: VideoQuality[] = [];
+  if (episode.hls_1080) list.push("1080p");
+  if (episode.hls_720) list.push("720p");
+  if (episode.hls_480) list.push("480p");
+  return list.length > 0 ? list : ["720p"];
+}
+
 export function resolveEpisodeQuality(episode: EpisodeItem, preferred: VideoQuality): VideoQuality {
-  if (preferred === "1080p" && episode.hls_1080) return "1080p";
-  if (preferred === "720p" && episode.hls_720) return "720p";
-  if (preferred === "480p" && episode.hls_480) return "480p";
-  if (episode.hls_1080) return "1080p";
-  if (episode.hls_720) return "720p";
-  if (episode.hls_480) return "480p";
-  return "1080p";
+  const available = getAvailableQualities(episode);
+  if (available.includes(preferred)) {
+    return preferred;
+  }
+  return available[0] || "720p";
 }
 
 export async function fetchSettingsFromDb(): Promise<Partial<PlayerState>> {

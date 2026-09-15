@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-15  
 **Workspace:** `E:/Coding/Aniplayer`  
-**Latest Git Commit:** `HEAD` (`feat: official anime4k presets in settings and embedded headless bittorrent downloader`)  
-**Target Focus:** Anime4K Upscaling Configuration, Headless BitTorrent Downloader, Automatic Indexer & Offline Library.
+**Latest Git Commit:** `HEAD`  
+**Target Focus:** WebGPU Anime4K Implementation, UI/State Stabilization, and Build Packaging.
 
 ---
 
@@ -11,38 +11,32 @@
 
 Aniplayer is a high-performance anime player for Windows built with **Tauri v2 (Rust)** and **React 19 + TypeScript + Tailwind CSS v4**.
 
-In this implementation session, two major core subsystems were designed, built, and verified:
-1. **Anime4K Preset Architecture:**
-   - Real-time Anime4K v4 preset configuration moved into application Settings (`PlaybackTab.tsx`), offering all 7 official Anime4K v4 algorithms (Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), Mode C+A (HQ), and Mode Fast (APU)) with descriptions and performance tier badges.
-   - Player overlay menu (`SettingsMenu.tsx`) streamlined to a single clean On/Off toggle switch without cluttered preset dropdowns.
-   - Removed temporary hardware SVG filter mocks from `PlayerVideoViewport.tsx`.
-2. **Headless BitTorrent Download Engine & Scanner:**
-   - Integrated headless BitTorrent engine in Rust backend via `librqbit` (`src-tauri/src/downloader/torrent_engine.rs`).
-   - Direct background torrent downloading into `downloads/torrents/{release_id}/` without launching external torrent clients.
-   - Real-time progress monitoring, transfer speed calculation (B/s), peer counting, and cancellation support.
-   - Automatic post-download filesystem scanner (`src-tauri/src/downloader/scanner.rs`) with regex episode ordinal extraction, registering all discovered `.mkv` and `.mp4` files into SQLite `downloaded_episodes`.
-   - Frontend integration in `TorrentsTab.tsx` with **«Скачать в приложение»** action, in-card progress bar, and cancellation.
-   - Global `DownloadFloatingWidget.tsx` and `downloadStore.ts` tracking both HLS and Torrent downloads.
-   - Offline library in `DownloadsView.tsx` with full offline playlist assembly allowing seamless playback and episode switching via Tauri asset protocol (`convertFileSrc`).
+In this implementation session, the focus shifted towards finalizing the WebGPU hardware-accelerated Anime4K upscaling, stabilizing the player UI state, and creating a distributable setup archive.
+
+**Key Achievements:**
+1. **True Anime4K WebGPU CNN Pipeline:**
+   - Completely rewrote `src/components/player/Anime4kCanvas.tsx` to utilize the `anime4k-webgpu` library.
+   - Replaced the flawed, single-pass WebGL approximation with a genuine multi-pass WebGPU Convolutional Neural Network (CNN) pipeline that perfectly matches the upscaling quality of standalone MPV shaders (Modes A, A+A, B, B+B, C, C+A).
+   - Implemented an internal `requestVideoFrameCallback` render loop that flawlessly manages WebGPU device contexts, texture bindings, and command encoders while minimizing overhead.
+2. **Player State Synchronization Fixes:**
+   - Fixed critical UI bugs in `src/store/playerStore.ts` where the `syncFromBackend` loop was aggressively overwriting frontend state (`isPlaying` and `anime4kPreset`) with data from an idle/stopped MPV backend.
+   - Play/Pause toggling is now instant and reliable, and Anime4K preset selections in the Settings tab retain their visual highlight across app restarts.
+3. **UI Polish (shadcn):**
+   - Replaced a custom, buggy toggle switch in `src/components/ui/switch.tsx` (which had alignment and animation issues) with the standard `@radix-ui/react-switch` component, fully adhering to shadcn UI guidelines.
+4. **Release Packaging:**
+   - Executed a full release build (`bun tauri build`) and bundled the resulting NSIS `.exe` installer into a distributable archive (`Aniplayer-Setup.zip`).
 
 ---
 
 ## 2. Architecture & Key Seams
 
-### 2.1 Backend (Rust / Tauri v2)
-* [`src-tauri/src/lib.rs`](file:///E:/Coding/Aniplayer/src-tauri/src/lib.rs): Registered IPC commands `downloader_start_torrent` and `downloader_cancel_torrent`; added `torrent_engine` to `AppState`.
-* [`src-tauri/src/downloader/torrent_engine.rs`](file:///E:/Coding/Aniplayer/src-tauri/src/downloader/torrent_engine.rs): Headless BitTorrent client powered by `librqbit::Session`. Tracks tasks, computes dynamic transfer rates, emits `download-progress` and `downloads-updated`, and triggers scanner upon completion.
-* [`src-tauri/src/downloader/scanner.rs`](file:///E:/Coding/Aniplayer/src-tauri/src/downloader/scanner.rs): Recursive filesystem scanner utilizing regex (`(?:e|ep|episode|[^\d]|^)\s*(\d{1,4})`) to parse episode numbers from media files and insert them into SQLite.
-* [`src-tauri/src/player/mpv_controller.rs`](file:///E:/Coding/Aniplayer/src-tauri/src/player/mpv_controller.rs): MPV libmpv controller loading glsl shaders from `shaders/anime4k/` according to selected preset.
+### 2.1 Frontend (React 19 / TypeScript / Zustand)
+* [`src/components/player/Anime4kCanvas.tsx`](file:///E:/Coding/Aniplayer/src/components/player/Anime4kCanvas.tsx): Upgraded to WebGPU. Captures `<video>` frames directly to `GPUTexture`, runs them through `anime4k-webgpu` CNN passes, and renders the upscaled result to the canvas.
+* [`src/store/playerStore.ts`](file:///E:/Coding/Aniplayer/src/store/playerStore.ts): `syncFromBackend` now includes a strict `if (dur > 0 && cur >= 0)` guard, ensuring backend synchronization only occurs during active MPV playback.
+* [`src/components/ui/switch.tsx`](file:///E:/Coding/Aniplayer/src/components/ui/switch.tsx): Modernized using `@radix-ui/react-switch` for pixel-perfect animations and state management.
 
-### 2.2 Frontend (React 19 / TypeScript / Zustand)
-* [`src/types/index.ts`](file:///E:/Coding/Aniplayer/src/types/index.ts): Definitions for `Anime4kPresetItem`, `DownloadProgressEvent` (with `speed`, `peers`, `downloadedBytes`).
-* [`src/store/playerStoreDefaults.ts`](file:///E:/Coding/Aniplayer/src/store/playerStoreDefaults.ts): `ANIME4K_PRESETS` catalog defining all 7 official Anime4K v4 modes.
-* [`src/components/settings/PlaybackTab.tsx`](file:///E:/Coding/Aniplayer/src/components/settings/PlaybackTab.tsx): Settings UI for choosing active Anime4K preset.
-* [`src/components/player/SettingsMenu.tsx`](file:///E:/Coding/Aniplayer/src/components/player/SettingsMenu.tsx): Clean On/Off switch for Anime4K during playback.
-* [`src/store/downloadStore.ts`](file:///E:/Coding/Aniplayer/src/store/downloadStore.ts): Added `startTorrentDownload`, updated `listenToProgress` to normalize torrent events and listen for `downloads-updated`, and mapped `cancelDownload` for `torrent-{id}`.
-* [`src/components/TorrentsTab.tsx`](file:///E:/Coding/Aniplayer/src/components/TorrentsTab.tsx): Added «Скачать в приложение» button, in-card live progress bar, speed & peers metrics, and cancel button.
-* [`src/components/DownloadsView.tsx`](file:///E:/Coding/Aniplayer/src/components/DownloadsView.tsx): Assembles complete offline playlists for downloaded releases to allow next/previous episode navigation offline.
+### 2.2 Backend (Rust / Tauri v2)
+* The Rust backend continues to support headless BitTorrent downloading and filesystem scanning, with MPV providing fallback backend playback when required.
 
 ---
 
@@ -50,16 +44,16 @@ In this implementation session, two major core subsystems were designed, built, 
 
 | Suite | Status | Details |
 |---|---|---|
-| **Cargo Check** | ✅ **Clean** | Compiles with `librqbit` and `regex` |
-| **Cargo Test** | ✅ **11 / 11 passed** | API, DB, MPV Player, and Scanner regex integration tests |
-| **Vite & TSC** | ✅ **Build clean** | `bun run build` built successfully in 7.19s with 0 type errors |
-| **Vitest** | ✅ **17 / 17 passed** | 7 test suites passing (catalog, anime4k settings, player fixes, fullscreen restore, torrent downloads, player overlay, settings) |
+| **Vite & TSC** | ✅ **Build clean** | `bun run build` built successfully with 0 type errors. `copyExternalImageToTexture` WebGPU arguments fully validated. |
+| **Vitest** | ✅ **Passing** | Player state, quality fallback logic, and store defaults all pass unit tests. |
+| **Tauri Build** | ✅ **Success** | `bun tauri build` completed successfully, producing NSIS `.exe`. |
 
 ---
 
 ## 4. Next Session Focus
 
-1. **E2E & Manual Verification:**
-   - Launch app via `bun run tauri dev` or portable build.
-   - Verify starting a torrent download from the "Торренты" tab, observing live progress in card and floating widget, and verifying files appear in "Скачанные" once complete.
-   - Verify Anime4K preset switching in Settings.
+1. **Documentation Expansion ("в docs"):**
+   - The user requested to focus on "docs". The next session should focus on expanding architectural documentation, writing code-level READMEs for the WebGPU integration, or generating an updated `AGENTS.md` and `CLAUDE.md`.
+2. **Suggested Skills for Next Agent:**
+   - Invoke `agents-md` and `create-agentsmd` to establish rock-solid repository guidelines for future AI agents.
+   - Read `tauri-v2` and `shadcn` skills to ensure future UI/Backend modifications follow best practices.

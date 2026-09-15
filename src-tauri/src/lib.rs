@@ -461,7 +461,10 @@ fn player_get_current_preset(state: State<'_, AppState>) -> Result<String, Strin
     if let Some(core) = p.as_ref() {
         Ok(core.get_current_preset())
     } else {
-        Ok("A+A".to_string())
+        match state.db.get_setting("anime4k_preset") {
+            Ok(Some(preset)) => Ok(preset),
+            _ => Ok("Mode A+A (HQ)".to_string()),
+        }
     }
 }
 

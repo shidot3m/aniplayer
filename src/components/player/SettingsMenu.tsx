@@ -5,12 +5,17 @@ import { Switch } from "../ui/switch";
 
 interface SettingsMenuProps {
   currentQuality: "1080p" | "720p" | "480p";
+  availableQualities?: ("1080p" | "720p" | "480p")[];
   onSelectQuality: (q: "1080p" | "720p" | "480p") => void;
 }
 
 const SPEEDS = [0.75, 1.0, 1.25, 1.5, 2.0];
 
-export function SettingsMenu({ currentQuality, onSelectQuality }: SettingsMenuProps) {
+export function SettingsMenu({
+  currentQuality,
+  availableQualities,
+  onSelectQuality,
+}: SettingsMenuProps) {
   const {
     speed,
     setSpeed,
@@ -84,7 +89,7 @@ export function SettingsMenu({ currentQuality, onSelectQuality }: SettingsMenuPr
         <div>
           <span className="block text-xs font-semibold text-slate-200 mb-1.5">Качество видео</span>
           <div className="flex gap-1">
-            {(["1080p", "720p", "480p"] as const).map((q) => (
+            {(availableQualities || ["1080p", "720p", "480p"]).map((q) => (
               <button
                 key={q}
                 type="button"

@@ -355,24 +355,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       duration: duration > 0 ? duration : state.duration,
     });
 
-    // Auto-skip opening
-    if (state.autoSkipOpening && state.currentEpisode?.opening) {
-      const { start, stop } = state.currentEpisode.opening;
-      if (start != null && stop != null && time >= start && time < stop) {
-        get().seek(stop);
-        return;
-      }
-    }
-
-    // Auto-skip ending
-    if (state.autoSkipEnding && state.currentEpisode?.ending) {
-      const { start, stop } = state.currentEpisode.ending;
-      if (start != null && stop != null && time >= start && time < stop) {
-        get().seek(stop);
-        return;
-      }
-    }
-
     // Auto-play next episode when reaching the end
     if (state.autoplayNext && duration > 0 && time >= duration - 1.5) {
       get().playNextEpisode();
@@ -381,25 +363,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   syncFromBackend: async () => {
     try {
-      const vol = await invoke<number>("player_get_volume");
-      const preset = await invoke<string>("player_get_current_preset");
-      const paused = await invoke<boolean>("player_is_paused");
       const cur = await invoke<number>("player_get_time_pos");
       const dur = await invoke<number>("player_get_duration");
 
-      // Only update time and isPlaying if backend has an active running stream
+      // Only update time and state if backend has an active running stream
       if (dur > 0 && cur >= 0) {
+        const vol = await invoke<number>("player_get_volume");
+        const preset = await invoke<string>("player_get_current_preset");
+        const paused = await invoke<boolean>("player_is_paused");
         set({
           volume: vol,
-          anime4kPreset: preset,
+          ...(preset ? { anime4kPreset: preset } : {}),
           isPlaying: !paused,
           currentTime: cur,
           duration: dur,
-        });
-      } else {
-        set({
-          volume: vol,
-          anime4kPreset: preset,
         });
       }
     } catch (_e) {

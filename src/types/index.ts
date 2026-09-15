@@ -180,4 +180,3 @@ export interface Anime4kPresetItem {
   description: string;
   tier: "HQ" | "Fast";
 }
-

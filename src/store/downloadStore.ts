@@ -14,7 +14,11 @@ interface DownloadState {
   fetchDownloadedEpisodes: () => Promise<void>;
   deleteDownloadedEpisode: (episodeId: string, deleteFile?: boolean) => Promise<void>;
   openDownloadsFolder: (releaseId?: number) => Promise<void>;
-  startTorrentDownload: (releaseId: number, torrentId: number, magnetOrUrl: string) => Promise<void>;
+  startTorrentDownload: (
+    releaseId: number,
+    torrentId: number,
+    magnetOrUrl: string,
+  ) => Promise<void>;
   listenToProgress: () => Promise<() => void>;
   toggleWidgetExpanded: () => void;
   setWidgetExpanded: (expanded: boolean) => void;

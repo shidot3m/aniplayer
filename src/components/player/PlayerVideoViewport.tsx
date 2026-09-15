@@ -43,6 +43,7 @@ export function PlayerVideoViewport({
           anime4kEnabled ? "opacity-0" : "opacity-100"
         }`}
         playsInline
+        crossOrigin="anonymous"
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
         onPlay={onPlay}
@@ -52,11 +53,7 @@ export function PlayerVideoViewport({
         <track kind="captions" />
       </video>
 
-      <Anime4kCanvas
-        videoRef={videoRef}
-        enabled={anime4kEnabled}
-        preset={anime4kPreset}
-      />
+      <Anime4kCanvas videoRef={videoRef} enabled={anime4kEnabled} preset={anime4kPreset} />
 
       {!streamUrl && (
         <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm">
