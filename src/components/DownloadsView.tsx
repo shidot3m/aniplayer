@@ -110,7 +110,11 @@ function DownloadedReleaseCard({
 }) {
   const title = release?.name?.main || `Аниме #${releaseId}`;
   const poster = formatPosterUrl(
-    release?.poster?.thumbnail || release?.poster?.preview || release?.poster?.src,
+    release?.poster?.src ||
+    release?.poster?.preview ||
+    release?.poster?.optimized?.src ||
+    release?.poster?.optimized?.preview ||
+    release?.poster?.thumbnail,
   );
   const totalSize = items.reduce((acc, curr) => acc + curr.file_size, 0);
 

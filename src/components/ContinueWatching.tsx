@@ -205,7 +205,12 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
           const { release, targetEpisode } = item;
           const title = release?.name?.main || `Аниме #${item.releaseId}`;
           const poster =
-            release?.poster?.thumbnail || release?.poster?.preview || release?.poster?.src || "";
+            release?.poster?.src ||
+            release?.poster?.preview ||
+            release?.poster?.optimized?.src ||
+            release?.poster?.optimized?.preview ||
+            release?.poster?.thumbnail ||
+            "";
           const formattedPoster = formatPosterUrl(poster);
 
           return (
@@ -219,6 +224,8 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
                   <img
                     src={formattedPoster}
                     alt={title}
+                    loading="eager"
+                    decoding="async"
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
