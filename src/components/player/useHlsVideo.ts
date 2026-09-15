@@ -101,6 +101,32 @@ export function useHlsVideo({
     };
   }, [streamUrl]);
 
+  // Attach native play, pause, ended listeners
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlayEvent = () => {
+      onPlay?.();
+    };
+    const handlePauseEvent = () => {
+      onPause?.();
+    };
+    const handleEndedEvent = () => {
+      onEnded?.();
+    };
+
+    video.addEventListener("play", handlePlayEvent);
+    video.addEventListener("pause", handlePauseEvent);
+    video.addEventListener("ended", handleEndedEvent);
+
+    return () => {
+      video.removeEventListener("play", handlePlayEvent);
+      video.removeEventListener("pause", handlePauseEvent);
+      video.removeEventListener("ended", handleEndedEvent);
+    };
+  }, [onPlay, onPause, onEnded]);
+
   // Sync play/pause state
   useEffect(() => {
     const video = videoRef.current;

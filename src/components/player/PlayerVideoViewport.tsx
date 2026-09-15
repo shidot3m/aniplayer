@@ -10,6 +10,9 @@ interface PlayerVideoViewportProps {
   onToggleFullscreen: () => void;
   onTimeUpdate: () => void;
   onLoadedMetadata: () => void;
+  onPlay?: () => void;
+  onPause?: () => void;
+  onEnded?: () => void;
 }
 
 export function PlayerVideoViewport({
@@ -21,6 +24,9 @@ export function PlayerVideoViewport({
   onToggleFullscreen,
   onTimeUpdate,
   onLoadedMetadata,
+  onPlay,
+  onPause,
+  onEnded,
 }: PlayerVideoViewportProps) {
   return (
     <button
@@ -39,6 +45,9 @@ export function PlayerVideoViewport({
         playsInline
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
+        onPlay={onPlay}
+        onPause={onPause}
+        onEnded={onEnded}
       >
         <track kind="captions" />
       </video>

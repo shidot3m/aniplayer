@@ -169,6 +169,16 @@ export const getInitialAnime4kEnabled = (): boolean => {
   return true;
 };
 
+export const getInitialAnime4kPreset = (): string => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("aniplayer_anime4k_preset");
+    if (saved) {
+      return saved;
+    }
+  }
+  return "Mode A+A (HQ)";
+};
+
 export function resolveEpisodeQuality(episode: EpisodeItem, preferred: VideoQuality): VideoQuality {
   if (preferred === "1080p" && episode.hls_1080) return "1080p";
   if (preferred === "720p" && episode.hls_720) return "720p";

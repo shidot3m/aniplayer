@@ -6,6 +6,7 @@ import {
   DEFAULT_HOTKEYS,
   fetchSettingsFromDb,
   getInitialAnime4kEnabled,
+  getInitialAnime4kPreset,
   getInitialHotkeys,
   getInitialQuality,
   getInitialVolume,
@@ -23,7 +24,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   volume: getInitialVolume(),
   isMuted: false,
   speed: 1.0,
-  anime4kPreset: "Mode A+A (HQ)",
+  anime4kPreset: getInitialAnime4kPreset(),
   anime4kEnabled: getInitialAnime4kEnabled(),
   autoSkipOpening: true,
   autoSkipEnding: true,
@@ -123,20 +124,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   play: async () => {
+    set({ isPlaying: true });
     try {
       await invoke("player_play");
-      set({ isPlaying: true });
-    } catch (e) {
-      console.error(e);
+    } catch (_e) {
+      // Backend player optional (webview player active)
     }
   },
 
   pause: async () => {
+    set({ isPlaying: false });
     try {
       await invoke("player_pause");
-      set({ isPlaying: false });
-    } catch (e) {
-      console.error(e);
+    } catch (_e) {
+      // Backend player optional (webview player active)
     }
   },
 
@@ -149,11 +150,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   seek: async (seconds: number) => {
+    set({ currentTime: seconds });
     try {
       await invoke("player_seek", { seconds });
-      set({ currentTime: seconds });
-    } catch (e) {
-      console.error(e);
+    } catch (_e) {
+      // Backend player optional
     }
   },
 
@@ -162,12 +163,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   seekRelative: async (offset: number) => {
+    const newPos = Math.max(0, get().currentTime + offset);
+    set({ currentTime: newPos });
     try {
       await invoke("player_seek_relative", { offset });
-      const newPos = Math.max(0, get().currentTime + offset);
-      set({ currentTime: newPos });
-    } catch (e) {
-      console.error(e);
+    } catch (_e) {
+      // Backend player optional
     }
   },
 
@@ -215,12 +216,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setPreset: async (preset: string) => {
     set({ anime4kPreset: preset });
-    if (get().anime4kEnabled) {
-      try {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aniplayer_anime4k_preset", preset);
+    }
+    try {
+      await invoke("db_save_setting", {
+        key: "anime4k_preset",
+        value: preset,
+      });
+      if (get().anime4kEnabled) {
         await invoke("player_set_shader_preset", { preset });
-      } catch (e) {
-        console.error(e);
       }
+    } catch (_e) {
+      // Backend player optional
     }
   },
 

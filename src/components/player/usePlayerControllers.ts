@@ -96,9 +96,11 @@ export function usePlayerControllers({
   const {
     videoRef,
     seek: videoSeek,
-    togglePlay: videoTogglePlay,
     handleTimeUpdate,
     handleLoadedMetadata,
+    handlePlay,
+    handlePause,
+    handleEnded,
   } = useHlsVideo({
     streamUrl,
     isPlaying,
@@ -159,9 +161,19 @@ export function usePlayerControllers({
   );
 
   const handleTogglePlay = useCallback(() => {
-    videoTogglePlay();
-    togglePlay();
-  }, [videoTogglePlay, togglePlay]);
+    const video = videoRef.current;
+    if (video) {
+      if (video.paused) {
+        video.play().catch(console.error);
+        play();
+      } else {
+        video.pause();
+        pause();
+      }
+    } else {
+      togglePlay();
+    }
+  }, [videoRef, play, pause, togglePlay]);
 
   const isInsideOpening =
     episode.opening?.start != null &&
@@ -220,6 +232,9 @@ export function usePlayerControllers({
     handleTogglePlay,
     handleTimeUpdate,
     handleLoadedMetadata,
+    handlePlay,
+    handlePause,
+    handleEnded,
     timeLeft,
     isAutoplayCountdown,
     isInsideOpening,

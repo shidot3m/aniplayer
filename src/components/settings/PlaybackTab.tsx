@@ -82,18 +82,13 @@ export function PlaybackTab() {
           />
         </div>
         <div className="text-[11px] text-slate-400 mb-2.5">
-          {anime4kEnabled ? "Включен (активен выбранный шейдер)" : "Выключен"}
+          {anime4kEnabled ? "Включен (активен выбранный шейдер)" : "Выключен (выберите пресет по умолчанию)"}
         </div>
-        <div
-          className={`grid grid-cols-1 sm:grid-cols-2 gap-2 transition-opacity duration-200 ${
-            anime4kEnabled ? "opacity-100" : "opacity-40 pointer-events-none"
-          }`}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {ANIME4K_PRESETS.map((p) => (
             <button
               key={p.id}
               type="button"
-              disabled={!anime4kEnabled}
               onClick={() => setAnime4kPreset(p.id)}
               className={`rounded-xl p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                 anime4kPreset === p.id

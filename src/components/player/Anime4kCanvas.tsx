@@ -195,7 +195,7 @@ export function Anime4kCanvas({ videoRef, enabled, preset }: Anime4kCanvasProps)
         alpha: false,
         antialias: false,
         depth: false,
-        preserveDrawingBuffer: false,
+        preserveDrawingBuffer: true,
       });
     } catch (_e) {
       return;
@@ -248,43 +248,91 @@ export function Anime4kCanvas({ videoRef, enabled, preset }: Anime4kCanvasProps)
     gl.uniform1i(uMode, getModeId(preset));
 
     let isRunning = true;
-    let frameId: number | null = null;
     let videoCallbackId: number | null = null;
+    let rafId: number | null = null;
 
-    const render = () => {
+    const drawFrame = () => {
       if (!isRunning || !canvas || !video || !gl) return;
+      if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) return;
 
-      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-        // Match canvas resolution to native video resolution or viewport
-        const targetWidth = video.videoWidth;
-        const targetHeight = video.videoHeight;
+      const targetWidth = video.videoWidth;
+      const targetHeight = video.videoHeight;
 
-        if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
-          canvas.width = targetWidth;
-          canvas.height = targetHeight;
-          gl.viewport(0, 0, targetWidth, targetHeight);
-        }
-
-        gl.uniform2f(uResolution, targetWidth, targetHeight);
-        gl.uniform1i(uMode, getModeId(preset));
-
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
-
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        gl.viewport(0, 0, targetWidth, targetHeight);
       }
 
-      if ("requestVideoFrameCallback" in video) {
-        videoCallbackId = (video as any).requestVideoFrameCallback(render);
-      } else {
-        frameId = requestAnimationFrame(render);
+      gl.useProgram(program);
+      gl.uniform2f(uResolution, targetWidth, targetHeight);
+      gl.uniform1i(uMode, getModeId(preset));
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      try {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      } catch (_e) {
+        // Video frame temporarily unavailable
       }
     };
 
-    if ("requestVideoFrameCallback" in video) {
-      videoCallbackId = (video as any).requestVideoFrameCallback(render);
-    } else {
-      frameId = requestAnimationFrame(render);
+    const scheduleNextFrame = () => {
+      if (!isRunning || video.paused || video.ended) return;
+
+      if ("requestVideoFrameCallback" in video) {
+        videoCallbackId = (video as any).requestVideoFrameCallback(() => {
+          drawFrame();
+          scheduleNextFrame();
+        });
+      } else {
+        rafId = requestAnimationFrame(() => {
+          drawFrame();
+          scheduleNextFrame();
+        });
+      }
+    };
+
+    const startPlaybackLoop = () => {
+      drawFrame();
+      scheduleNextFrame();
+    };
+
+    const stopPlaybackLoop = () => {
+      if (videoCallbackId != null && "cancelVideoFrameCallback" in video) {
+        (video as any).cancelVideoFrameCallback(videoCallbackId);
+        videoCallbackId = null;
+      }
+      if (rafId != null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      drawFrame();
+    };
+
+    const onPlay = () => startPlaybackLoop();
+    const onPause = () => stopPlaybackLoop();
+    const onSeeked = () => drawFrame();
+    const onLoadedData = () => drawFrame();
+    const onTimeUpdate = () => {
+      if (video.paused) {
+        drawFrame();
+      }
+    };
+
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("seeked", onSeeked);
+    video.addEventListener("loadeddata", onLoadedData);
+    video.addEventListener("canplay", onLoadedData);
+    video.addEventListener("timeupdate", onTimeUpdate);
+    window.addEventListener("resize", drawFrame);
+
+    // Render immediate frame synchronously (essential for paused video or preset switch)
+    drawFrame();
+    if (!video.paused && !video.ended) {
+      startPlaybackLoop();
     }
 
     return () => {
@@ -292,9 +340,17 @@ export function Anime4kCanvas({ videoRef, enabled, preset }: Anime4kCanvasProps)
       if (videoCallbackId != null && "cancelVideoFrameCallback" in video) {
         (video as any).cancelVideoFrameCallback(videoCallbackId);
       }
-      if (frameId != null) {
-        cancelAnimationFrame(frameId);
+      if (rafId != null) {
+        cancelAnimationFrame(rafId);
       }
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("seeked", onSeeked);
+      video.removeEventListener("loadeddata", onLoadedData);
+      video.removeEventListener("canplay", onLoadedData);
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      window.removeEventListener("resize", drawFrame);
+
       if (gl) {
         if (texture) gl.deleteTexture(texture);
         if (positionBuffer) gl.deleteBuffer(positionBuffer);

@@ -52,6 +52,9 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     handleTogglePlay,
     handleTimeUpdate,
     handleLoadedMetadata,
+    handlePlay,
+    handlePause,
+    handleEnded,
     timeLeft,
     isAutoplayCountdown,
     isInsideOpening,
@@ -106,6 +109,9 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         onToggleFullscreen={toggleFullscreen}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onEnded={handleEnded}
       />
 
       <PlayerTopBar

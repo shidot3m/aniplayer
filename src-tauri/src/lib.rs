@@ -382,40 +382,36 @@ fn player_load_video(state: State<'_, AppState>, url: String, start_pos: Option<
 fn player_play(state: State<'_, AppState>) -> Result<(), String> {
     let p = state.player.lock().map_err(|e| e.to_string())?;
     if let Some(core) = p.as_ref() {
-        core.play()
-    } else {
-        Err("Player not initialized".to_string())
+        let _ = core.play();
     }
+    Ok(())
 }
 
 #[tauri::command]
 fn player_pause(state: State<'_, AppState>) -> Result<(), String> {
     let p = state.player.lock().map_err(|e| e.to_string())?;
     if let Some(core) = p.as_ref() {
-        core.pause()
-    } else {
-        Err("Player not initialized".to_string())
+        let _ = core.pause();
     }
+    Ok(())
 }
 
 #[tauri::command]
 fn player_seek(state: State<'_, AppState>, seconds: f64) -> Result<(), String> {
     let p = state.player.lock().map_err(|e| e.to_string())?;
     if let Some(core) = p.as_ref() {
-        core.seek(seconds)
-    } else {
-        Err("Player not initialized".to_string())
+        let _ = core.seek(seconds);
     }
+    Ok(())
 }
 
 #[tauri::command]
 fn player_seek_relative(state: State<'_, AppState>, offset: f64) -> Result<(), String> {
     let p = state.player.lock().map_err(|e| e.to_string())?;
     if let Some(core) = p.as_ref() {
-        core.seek_relative(offset)
-    } else {
-        Err("Player not initialized".to_string())
+        let _ = core.seek_relative(offset);
     }
+    Ok(())
 }
 
 #[tauri::command]
@@ -444,22 +440,19 @@ fn player_get_volume(state: State<'_, AppState>) -> Result<f64, String> {
 fn player_set_speed(state: State<'_, AppState>, speed: f64) -> Result<(), String> {
     let p = state.player.lock().map_err(|e| e.to_string())?;
     if let Some(core) = p.as_ref() {
-        core.set_speed(speed)
-    } else {
-        Err("Player not initialized".to_string())
+        let _ = core.set_speed(speed);
     }
+    Ok(())
 }
 
 #[tauri::command]
 fn player_set_shader_preset(state: State<'_, AppState>, preset: String) -> Result<(), String> {
+    let _ = state.db.save_setting("anime4k_preset", &preset);
     let mut p = state.player.lock().map_err(|e| e.to_string())?;
     if let Some(core) = p.as_mut() {
-        core.set_shader_preset(&preset)?;
-        let _ = state.db.save_setting("anime4k_preset", &preset);
-        Ok(())
-    } else {
-        Err("Player not initialized".to_string())
+        let _ = core.set_shader_preset(&preset);
     }
+    Ok(())
 }
 
 #[tauri::command]
