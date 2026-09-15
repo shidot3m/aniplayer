@@ -101,6 +101,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         videoRef={videoRef}
         streamUrl={streamUrl}
         anime4kEnabled={playerStore.anime4kEnabled}
+        anime4kPreset={playerStore.anime4kPreset}
         onTogglePlay={handleTogglePlay}
         onToggleFullscreen={toggleFullscreen}
         onTimeUpdate={handleTimeUpdate}

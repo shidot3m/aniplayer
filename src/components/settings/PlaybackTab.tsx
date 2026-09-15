@@ -2,6 +2,7 @@ import { Sparkles, Tv, Volume2 } from "lucide-react";
 import { usePlayerStore } from "../../store/playerStore";
 import type { VideoQuality } from "../../types";
 import { Slider } from "../ui/slider";
+import { Switch } from "../ui/switch";
 
 const QUALITY_OPTIONS: { id: VideoQuality; title: string; desc: string }[] = [
   { id: "1080p", title: "1080p (Full HD)", desc: "Максимальная четкость" },
@@ -74,22 +75,11 @@ export function PlaybackTab() {
             <Sparkles className="h-3.5 w-3.5 text-rose-500" />
             Апскейлер Anime4K
           </span>
-          <button
-            type="button"
-            role="switch"
+          <Switch
+            checked={anime4kEnabled}
+            onCheckedChange={toggleAnime4k}
             aria-label="Переключить апскейлер Anime4K"
-            aria-checked={anime4kEnabled}
-            onClick={toggleAnime4k}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
-              anime4kEnabled ? "bg-rose-600" : "bg-white/20"
-            }`}
-          >
-            <span
-              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                anime4kEnabled ? "translate-x-4.5" : "translate-x-1"
-              }`}
-            />
-          </button>
+          />
         </div>
         <div className="text-[11px] text-slate-400 mb-2.5">
           {anime4kEnabled ? "Включен (активен выбранный шейдер)" : "Выключен"}
@@ -131,29 +121,27 @@ export function PlaybackTab() {
 
       {/* Automation Toggles */}
       <div className="space-y-3 pt-3 border-t border-white/10">
-        <label className="flex items-center justify-between cursor-pointer group">
-          <span className="group-hover:text-white transition-colors">
+        <div className="flex items-center justify-between">
+          <span className="text-slate-300">
             Автопропуск опенингов и эндингов
           </span>
-          <input
-            type="checkbox"
+          <Switch
             checked={autoSkipOpEd}
-            onChange={(e) => setAutoSkipOpEd(e.target.checked)}
-            className="h-4 w-4 rounded accent-rose-500 cursor-pointer"
+            onCheckedChange={setAutoSkipOpEd}
+            aria-label="Автопропуск опенингов и эндингов"
           />
-        </label>
+        </div>
 
-        <label className="flex items-center justify-between cursor-pointer group">
-          <span className="group-hover:text-white transition-colors">
+        <div className="flex items-center justify-between">
+          <span className="text-slate-300">
             Автопереход к следующему эпизоду
           </span>
-          <input
-            type="checkbox"
+          <Switch
             checked={autoplayNext}
-            onChange={(e) => setAutoplayNext(e.target.checked)}
-            className="h-4 w-4 rounded accent-rose-500 cursor-pointer"
+            onCheckedChange={setAutoplayNext}
+            aria-label="Автопереход к следующему эпизоду"
           />
-        </label>
+        </div>
       </div>
     </div>
   );

@@ -1,9 +1,11 @@
 import type React from "react";
+import { Anime4kCanvas } from "./Anime4kCanvas";
 
 interface PlayerVideoViewportProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   streamUrl: string;
   anime4kEnabled?: boolean;
+  anime4kPreset?: string;
   onTogglePlay: () => void;
   onToggleFullscreen: () => void;
   onTimeUpdate: () => void;
@@ -14,6 +16,7 @@ export function PlayerVideoViewport({
   videoRef,
   streamUrl,
   anime4kEnabled = false,
+  anime4kPreset = "mode-a",
   onTogglePlay,
   onToggleFullscreen,
   onTimeUpdate,
@@ -30,18 +33,22 @@ export function PlayerVideoViewport({
     >
       <video
         ref={videoRef}
-        className={`h-full w-full object-contain pointer-events-none transition-all duration-200 ${
-          anime4kEnabled ? "contrast-[1.03] saturate-[1.04]" : ""
+        className={`h-full w-full object-contain pointer-events-none transition-opacity duration-200 ${
+          anime4kEnabled ? "opacity-0" : "opacity-100"
         }`}
-        style={{
-          imageRendering: anime4kEnabled ? "crisp-edges" : "auto",
-        }}
         playsInline
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
       >
         <track kind="captions" />
       </video>
+
+      <Anime4kCanvas
+        videoRef={videoRef}
+        enabled={anime4kEnabled}
+        preset={anime4kPreset}
+      />
+
       {!streamUrl && (
         <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm">
           Загрузка видеопотока...
