@@ -152,18 +152,18 @@ impl TorrentEngine {
                 }
             }
 
-            let mut tasks = active_tasks.lock().unwrap();
+            let mut tasks = active_tasks.lock().expect("active_tasks mutex poisoned");
             tasks.remove(&torrent_id);
         });
 
-        let mut tasks = self.active_tasks.lock().unwrap();
+        let mut tasks = self.active_tasks.lock().expect("active_tasks mutex poisoned");
         tasks.insert(torrent_id, task);
 
         Ok(download_id)
     }
 
     pub fn cancel_download(&self, app_handle: &tauri::AppHandle, torrent_id: i64) -> Result<(), String> {
-        let mut tasks = self.active_tasks.lock().unwrap();
+        let mut tasks = self.active_tasks.lock().expect("active_tasks mutex poisoned");
         if let Some(handle) = tasks.remove(&torrent_id) {
             handle.abort();
             let _ = app_handle.emit(

@@ -197,7 +197,7 @@ export function usePlayerControllers({
         seekRelative(offset);
       }
     },
-    [videoRef, videoSeek, seekTo, seekRelative],
+    [videoSeek, seekTo, seekRelative],
   );
 
   const handleTogglePlay = useCallback(() => {
@@ -213,7 +213,7 @@ export function usePlayerControllers({
     } else {
       togglePlay();
     }
-  }, [videoRef, play, pause, togglePlay]);
+  }, [play, pause, togglePlay]);
 
   const isInsideOpening =
     episode.opening?.start != null &&

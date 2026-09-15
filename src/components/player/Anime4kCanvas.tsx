@@ -233,7 +233,7 @@ export function Anime4kCanvas({ videoRef, enabled, preset }: Anime4kCanvasProps)
         (video as any).cancelVideoFrameCallback(vFCId);
       }
     };
-  }, [enabled, preset]);
+  }, [enabled, preset, videoRef]);
 
   return (
     <canvas

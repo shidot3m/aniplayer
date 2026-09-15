@@ -69,24 +69,31 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
 
   startTorrentDownload: async (releaseId: number, torrentId: number, magnetOrUrl: string) => {
     const downloadId = `torrent-${torrentId}`;
-    set((state) => ({
-      activeDownloads: {
-        ...state.activeDownloads,
-        [downloadId]: {
-          episodeId: downloadId,
-          releaseId,
-          episodeOrdinal: 0,
-          totalSegments: 0,
-          downloadedSegments: 0,
-          totalBytes: 0,
-          percent: 0,
-          status: "DOWNLOADING",
-          speed: 0,
-          peers: 0,
+    
+    const setStatus = (status: "DOWNLOADING" | "FAILED", extra: any = {}) => {
+      set((state) => ({
+        activeDownloads: {
+          ...state.activeDownloads,
+          [downloadId]: {
+            episodeId: downloadId,
+            releaseId,
+            episodeOrdinal: 0,
+            totalSegments: 0,
+            downloadedSegments: 0,
+            totalBytes: 0,
+            percent: 0,
+            speed: 0,
+            peers: 0,
+            ...state.activeDownloads[downloadId], // preserve existing if any
+            status,
+            ...extra,
+          },
         },
-      },
-      isWidgetVisible: true,
-    }));
+        isWidgetVisible: true,
+      }));
+    };
+
+    setStatus("DOWNLOADING");
 
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
       try {
@@ -97,22 +104,7 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
         });
       } catch (err) {
         console.error("Failed to start torrent download:", err);
-        set((state) => ({
-          activeDownloads: {
-            ...state.activeDownloads,
-            [downloadId]: {
-              episodeId: downloadId,
-              releaseId,
-              episodeOrdinal: 0,
-              totalSegments: 0,
-              downloadedSegments: 0,
-              totalBytes: 0,
-              percent: 0,
-              status: "FAILED",
-              error: String(err),
-            },
-          },
-        }));
+        setStatus("FAILED", { error: String(err) });
       }
     }
   },
