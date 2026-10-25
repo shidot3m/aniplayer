@@ -15,6 +15,9 @@ downloads/
 *.db
 *.db-journal
 
+# Vendored binaries (libmpv, 7-Zip) — see README "Подготовка bin/"
+bin/
+
 # Temporary archives
 *.7z
 *.zip
