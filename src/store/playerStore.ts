@@ -55,7 +55,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
           const res = await fetch(`${API_BASE_URL}/anime/releases/${release.id}`).catch(() => null);
           if (res?.ok) fullRel = await res.json();
         }
-        if (fullRel && fullRel.episodes?.length) {
+        if (fullRel?.episodes?.length) {
           activeRelease = fullRel;
           const found = fullRel.episodes.find(
             (e) => e.id === episode.id || e.ordinal === episode.ordinal,

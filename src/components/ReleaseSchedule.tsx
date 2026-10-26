@@ -19,13 +19,13 @@ const DAYS = [
   { id: "7", label: "Вс" },
 ];
 
-export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseScheduleProps) {
-  // Today's day index in 1-7 (Monday = 1, Sunday = 7)
-  const currentDay = (() => {
-    const d = new Date().getDay();
-    return d === 0 ? "7" : String(d);
-  })();
+function getCurrentDayId(): string {
+  const day = new Date().getDay();
+  return day === 0 ? "7" : String(day);
+}
 
+export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseScheduleProps) {
+  const [currentDay] = useState<string>(getCurrentDayId);
   const [selectedDay, setSelectedDay] = useState<string>(currentDay);
 
   // Group releases across days (or simulate schedule distribution if publish_day is not populated)

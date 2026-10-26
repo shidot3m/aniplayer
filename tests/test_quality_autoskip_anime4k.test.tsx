@@ -1,10 +1,9 @@
 import { render, screen } from "@testing-library/react";
+import { ModeA, ModeAA, ModeB, ModeBB, ModeC, ModeCA } from "anime4k-webgpu";
 import { describe, expect, it, vi } from "vitest";
+import { resolvePresetPipeline } from "../src/components/player/anime4kRenderer";
 import { SeekBar } from "../src/components/player/SeekBar";
-import {
-  getAvailableQualities,
-  resolveEpisodeQuality,
-} from "../src/store/playerStoreDefaults";
+import { getAvailableQualities, resolveEpisodeQuality } from "../src/store/playerStoreDefaults";
 import type { EpisodeItem } from "../src/types";
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -71,32 +70,15 @@ describe("SeekBar Timeline Markers (OP/ED)", () => {
   });
 });
 
-describe("Anime4K Shader & Upscaler Validation", () => {
-  it("contains authentic Anime4K algorithms: Catmull-Rom, Clamp Highlights, and edge-directed reconstruction", async () => {
-    const fs = await import("fs");
-    const path = await import("path");
-    const shaderCode = fs.readFileSync(
-      path.resolve(__dirname, "../src/components/player/Anime4kCanvas.tsx"),
-      "utf-8",
-    );
-
-    // Smooth subpixel upscale
-    expect(shaderCode).toContain("sampleBicubic");
-    expect(shaderCode).toContain("w0 = -0.5 * f3 + f2 - 0.5 * f");
-
-    // Clamp Highlights
-    expect(shaderCode).toContain("minCol = min(c, min(min(tl, tr), min(bl, br)))");
-    expect(shaderCode).toContain("maxCol = max(c, max(max(tl, tr), max(bl, br)))");
-
-    // Line Thinning & Deblur
-    expect(shaderCode).toContain("edgeWeight = smoothstep(0.04, 0.14, edgeLen)");
-    expect(shaderCode).toContain("dog * sharpenStrength * edgeWeight");
-
-    // Display resolution render target up to 4K
-    expect(shaderCode).toContain("Math.min(3840, Math.max(video.videoWidth");
-    expect(shaderCode).toContain("Math.min(2160, Math.max(video.videoHeight");
-
-    // Zero context teardown on preset change
-    expect(shaderCode).toContain("presetRef.current = preset");
+describe("Anime4K Preset Mapping", () => {
+  it("maps every supported preset to its pipeline and falls back to Mode A+A", () => {
+    expect(resolvePresetPipeline("Mode A (HQ)")).toBe(ModeA);
+    expect(resolvePresetPipeline("Mode A+A (HQ)")).toBe(ModeAA);
+    expect(resolvePresetPipeline("Mode B (HQ)")).toBe(ModeB);
+    expect(resolvePresetPipeline("Mode B+B (HQ)")).toBe(ModeBB);
+    expect(resolvePresetPipeline("Mode C (HQ)")).toBe(ModeC);
+    expect(resolvePresetPipeline("Mode C+A (HQ)")).toBe(ModeCA);
+    expect(resolvePresetPipeline("Mode Fast (APU)")).toBe(ModeA);
+    expect(resolvePresetPipeline("Unknown preset")).toBe(ModeAA);
   });
 });

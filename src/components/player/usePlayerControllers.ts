@@ -21,7 +21,6 @@ interface UsePlayerControllersOptions {
   play: () => Promise<void>;
   pause: () => Promise<void>;
   seekTo: (pos: number) => Promise<void>;
-  seekRelative: (offset: number) => Promise<void>;
   togglePlay: () => Promise<void>;
   setVolume: (vol: number) => Promise<void>;
   toggleMute: () => Promise<void>;
@@ -51,7 +50,6 @@ export function usePlayerControllers({
   play,
   pause,
   seekTo,
-  seekRelative,
   togglePlay,
   setVolume,
   toggleMute,
@@ -109,6 +107,7 @@ export function usePlayerControllers({
   const {
     videoRef,
     seek: videoSeek,
+    togglePlay: toggleVideoPlay,
     handleTimeUpdate,
     handleLoadedMetadata,
     handlePlay,
@@ -188,32 +187,18 @@ export function usePlayerControllers({
 
   const handleSeekRelative = useCallback(
     (offset: number) => {
-      if (videoRef.current) {
-        const dur = videoRef.current.duration || 999999;
-        const newPos = Math.max(0, Math.min(dur, videoRef.current.currentTime + offset));
-        videoSeek(newPos);
-        seekTo(newPos);
-      } else {
-        seekRelative(offset);
-      }
+      const totalDuration = duration || 999999;
+      const newPosition = Math.max(0, Math.min(totalDuration, currentTime + offset));
+      videoSeek(newPosition);
+      seekTo(newPosition);
     },
-    [videoSeek, seekTo, seekRelative],
+    [currentTime, duration, videoSeek, seekTo],
   );
 
   const handleTogglePlay = useCallback(() => {
-    const video = videoRef.current;
-    if (video) {
-      if (video.paused) {
-        video.play().catch(console.error);
-        play();
-      } else {
-        video.pause();
-        pause();
-      }
-    } else {
-      togglePlay();
-    }
-  }, [play, pause, togglePlay]);
+    toggleVideoPlay();
+    togglePlay();
+  }, [toggleVideoPlay, togglePlay]);
 
   const isInsideOpening =
     episode.opening?.start != null &&

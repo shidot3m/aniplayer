@@ -1,9 +1,9 @@
+import { invoke } from "@tauri-apps/api/core";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PlaybackTab } from "../src/components/settings/PlaybackTab";
 import { usePlayerStore } from "../src/store/playerStore";
 import { getInitialAnime4kPreset } from "../src/store/playerStoreDefaults";
-import { invoke } from "@tauri-apps/api/core";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -70,19 +70,23 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
     });
   });
 
-  it("3. Anime4K canvas preserves drawing buffer and hooks up play/pause/seeked events", async () => {
-    // Read Anime4kCanvas.tsx code to verify preserveDrawingBuffer: true and paused handling
+  it("3. Anime4K canvas starts the GPU renderer only when enabled and cleans it up", async () => {
     const fs = await import("fs");
     const path = await import("path");
-    const code = fs.readFileSync(
+    const canvasCode = fs.readFileSync(
       path.resolve(__dirname, "../src/components/player/Anime4kCanvas.tsx"),
       "utf-8",
     );
+    const rendererCode = fs.readFileSync(
+      path.resolve(__dirname, "../src/components/player/anime4kRenderer.ts"),
+      "utf-8",
+    );
 
-    expect(code).toContain("preserveDrawingBuffer: true");
-    expect(code).toContain("drawFrame()");
-    expect(code).toContain('video.addEventListener("seeked"');
-    expect(code).toContain('video.addEventListener("pause"');
-    expect(code).toContain('video.addEventListener("play"');
+    expect(canvasCode).toContain("new Anime4kRenderer");
+    expect(canvasCode).toContain("renderer.destroy()");
+    expect(rendererCode).toContain("copyExternalImageToTexture");
+    expect(rendererCode).toContain("requestVideoFrameCallback");
+    expect(rendererCode).toContain("cancelVideoFrameCallback");
+    expect(rendererCode).toContain("this.video.paused");
   });
 });

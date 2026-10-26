@@ -76,7 +76,6 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     play: playerStore.play,
     pause: playerStore.pause,
     seekTo: playerStore.seekTo,
-    seekRelative: playerStore.seekRelative,
     togglePlay: playerStore.togglePlay,
     setVolume: playerStore.setVolume,
     toggleMute: playerStore.toggleMute,

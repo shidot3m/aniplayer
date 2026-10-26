@@ -74,13 +74,17 @@ export function useFullscreen() {
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
         await invoke("app_set_fullscreen", { fullscreen: false });
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     try {
       if (typeof document !== "undefined" && document.fullscreenElement) {
         await document.exitFullscreen().catch(() => {});
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     setIsFullscreen(false);
   }, []);
@@ -93,7 +97,9 @@ export function useFullscreen() {
         setIsFullscreen(!current);
         return;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     try {
       if (!document.fullscreenElement) {

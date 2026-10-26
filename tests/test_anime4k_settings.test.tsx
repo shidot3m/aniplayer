@@ -51,4 +51,3 @@ describe("Anime4K Presets Specification", () => {
     expect(usePlayerStore.getState().anime4kPreset).toBe("Mode Fast (APU)");
   });
 });
-

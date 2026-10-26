@@ -95,13 +95,7 @@ describe("Fullscreen restore on player exit", () => {
     const exitFullscreen = vi.fn();
     const onBack = vi.fn();
 
-    render(
-      <HotkeyTester
-        isFullscreen={true}
-        exitFullscreen={exitFullscreen}
-        onBack={onBack}
-      />
-    );
+    render(<HotkeyTester isFullscreen={true} exitFullscreen={exitFullscreen} onBack={onBack} />);
 
     fireEvent.keyDown(window, { code: "Escape" });
 
@@ -113,13 +107,7 @@ describe("Fullscreen restore on player exit", () => {
     const exitFullscreen = vi.fn();
     const onBack = vi.fn();
 
-    render(
-      <HotkeyTester
-        isFullscreen={false}
-        exitFullscreen={exitFullscreen}
-        onBack={onBack}
-      />
-    );
+    render(<HotkeyTester isFullscreen={false} exitFullscreen={exitFullscreen} onBack={onBack} />);
 
     fireEvent.keyDown(window, { code: "Escape" });
 
@@ -137,7 +125,7 @@ describe("Fullscreen restore on player exit", () => {
         episode={mockEpisode}
         onBack={onBack}
         onGoToRelease={onGoToRelease}
-      />
+      />,
     );
 
     // Clicking back button should invoke app_set_fullscreen false

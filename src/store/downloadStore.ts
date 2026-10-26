@@ -29,6 +29,27 @@ interface DownloadState {
   clearCompletedDownloads: () => void;
 }
 
+interface RawDownloadProgressEvent {
+  id?: string;
+  episodeId?: string;
+  release_id?: number;
+  releaseId?: number;
+  episodeOrdinal?: number;
+  ordinal?: number;
+  totalSegments?: number;
+  downloadedSegments?: number;
+  total_bytes?: number;
+  totalBytes?: number;
+  progress?: number;
+  percent?: number;
+  status?: DownloadProgressEvent["status"] | "CANCELED";
+  error?: string | null;
+  speed?: number;
+  peers?: number;
+  downloaded_bytes?: number;
+  downloadedBytes?: number;
+}
+
 export const useDownloadStore = create<DownloadState>((set, get) => ({
   downloadedEpisodes: [],
   activeDownloads: {},
@@ -69,28 +90,33 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
 
   startTorrentDownload: async (releaseId: number, torrentId: number, magnetOrUrl: string) => {
     const downloadId = `torrent-${torrentId}`;
-    
-    const setStatus = (status: "DOWNLOADING" | "FAILED", extra: any = {}) => {
-      set((state) => ({
-        activeDownloads: {
-          ...state.activeDownloads,
-          [downloadId]: {
-            episodeId: downloadId,
-            releaseId,
-            episodeOrdinal: 0,
-            totalSegments: 0,
-            downloadedSegments: 0,
-            totalBytes: 0,
-            percent: 0,
-            speed: 0,
-            peers: 0,
-            ...state.activeDownloads[downloadId], // preserve existing if any
-            status,
-            ...extra,
+
+    const setStatus = (
+      status: "DOWNLOADING" | "FAILED",
+      extra: Partial<DownloadProgressEvent> = {},
+    ) => {
+      set((state) => {
+        const existing = state.activeDownloads[downloadId];
+        const base: DownloadProgressEvent = existing ?? {
+          episodeId: downloadId,
+          releaseId,
+          episodeOrdinal: 0,
+          totalSegments: 0,
+          downloadedSegments: 0,
+          totalBytes: 0,
+          percent: 0,
+          speed: 0,
+          peers: 0,
+          status: "DOWNLOADING",
+        };
+        return {
+          activeDownloads: {
+            ...state.activeDownloads,
+            [downloadId]: { ...base, status, ...extra },
           },
-        },
-        isWidgetVisible: true,
-      }));
+          isWidgetVisible: true,
+        };
+      });
     };
 
     setStatus("DOWNLOADING");
@@ -117,51 +143,55 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
     }
 
     try {
-      const unlistenProgress = await listen<any>("download-progress", (event) => {
-        const payload = event.payload;
-        if (!payload) return;
+      const unlistenProgress = await listen<RawDownloadProgressEvent>(
+        "download-progress",
+        (event) => {
+          const payload = event.payload;
+          if (!payload) return;
 
-        const id: string = payload.id || payload.episodeId;
-        if (!id) return;
+          const id = payload.id || payload.episodeId;
+          if (!id) return;
 
-        const status = payload.status === "CANCELED" ? "CANCELLED" : payload.status;
+          const status =
+            payload.status === "CANCELED" ? "CANCELLED" : (payload.status ?? "DOWNLOADING");
 
-        if (status === "CANCELLED") {
-          set((state) => {
-            const copy = { ...state.activeDownloads };
-            delete copy[id];
-            return { activeDownloads: copy };
-          });
-          return;
-        }
+          if (status === "CANCELLED") {
+            set((state) => {
+              const copy = { ...state.activeDownloads };
+              delete copy[id];
+              return { activeDownloads: copy };
+            });
+            return;
+          }
 
-        const normalized: DownloadProgressEvent = {
-          episodeId: id,
-          releaseId: payload.release_id ?? payload.releaseId ?? 0,
-          episodeOrdinal: payload.episodeOrdinal ?? payload.ordinal ?? 0,
-          totalSegments: payload.totalSegments ?? 0,
-          downloadedSegments: payload.downloadedSegments ?? 0,
-          totalBytes: payload.total_bytes ?? payload.totalBytes ?? 0,
-          percent: payload.progress ?? payload.percent ?? 0,
-          status: status,
-          error: payload.error ?? null,
-          speed: payload.speed,
-          peers: payload.peers,
-          downloadedBytes: payload.downloaded_bytes ?? payload.downloadedBytes,
-        };
+          const normalized: DownloadProgressEvent = {
+            episodeId: id,
+            releaseId: payload.release_id ?? payload.releaseId ?? 0,
+            episodeOrdinal: payload.episodeOrdinal ?? payload.ordinal ?? 0,
+            totalSegments: payload.totalSegments ?? 0,
+            downloadedSegments: payload.downloadedSegments ?? 0,
+            totalBytes: payload.total_bytes ?? payload.totalBytes ?? 0,
+            percent: payload.progress ?? payload.percent ?? 0,
+            status: status,
+            error: payload.error ?? null,
+            speed: payload.speed,
+            peers: payload.peers,
+            downloadedBytes: payload.downloaded_bytes ?? payload.downloadedBytes,
+          };
 
-        set((state) => ({
-          activeDownloads: {
-            ...state.activeDownloads,
-            [id]: normalized,
-          },
-          isWidgetVisible: true,
-        }));
+          set((state) => ({
+            activeDownloads: {
+              ...state.activeDownloads,
+              [id]: normalized,
+            },
+            isWidgetVisible: true,
+          }));
 
-        if (status === "COMPLETED") {
-          get().fetchDownloadedEpisodes();
-        }
-      });
+          if (status === "COMPLETED") {
+            get().fetchDownloadedEpisodes();
+          }
+        },
+      );
 
       const unlistenUpdated = await listen("downloads-updated", () => {
         get().fetchDownloadedEpisodes();
@@ -203,7 +233,7 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
       try {
         if (episodeId.startsWith("torrent-")) {
           const torrentId = parseInt(episodeId.replace("torrent-", ""), 10);
-          if (!isNaN(torrentId)) {
+          if (!Number.isNaN(torrentId)) {
             await invoke("downloader_cancel_torrent", { torrentId });
           }
         } else {
