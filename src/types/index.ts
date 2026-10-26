@@ -74,6 +74,7 @@ export interface ReleasePreview {
   name: ReleaseName;
   type?: ReleaseType | null;
   year?: number | null;
+  season?: ReleaseType | null;
   episodes_total?: number | null;
   poster?: ImageSource | null;
   description?: string | null;

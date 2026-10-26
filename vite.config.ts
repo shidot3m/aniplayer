@@ -2,7 +2,7 @@ import path from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-export default defineConfig(() => ({
+const config = defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
@@ -18,4 +18,6 @@ export default defineConfig(() => ({
       ignored: ["**/src-tauri/**"],
     },
   },
-}));
+});
+
+export default config;

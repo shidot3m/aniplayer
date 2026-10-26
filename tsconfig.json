@@ -15,10 +15,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "types": ["node", "vitest/globals"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "tests", "vite.config.ts", "vitest.config.ts"]
 }

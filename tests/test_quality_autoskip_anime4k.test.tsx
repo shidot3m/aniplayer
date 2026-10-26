@@ -13,7 +13,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 describe("Quality Selection & Clamping", () => {
   it("only returns qualities present in episode data and clamps 1080p if unavailable", () => {
     const ep720Only: EpisodeItem = {
-      id: 1,
+      id: "1",
       name: "Episode 1",
       ordinal: 1,
       hls_720: "https://example.com/720.m3u8",
@@ -32,7 +32,7 @@ describe("Quality Selection & Clamping", () => {
 
   it("returns 1080p when 1080p stream exists", () => {
     const ep1080: EpisodeItem = {
-      id: 2,
+      id: "2",
       name: "Episode 2",
       ordinal: 2,
       hls_1080: "https://example.com/1080.m3u8",

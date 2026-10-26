@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
-import { ContinueWatching } from "../src/components/ContinueWatching";
-import { SettingsMenu } from "../src/components/player/SettingsMenu";
-import { ReleaseDetails } from "../src/components/ReleaseDetails";
-import { useCatalogStore } from "../src/store/catalogStore";
-import type { HistoryItem, Release } from "../src/types";
+import { ContinueWatching } from "@/components/ContinueWatching";
+import { SettingsMenu } from "@/components/player/SettingsMenu";
+import { ReleaseDetails } from "@/components/ReleaseDetails";
+import { useCatalogStore } from "@/store/catalogStore";
+import type { HistoryItem, Release } from "@/types";
 
 const mockRelease: Release = {
   id: 1001,
