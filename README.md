@@ -107,7 +107,7 @@ src/                 React-приложение (components, hooks, store, lib, 
 src-tauri/           Rust-бэкенд: плеер (mpv.rs), торренты, БД, IPC-команды
 shaders/anime4k/     GLSL-шейдеры Anime4K (в репозитории)
 bin/                 локальные бинарники libmpv / 7-Zip (см. выше, не в git)
-scripts/             генерация иконок, portable-упаковка
+scripts/             portable-упаковка
 docs/                выгрузка схемы AniLiberty API
 tests/               тесты фронтенда
 data/, downloads/    локальные БД и загрузки (не в git)
