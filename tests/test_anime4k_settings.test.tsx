@@ -46,7 +46,8 @@ describe("Anime4K Presets Specification", () => {
     // Click Mode Fast (APU)
     const fastBtn = screen.getByText("Mode Fast (APU)").closest("button");
     expect(fastBtn).toBeDefined();
-    fireEvent.click(fastBtn!);
+    if (!fastBtn) throw new Error("Mode Fast button not found");
+    fireEvent.click(fastBtn);
 
     expect(usePlayerStore.getState().anime4kPreset).toBe("Mode Fast (APU)");
   });

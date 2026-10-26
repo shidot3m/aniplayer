@@ -14,7 +14,11 @@
       "!**/target",
       "!**/src-tauri/target",
       "!**/bin",
-      "!**/shaders"
+      "!**/shaders",
+      "!**/.agents",
+      "!**/.qoder",
+      "!**/src-tauri/gen",
+      "!**/docs/anilibria/openapi.json"
     ]
   },
   "formatter": {

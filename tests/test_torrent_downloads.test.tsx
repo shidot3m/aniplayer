@@ -33,10 +33,13 @@ describe("Torrent Engine and Download Store", () => {
       downloadedEpisodes: [],
     });
     // Mock global fetch for TorrentsTab
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockTorrents,
-    } as any);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockTorrents,
+      }),
+    );
   });
 
   it("adds torrent to activeDownloads when startTorrentDownload is called", async () => {

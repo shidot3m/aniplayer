@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { ModeA, ModeAA, ModeB, ModeBB, ModeC, ModeCA } from "anime4k-webgpu";
 import { describe, expect, it, vi } from "vitest";
 import { resolvePresetPipeline } from "../src/components/player/anime4kRenderer";

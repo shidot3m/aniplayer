@@ -97,7 +97,7 @@ GitHub Actions (`.github/workflows/ci.yml`) проверяет каждый push
 
 ```bash
 npx vitest run     # юнит-тесты
-npx biome check .  # линт + форматирование
+npx @biomejs/biome check .  # линт + форматирование
 npx tsc --noEmit   # типы
 ```
 

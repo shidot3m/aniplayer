@@ -17,7 +17,7 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
 
   it("1. Play/Pause state updates reliably even when MPV backend is not initialized", async () => {
     // Simulate MPV not initialized error from backend
-    (invoke as any).mockRejectedValue(new Error("Player not initialized"));
+    vi.mocked(invoke).mockRejectedValue(new Error("Player not initialized"));
 
     usePlayerStore.setState({ isPlaying: false });
 
@@ -38,7 +38,7 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
   });
 
   it("2. Upscaler preset persists to localStorage, db_save_setting, and can be changed when disabled", async () => {
-    (invoke as any).mockResolvedValue(null);
+    vi.mocked(invoke).mockResolvedValue(null);
 
     usePlayerStore.setState({
       anime4kEnabled: false,
@@ -52,7 +52,8 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
     expect(bbBtn).toBeDefined();
     expect(bbBtn?.hasAttribute("disabled")).toBe(false);
 
-    fireEvent.click(bbBtn!);
+    if (!bbBtn) throw new Error("Mode B+B button not found");
+    fireEvent.click(bbBtn);
 
     // Store must be updated
     expect(usePlayerStore.getState().anime4kPreset).toBe("Mode B+B (HQ)");
@@ -71,8 +72,8 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
   });
 
   it("3. Anime4K canvas starts the GPU renderer only when enabled and cleans it up", async () => {
-    const fs = await import("fs");
-    const path = await import("path");
+    const fs = await import("node:fs");
+    const path = await import("node:path");
     const canvasCode = fs.readFileSync(
       path.resolve(__dirname, "../src/components/player/Anime4kCanvas.tsx"),
       "utf-8",

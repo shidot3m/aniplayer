@@ -1,10 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import React, { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { useState } from "react";
+import { describe, expect, it } from "vitest";
 import { Anime4kCanvas } from "../src/components/player/Anime4kCanvas";
 import { SettingsMenu } from "../src/components/player/SettingsMenu";
 import { Switch } from "../src/components/ui/switch";
-import { usePlayerStore } from "../src/store/playerStore";
 
 function ControlledSwitch() {
   const [checked, setChecked] = useState(false);

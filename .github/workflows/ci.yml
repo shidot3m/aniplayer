@@ -26,7 +26,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npx biome check .
+      - run: npx @biomejs/biome check .
       - run: npx vitest run
       - run: npx --yes aislop scan
 
