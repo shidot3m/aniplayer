@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx biome check .
+      - run: npx vitest run
+      - run: npx --yes aislop scan
+
+  rust:
+    name: Rust checks
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Compile all tests
+        working-directory: src-tauri
+        run: cargo test --locked --no-run
+
+      # test_api needs the live AniLiberty API and test_player needs libmpv-2.dll,
+      # so CI compiles them but only executes the hermetic suites.
+      - name: Run hermetic tests
+        working-directory: src-tauri
+        run: cargo test --locked --test test_db --test test_scanner
+
+  release:
+    name: Publish latest build
+    if: github.ref == 'refs/heads/master'
+    needs: [frontend, rust]
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Download libmpv
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          asset=$(gh release view --repo shinchiro/mpv-winbuild-cmake --json assets \
+            --jq '.assets[].name' | grep -m 1 -E '^mpv-dev-x86_64-[0-9]{8}-git-')
+          test -n "$asset"
+          gh release download --repo shinchiro/mpv-winbuild-cmake --pattern "$asset" --dir mpv-dev
+          7z x "mpv-dev/$asset" -o"mpv-dev/extracted" -y
+          mkdir -p bin/mpv-dev
+          cp mpv-dev/extracted/libmpv-2.dll bin/mpv-dev/
+
+      - name: Build portable bundle
+        shell: pwsh
+        run: |
+          npx tauri build --no-bundle
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/package_portable.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if (-not (Test-Path -LiteralPath 'dist_portable/aniplayer.exe')) { throw 'aniplayer.exe missing from portable bundle' }
+          if (-not (Test-Path -LiteralPath 'dist_portable/libmpv-2.dll')) { throw 'libmpv-2.dll missing from portable bundle' }
+          Copy-Item dist_portable/aniplayer.exe Aniplayer.exe
+          Push-Location dist_portable
+          7z a ../Aniplayer-portable.zip .
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Pop-Location
+          7z t Aniplayer-portable.zip
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Publish rolling release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<EOF
+          Automatic build of the latest commit on \`master\`.
+
+          - Commit: \`$GITHUB_SHA\`
+          - Built: $(date -u +'%Y-%m-%d %H:%M UTC')
+          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          Download \`Aniplayer-portable.zip\` for the complete package (\`aniplayer.exe\`, \`libmpv-2.dll\`, Anime4K shaders).
+          The standalone \`Aniplayer.exe\` needs \`libmpv-2.dll\` and \`shaders/anime4k\` next to it.
+          EOF
+
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "Latest build" --target master --latest --notes "Publishing build..."
+          fi
+
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            Aniplayer-portable.zip Aniplayer.exe --clobber
+
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --title "Latest build" --notes-file release-notes.md --target master --latest
+
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$RELEASE_TAG" \
+            -f sha="$GITHUB_SHA" -F force=true >/dev/null

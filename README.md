@@ -82,6 +82,17 @@ npm run tauri build          # бандл (msi/nsis) в src-tauri/target/release
 python scripts/package_portable.py   # portable-сборка в dist_portable (копирует libmpv-2.dll и шейдеры)
 ```
 
+## CI и релизы
+
+GitHub Actions (`.github/workflows/ci.yml`) проверяет каждый push в `master` и каждый pull request: сборку фронтенда, Biome, Vitest, aislop и Rust-тесты (`test_db`, `test_scanner`).
+
+После успешных проверок каждый push в `master` собирает Windows-сборку и обновляет release [`latest`](../../releases/tag/latest), перемещая туда тег `latest`. В релизе всегда есть:
+
+- `Aniplayer-portable.zip` — полный набор: свежий `aniplayer.exe`, `libmpv-2.dll` (последний [mpv-dev](https://github.com/shinchiro/mpv-winbuild-cmake/releases)) и шейдеры Anime4K;
+- `Aniplayer.exe` — отдельный бинарник (рядом нужны `libmpv-2.dll` и `shaders/anime4k`).
+
+Ручной запуск: Actions → CI → Run workflow на ветке `master` — пересобирает и обновляет `latest`.
+
 ## Тесты и качество кода
 
 ```bash
