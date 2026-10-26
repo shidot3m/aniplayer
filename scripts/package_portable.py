@@ -28,6 +28,9 @@ def package_portable():
     if os.path.isdir(src_shaders):
         shutil.copytree(src_shaders, dest_shaders)
         shader_count = len([f for f in os.listdir(dest_shaders) if f.endswith(".glsl")])
+        if shader_count == 0:
+            print(f"[ERROR] No Anime4K shaders found at {src_shaders}")
+            sys.exit(1)
         print(f"[OK] Copied {shader_count} Anime4K shaders to {dest_shaders}")
     else:
         print(f"[ERROR] Shaders directory not found at {src_shaders}")
@@ -47,8 +50,9 @@ def package_portable():
         print("[OK] Copied compiled binary aniplayer.exe into bundle")
     else:
         print(
-            "[NOTE] aniplayer.exe not built in release mode yet (can be compiled with `cargo build --release`)"
+            f"[ERROR] Compiled binary not found at {target_exe}; run `npx tauri build --no-bundle` first"
         )
+        sys.exit(1)
 
     print(
         "\n[SUCCESS] Portable bundle structure prepared successfully at dist_portable/"

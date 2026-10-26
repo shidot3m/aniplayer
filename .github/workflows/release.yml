@@ -1,0 +1,128 @@
+name: Release
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  portable:
+    name: Build portable release
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Download libmpv
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          asset=$(gh release view --repo shinchiro/mpv-winbuild-cmake --json assets \
+            --jq '.assets[].name' | grep -m 1 -E '^mpv-dev-x86_64-[0-9]{8}-git-')
+          test -n "$asset"
+          gh release download --repo shinchiro/mpv-winbuild-cmake --pattern "$asset" --dir mpv-dev
+          7z x "mpv-dev/$asset" -o"mpv-dev/extracted" -y
+          mkdir -p bin/mpv-dev
+          cp mpv-dev/extracted/libmpv-2.dll bin/mpv-dev/
+
+      - name: Build portable bundle
+        shell: pwsh
+        run: |
+          npx tauri build --no-bundle
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/package_portable.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Push-Location dist_portable
+          7z a ../Aniplayer-portable.zip .
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Pop-Location
+          7z t Aniplayer-portable.zip
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $entries = ((& 7z l -ba Aniplayer-portable.zip) -join "`n").Replace('\', '/')
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          foreach ($required in @('aniplayer.exe', 'libmpv-2.dll', 'shaders/anime4k/')) {
+            if (-not $entries.Contains($required)) {
+              throw "Aniplayer-portable.zip is missing $required"
+            }
+          }
+
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            release_tag="$GITHUB_REF_NAME"
+            title="Aniplayer $release_tag"
+            latest=false
+          else
+            release_tag=latest
+            title="Latest build"
+            latest=true
+          fi
+
+          cat > release-notes.md <<EOF
+          Portable build of Aniplayer.
+
+          - Commit: \`$GITHUB_SHA\`
+          - Built: $(date -u +'%Y-%m-%d %H:%M UTC')
+          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          Download \`Aniplayer-portable.zip\` — it contains \`aniplayer.exe\`, \`libmpv-2.dll\`, and the Anime4K shaders.
+          This is the only release artifact; no standalone executable is published.
+          EOF
+
+          if [[ "$latest" == "true" ]]; then
+            if ! gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" \
+                --title "$title" --target "$GITHUB_SHA" --latest --notes "Publishing build..."
+            fi
+
+            assets=$(gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" --json assets \
+              --jq '.assets[].name')
+            if grep -Fxq 'Aniplayer.exe' <<<"$assets"; then
+              gh release delete-asset "$release_tag" Aniplayer.exe --repo "$GITHUB_REPOSITORY" --yes
+            fi
+
+            gh release upload "$release_tag" --repo "$GITHUB_REPOSITORY" \
+              Aniplayer-portable.zip --clobber
+
+            gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" \
+              --title "$title" --notes-file release-notes.md --target "$GITHUB_SHA" --latest
+
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$release_tag" \
+              -f sha="$GITHUB_SHA" -F force=true >/dev/null
+          else
+            if ! gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" \
+                --title "$title" --verify-tag --latest=false --notes "Publishing build..."
+            fi
+
+            gh release upload "$release_tag" --repo "$GITHUB_REPOSITORY" \
+              Aniplayer-portable.zip --clobber
+
+            gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" \
+              --title "$title" --notes-file release-notes.md --latest=false
+          fi

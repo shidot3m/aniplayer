@@ -23,7 +23,7 @@
 ## Требования
 
 - Windows 10/11 x64
-- [Node.js](https://nodejs.org/) 20+ и npm (или Bun)
+- [Node.js](https://nodejs.org/) 20+ и npm
 - [Rust](https://rustup.rs/) (stable, `x86_64-pc-windows-msvc`)
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) с C++ (для `rusqlite`/Tauri)
 - WebView2 Runtime (в Windows 11 уже есть)
@@ -84,14 +84,13 @@ python scripts/package_portable.py   # portable-сборка в dist_portable (�
 
 ## CI и релизы
 
-GitHub Actions (`.github/workflows/ci.yml`) проверяет каждый push в `master` и каждый pull request: сборку фронтенда, Biome, Vitest, aislop и Rust-тесты (`test_db`, `test_scanner`).
+`.github/workflows/ci.yml` запускается на каждый push в `master` и каждый pull request и выполняет только быстрые проверки: сборку фронтенда, Biome, Vitest, aislop и герметичные Rust-тесты (`test_db`, `test_scanner`). Релизные сборки здесь не запускаются.
 
-После успешных проверок каждый push в `master` собирает Windows-сборку и обновляет release [`latest`](../../releases/tag/latest), перемещая туда тег `latest`. В релизе всегда есть:
+`.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows portable-сборку и публикует единственный артефакт:
 
-- `Aniplayer-portable.zip` — полный набор: свежий `aniplayer.exe`, `libmpv-2.dll` (последний [mpv-dev](https://github.com/shinchiro/mpv-winbuild-cmake/releases)) и шейдеры Anime4K;
-- `Aniplayer.exe` — отдельный бинарник (рядом нужны `libmpv-2.dll` и `shaders/anime4k`).
+- `Aniplayer-portable.zip` — `aniplayer.exe`, `libmpv-2.dll` (последний [mpv-dev](https://github.com/shinchiro/mpv-winbuild-cmake/releases)) и шейдеры Anime4K.
 
-Ручной запуск: Actions → CI → Run workflow на ветке `master` — пересобирает и обновляет `latest`.
+Ночные и ручные сборки обновляют rolling-релиз [`latest`](../../releases/tag/latest) и перемещают тег `latest` на собранный коммит. Теги `v*` публикуют отдельный версионированный релиз и не меняют `latest`. Отдельного `Aniplayer.exe` в релизах нет.
 
 ## Тесты и качество кода
 
