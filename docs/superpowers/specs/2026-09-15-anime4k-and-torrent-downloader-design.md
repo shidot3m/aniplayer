@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-15  
 **Status:** Approved  
-**Author:** Antigravity  
+**Author:** Antigravity
 
 ---
 
@@ -38,6 +38,7 @@ The system defines 7 official Anime4K v4 presets:
 ### 2.2 Data Layer & State Management
 
 - **Types (`src/types/index.ts`):**
+
   ```typescript
   export interface Anime4kPresetItem {
     id: string;
@@ -74,6 +75,7 @@ The system defines 7 official Anime4K v4 presets:
 
 - **Crate:** `librqbit` integrated into `src-tauri/Cargo.toml`.
 - **Module Structure (`src-tauri/src/downloader/torrent_engine.rs`):**
+
   ```rust
   pub struct TorrentEngine {
       session: Arc<librqbit::Session>,
@@ -88,6 +90,7 @@ The system defines 7 official Anime4K v4 presets:
   3. `start_download(release_id: i64, torrent_id: i64, magnet_or_file_url: String) -> Result<(), String>`:
      - Downloads the torrent / magnet into `downloads/torrents/{release_id}/`.
      - Polls progress every 500ms and emits `download-progress` event to frontend:
+
        ```json
        {
          "id": "torrent-{torrent_id}",

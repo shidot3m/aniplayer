@@ -13,12 +13,12 @@
 
 ## Стек
 
-| Слой | Технологии |
-| --- | --- |
-| UI | React 19, TypeScript, Vite 6, Tailwind 3, Zustand, Radix UI, lucide-react |
-| Оболочка | Tauri 2 (Rust 2021) |
-| Бэкенд | `libmpv` через `libloading`, `librqbit`, `rusqlite`, `reqwest` |
-| Тесты / линт | Vitest, Testing Library, Biome |
+| Слой         | Технологии                                                                |
+| ------------ | ------------------------------------------------------------------------- |
+| UI           | React 19, TypeScript, Vite 6, Tailwind 3, Zustand, Radix UI, lucide-react |
+| Оболочка     | Tauri 2 (Rust 2021)                                                       |
+| Бэкенд       | `libmpv` через `libloading`, `librqbit`, `rusqlite`, `reqwest`            |
+| Тесты / линт | Vitest, Testing Library, Biome                                            |
 
 ## Требования
 
@@ -48,12 +48,12 @@ bin/
          └─ stream_cb.h
 ```
 
-| Файл | Зачем | Откуда |
-| --- | --- | --- |
-| `bin/mpv-dev/libmpv-2.dll` | Рантайм-библиотека плеера. Ищется в `bin/mpv-dev/`, рядом с exe, в `dist_portable/` | [mpv-dev сборки](https://sourceforge.net/projects/mpv-player-windows/files/libmpv/) (`mpv-dev-x86_64-*.7z`) или [shinchiro/mpv-winbuild-cmake](https://github.com/shinchiro/mpv-winbuild-cmake/releases) (тег `mpv-dev`) |
-| `bin/mpv-dev/libmpv.dll.a` | Импорт-библиотека, нужна только для нативной линковки | тот же архив |
-| `bin/mpv-dev/include/mpv/*.h` | Заголовки C API (справка/FFI) | тот же архив |
-| `bin/7za.exe` | Утилита распаковки, кодом сейчас не используется | [7-zip.org](https://www.7-zip.org/download.html) (7z Extra) |
+| Файл                          | Зачем                                                                               | Откуда                                                                                                                                                                                                                   |
+| ----------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bin/mpv-dev/libmpv-2.dll`    | Рантайм-библиотека плеера. Ищется в `bin/mpv-dev/`, рядом с exe, в `dist_portable/` | [mpv-dev сборки](https://sourceforge.net/projects/mpv-player-windows/files/libmpv/) (`mpv-dev-x86_64-*.7z`) или [shinchiro/mpv-winbuild-cmake](https://github.com/shinchiro/mpv-winbuild-cmake/releases) (тег `mpv-dev`) |
+| `bin/mpv-dev/libmpv.dll.a`    | Импорт-библиотека, нужна только для нативной линковки                               | тот же архив                                                                                                                                                                                                             |
+| `bin/mpv-dev/include/mpv/*.h` | Заголовки C API (справка/FFI)                                                       | тот же архив                                                                                                                                                                                                             |
+| `bin/7za.exe`                 | Утилита распаковки, кодом сейчас не используется                                    | [7-zip.org](https://www.7-zip.org/download.html) (7z Extra)                                                                                                                                                              |
 
 Быстрая раскладка из скачанного архива (PowerShell):
 

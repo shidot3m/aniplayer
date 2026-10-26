@@ -9,20 +9,20 @@
 
 ## Skill routing
 
-| Task | Start with | Also use |
-|---|---|---|
-| Spec, tickets | `to-spec`, `to-tickets` | `grilling`, `domain-modeling`, `wayfinder` |
-| Architecture | `codebase-design` | `improve-codebase-architecture`, `domain-modeling` |
-| Rust | `rust-best-practices` | `rust-async-patterns`, `domain-cloud-native` |
-| React performance | `vercel-react-best-practices` | `vercel-composition-patterns` |
-| UI direction | `frontend-design`, `design-taste-frontend` | `web-design-guidelines` |
-| Tauri | `tauri-v2` | `tauri-security` |
-| API / gRPC | `api-and-interface-design` | `contract-first`, `protobuf`, `grpc-development` |
-| Databases | `sqlite-database-expert`, `postgres-patterns` | `database-migration` |
-| Tests | `tdd` | `rust-testing`, `vitest`, `react-testing-library`, `playwright` |
-| Motion | `animate` | `review-animations`, `improve-animations`, `vercel-react-view-transitions` |
-| Security | `security-and-hardening` | `owasp-security`, `tauri-security` |
-| Review, debugging | `code-review`, `diagnosing-bugs` | `review-animations`, `owasp-security` |
+| Task              | Start with                                    | Also use                                                                   |
+| ----------------- | --------------------------------------------- | -------------------------------------------------------------------------- |
+| Spec, tickets     | `to-spec`, `to-tickets`                       | `grilling`, `domain-modeling`, `wayfinder`                                 |
+| Architecture      | `codebase-design`                             | `improve-codebase-architecture`, `domain-modeling`                         |
+| Rust              | `rust-best-practices`                         | `rust-async-patterns`, `domain-cloud-native`                               |
+| React performance | `vercel-react-best-practices`                 | `vercel-composition-patterns`                                              |
+| UI direction      | `frontend-design`, `design-taste-frontend`    | `web-design-guidelines`                                                    |
+| Tauri             | `tauri-v2`                                    | `tauri-security`                                                           |
+| API / gRPC        | `api-and-interface-design`                    | `contract-first`, `protobuf`, `grpc-development`                           |
+| Databases         | `sqlite-database-expert`, `postgres-patterns` | `database-migration`                                                       |
+| Tests             | `tdd`                                         | `rust-testing`, `vitest`, `react-testing-library`, `playwright`            |
+| Motion            | `animate`                                     | `review-animations`, `improve-animations`, `vercel-react-view-transitions` |
+| Security          | `security-and-hardening`                      | `owasp-security`, `tauri-security`                                         |
+| Review, debugging | `code-review`, `diagnosing-bugs`              | `review-animations`, `owasp-security`                                      |
 
 ## Agent skills
 
@@ -37,4 +37,3 @@ Default five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
-
