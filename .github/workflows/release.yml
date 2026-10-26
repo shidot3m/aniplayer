@@ -17,6 +17,7 @@ concurrency:
 jobs:
   portable:
     name: Build portable release
+    if: github.event_name == 'push' || github.ref_name == github.event.repository.default_branch
     runs-on: windows-latest
     timeout-minutes: 60
     steps:

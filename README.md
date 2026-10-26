@@ -84,9 +84,9 @@ python scripts/package_portable.py   # portable-сборка в dist_portable (�
 
 ## CI и релизы
 
-`.github/workflows/ci.yml` запускается на каждый push в `master` и каждый pull request и выполняет только быстрые проверки: сборку фронтенда, Biome, Vitest, aislop и герметичные Rust-тесты (`test_db`, `test_scanner`). Релизные сборки здесь не запускаются.
+`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: сборку фронтенда, Biome, Vitest, aislop и герметичные Rust-тесты (`test_db`, `test_scanner`). Релизные сборки здесь не запускаются.
 
-`.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows portable-сборку и публикует единственный артефакт:
+`.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную на ветке `master` (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows portable-сборку и публикует единственный артефакт:
 
 - `Aniplayer-portable.zip` — `aniplayer.exe`, `libmpv-2.dll` (последний [mpv-dev](https://github.com/shinchiro/mpv-winbuild-cmake/releases)) и шейдеры Anime4K.
 
