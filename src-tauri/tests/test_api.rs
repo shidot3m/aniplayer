@@ -45,10 +45,26 @@ async fn test_api_fetch_genres() {
     let has_releases_count = genres.iter().any(|g| g.total_releases.unwrap_or(0) > 0);
     assert!(has_releases_count, "Expected at least one genre to have total_releases");
 
-    // Test fetch releases for first genre
-    let first_id = genres[0].id;
-    let releases = client.get_genre_releases(first_id).await.expect("Get genre releases failed");
-    assert!(!releases.is_empty(), "Expected genre releases to not be empty");
+    // Test paginated releases for a genre with more than one page
+    let genre = genres
+        .iter()
+        .find(|g| g.total_releases.unwrap_or(0) > 10)
+        .expect("Expected a genre with more than 10 releases");
+    let first_page = client
+        .get_genre_releases(genre.id, 1, 10)
+        .await
+        .expect("Get genre releases page 1 failed");
+    assert!(!first_page.releases.is_empty());
+    assert!(first_page.releases.len() <= 10);
+    assert_eq!(first_page.pagination.current_page, 1);
+    assert!(first_page.pagination.total_pages >= 2);
+
+    let second_page = client
+        .get_genre_releases(genre.id, 2, 10)
+        .await
+        .expect("Get genre releases page 2 failed");
+    assert!(!second_page.releases.is_empty());
+    assert_eq!(second_page.pagination.current_page, 2);
 }
 
 #[tokio::test]

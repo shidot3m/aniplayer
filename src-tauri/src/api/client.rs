@@ -69,14 +69,35 @@ impl AnilibriaClient {
         resp.json::<Vec<GenreItem>>().await.map_err(|e| e.to_string())
     }
 
-    pub async fn get_genre_releases(&self, genre_id: i64) -> Result<Vec<ReleasePreview>, String> {
-        let url = format!("{}/anime/genres/{}/releases?limit=30", self.config.base_url, genre_id);
+    pub async fn get_genre_releases(
+        &self,
+        genre_id: i64,
+        page: u32,
+        limit: u32,
+    ) -> Result<GenreReleasesPage, String> {
+        let page = page.max(1);
+        let limit = limit.max(1);
+        let url = format!(
+            "{}/anime/genres/{}/releases?page={}&limit={}",
+            self.config.base_url, genre_id, page, limit
+        );
         let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        let result = resp.json::<GenreReleasesResponse>().await.map_err(|e| e.to_string())?;
-        match result {
-            GenreReleasesResponse::Wrapped { data } => Ok(data),
-            GenreReleasesResponse::Direct(items) => Ok(items),
-        }
+        let result = resp
+            .json::<GenreReleasesResponse>()
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(match result {
+            GenreReleasesResponse::Wrapped { data, meta } => GenreReleasesPage {
+                pagination: meta
+                    .and_then(|meta| meta.pagination)
+                    .unwrap_or_else(|| GenrePagination::single_page(limit, data.len())),
+                releases: data,
+            },
+            GenreReleasesResponse::Direct(items) => GenreReleasesPage {
+                pagination: GenrePagination::single_page(limit, items.len()),
+                releases: items,
+            },
+        })
     }
 
     pub async fn get_release(&self, id_or_alias: &str) -> Result<ReleaseDetails, String> {

@@ -56,6 +56,19 @@ export interface GenreItem {
   total_releases?: number | null;
 }
 
+export interface GenrePagination {
+  total: number;
+  count: number;
+  per_page: number;
+  current_page: number;
+  total_pages: number;
+}
+
+export interface GenreReleasesPage {
+  releases: Release[];
+  pagination: GenrePagination;
+}
+
 export interface ReleasePreview {
   id: number;
   name: ReleaseName;

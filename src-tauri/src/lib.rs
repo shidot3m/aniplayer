@@ -111,8 +111,16 @@ async fn api_get_genres(state: State<'_, AppState>) -> Result<Vec<GenreItem>, St
 }
 
 #[tauri::command]
-async fn api_get_genre_releases(state: State<'_, AppState>, genre_id: i64) -> Result<Vec<ReleasePreview>, String> {
-    state.api.get_genre_releases(genre_id).await
+async fn api_get_genre_releases(
+    state: State<'_, AppState>,
+    genre_id: i64,
+    page: Option<u32>,
+    limit: Option<u32>,
+) -> Result<GenreReleasesPage, String> {
+    state
+        .api
+        .get_genre_releases(genre_id, page.unwrap_or(1), limit.unwrap_or(30))
+        .await
 }
 
 #[tauri::command]

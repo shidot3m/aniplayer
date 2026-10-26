@@ -1,7 +1,9 @@
 import { ArrowLeft, Film, Loader2, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
 import { useCatalogStore } from "../store/catalogStore";
 import type { GenreItem, Release } from "../types";
 import { AnimeCard } from "./AnimeCard";
+import { GenrePagination } from "./GenrePagination";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
@@ -12,10 +14,36 @@ interface GenreViewProps {
 }
 
 export function GenreView({ genre, onSelectRelease, onBack }: GenreViewProps) {
-  const { genreReleases, isLoadingGenre, genres, selectGenre } = useCatalogStore();
+  const {
+    genreReleases,
+    genrePage,
+    genreTotalPages,
+    isLoadingGenre,
+    genres,
+    selectGenre,
+    loadGenrePage,
+  } = useCatalogStore();
+
+  const topRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = useCallback(() => {
+    topRef.current?.scrollIntoView({ block: "start" });
+  }, []);
+
+  useEffect(() => {
+    scrollToTop();
+  }, [scrollToTop]);
+
+  const totalPages = Math.max(1, genreTotalPages);
+
+  const changePage = (page: number) => {
+    if (page < 1 || page > totalPages || page === genrePage || isLoadingGenre) return;
+    scrollToTop();
+    loadGenrePage(page);
+  };
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-6 pb-20">
+    <div ref={topRef} className="mx-auto max-w-7xl px-6 py-6 pb-20">
       {/* Header bar */}
       <div className="mb-6 flex flex-col gap-4 border-b border-white/5 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -59,7 +87,10 @@ export function GenreView({ genre, onSelectRelease, onBack }: GenreViewProps) {
             <button
               key={g.id}
               type="button"
-              onClick={() => selectGenre(g)}
+              onClick={() => {
+                scrollToTop();
+                selectGenre(g);
+              }}
               className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all shrink-0 cursor-pointer ${
                 isCurrent
                   ? "bg-rose-600 text-white font-semibold shadow-md shadow-rose-950/40"
@@ -99,6 +130,13 @@ export function GenreView({ genre, onSelectRelease, onBack }: GenreViewProps) {
           </Button>
         </div>
       )}
+
+      <GenrePagination
+        currentPage={genrePage}
+        totalPages={totalPages}
+        disabled={isLoadingGenre}
+        onPageChange={changePage}
+      />
     </div>
   );
 }

@@ -77,10 +77,54 @@ pub struct ReleasePreview {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GenrePagination {
+    #[serde(default)]
+    pub total: i64,
+    #[serde(default)]
+    pub count: i64,
+    #[serde(default)]
+    pub per_page: i64,
+    #[serde(default = "default_page")]
+    pub current_page: i64,
+    #[serde(default = "default_page")]
+    pub total_pages: i64,
+}
+
+impl GenrePagination {
+    pub(crate) fn single_page(per_page: u32, count: usize) -> Self {
+        Self {
+            total: count as i64,
+            count: count as i64,
+            per_page: per_page as i64,
+            current_page: 1,
+            total_pages: 1,
+        }
+    }
+}
+
+fn default_page() -> i64 {
+    1
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GenreReleasesPage {
+    pub releases: Vec<ReleasePreview>,
+    pub pagination: GenrePagination,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum GenreReleasesResponse {
-    Wrapped { data: Vec<ReleasePreview> },
+    Wrapped {
+        data: Vec<ReleasePreview>,
+        meta: Option<GenreReleasesMeta>,
+    },
     Direct(Vec<ReleasePreview>),
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct GenreReleasesMeta {
+    pub pagination: Option<GenrePagination>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

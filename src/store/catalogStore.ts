@@ -9,12 +9,30 @@ import type {
   HistoryItem,
   Release,
 } from "../types";
+import {
+  deleteBrowserBookmark,
+  getBrowserBookmarks,
+  getInitialCachedReleases,
+  groupBookmarks,
+  INITIAL_BOOKMARKS,
+  saveCachedReleases,
+  upsertBrowserBookmark,
+} from "./catalogCache";
+import {
+  beginGenreRequest,
+  fetchGenreReleasesPage,
+  GENRE_PAGE_SIZE,
+  invalidateGenreRequests,
+  isLatestGenreRequest,
+} from "./genreApi";
 
 interface CatalogState {
   activeScreen: "home" | "bookmarks" | "details" | "genre" | "downloads";
   selectedRelease: Release | null;
   selectedGenre: GenreItem | null;
   genreReleases: Release[];
+  genrePage: number;
+  genreTotalPages: number;
   isLoadingGenre: boolean;
   searchQuery: string;
   searchResults: Release[];
@@ -31,6 +49,7 @@ interface CatalogState {
   setSelectedRelease: (release: Release | null) => void;
   selectReleaseWithDetails: (release: Release) => Promise<void>;
   selectGenre: (genre: GenreItem | null) => Promise<void>;
+  loadGenrePage: (page: number) => Promise<void>;
   setSearchQuery: (query: string) => void;
   performSearch: (query: string) => Promise<void>;
   loadInitialData: () => Promise<void>;
@@ -54,31 +73,13 @@ interface CatalogState {
   ) => Promise<void>;
 }
 
-const INITIAL_BOOKMARKS: Record<BookmarkCategory, BookmarkItem[]> = {
-  WATCHING: [],
-  PLANNED: [],
-  POSTPONED: [],
-  ABANDONED: [],
-  NOT_INTERESTED: [],
-  FAVORITES: [],
-  WATCHED: [],
-};
-
-function getInitialCachedReleases(): Record<number, Release> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem("aniplayer_cached_releases");
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
 export const useCatalogStore = create<CatalogState>((set, get) => ({
   activeScreen: "home",
   selectedRelease: null,
   selectedGenre: null,
   genreReleases: [],
+  genrePage: 1,
+  genreTotalPages: 1,
   isLoadingGenre: false,
   searchQuery: "",
   searchResults: [],
@@ -96,34 +97,48 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
 
   selectGenre: async (genre: GenreItem | null) => {
     if (!genre) {
-      set({ selectedGenre: null, genreReleases: [], activeScreen: "home" });
+      invalidateGenreRequests();
+      set({
+        selectedGenre: null,
+        genreReleases: [],
+        genrePage: 1,
+        genreTotalPages: 1,
+        isLoadingGenre: false,
+        activeScreen: "home",
+      });
       return;
     }
-    set({ selectedGenre: genre, genreReleases: [], isLoadingGenre: true, activeScreen: "genre" });
+    set({
+      selectedGenre: genre,
+      genreReleases: [],
+      genrePage: 1,
+      genreTotalPages: 1,
+      activeScreen: "genre",
+    });
+    await get().loadGenrePage(1);
+  },
+
+  loadGenrePage: async (page: number) => {
+    const genre = get().selectedGenre;
+    if (!genre) return;
+
+    const previousPage = get().genrePage;
+    const requestId = beginGenreRequest();
+    set({ genrePage: page, isLoadingGenre: true });
+
     try {
-      let releases: Release[] = [];
-      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-        try {
-          releases = await invoke<Release[]>("api_get_genre_releases", { genreId: genre.id });
-        } catch (err) {
-          console.warn("Tauri api_get_genre_releases failed, falling back to fetch:", err);
-          const res = await fetch(`${API_BASE_URL}/anime/genres/${genre.id}/releases?limit=30`);
-          if (res.ok) {
-            const data = await res.json();
-            releases = Array.isArray(data) ? data : data.data || [];
-          }
-        }
-      } else {
-        const res = await fetch(`${API_BASE_URL}/anime/genres/${genre.id}/releases?limit=30`);
-        if (res.ok) {
-          const data = await res.json();
-          releases = Array.isArray(data) ? data : data.data || [];
-        }
-      }
-      set({ genreReleases: releases, isLoadingGenre: false });
+      const result = await fetchGenreReleasesPage(genre.id, page, GENRE_PAGE_SIZE);
+      if (!isLatestGenreRequest(requestId)) return;
+      set({
+        genreReleases: result.releases,
+        genrePage: Math.max(1, result.pagination.current_page),
+        genreTotalPages: Math.max(1, result.pagination.total_pages),
+        isLoadingGenre: false,
+      });
     } catch (e) {
+      if (!isLatestGenreRequest(requestId)) return;
       console.error("Failed to load genre releases:", e);
-      set({ isLoadingGenre: false });
+      set({ genrePage: previousPage, isLoadingGenre: false });
     }
   },
 
@@ -222,17 +237,11 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     set((state) => {
       const updated = { ...state.cachedReleases };
       for (const r of releases) {
-        if (r && r.id) {
+        if (r?.id) {
           updated[r.id] = { ...updated[r.id], ...r };
         }
       }
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("aniplayer_cached_releases", JSON.stringify(updated));
-        } catch {
-          // ignore quota limits
-        }
-      }
+      saveCachedReleases(updated);
       return { cachedReleases: updated };
     });
   },
@@ -308,34 +317,12 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
         bms = await invoke<BookmarkItem[]>("db_get_bookmarks", { category: null });
       } else if (typeof window !== "undefined") {
-        const raw = localStorage.getItem("aniplayer_bookmarks");
-        bms = raw ? JSON.parse(raw) : [];
+        bms = getBrowserBookmarks();
       }
 
-      const grouped: Record<BookmarkCategory, BookmarkItem[]> = {
-        WATCHING: [],
-        PLANNED: [],
-        POSTPONED: [],
-        ABANDONED: [],
-        NOT_INTERESTED: [],
-        FAVORITES: [],
-        WATCHED: [],
-      };
-      const bookmarkReleases: Release[] = [];
-      for (const b of bms) {
-        if (grouped[b.category]) {
-          grouped[b.category].push(b);
-        }
-        if (b.release_data_json) {
-          try {
-            bookmarkReleases.push(JSON.parse(b.release_data_json));
-          } catch {
-            // ignore JSON parse error
-          }
-        }
-      }
-      if (bookmarkReleases.length > 0) {
-        get().cacheReleases(bookmarkReleases);
+      const { grouped, releases } = groupBookmarks(bms);
+      if (releases.length > 0) {
+        get().cacheReleases(releases);
       }
       set({ bookmarks: grouped });
     } catch (e) {
@@ -400,11 +387,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
         await invoke("db_save_bookmark", { item });
       } else if (typeof window !== "undefined") {
-        const raw = localStorage.getItem("aniplayer_bookmarks");
-        const list: BookmarkItem[] = raw ? JSON.parse(raw) : [];
-        const filtered = list.filter((b) => b.release_id !== releaseId);
-        filtered.push(item);
-        localStorage.setItem("aniplayer_bookmarks", JSON.stringify(filtered));
+        upsertBrowserBookmark(item);
       }
       await get().fetchAllBookmarks();
     } catch (e) {
@@ -417,10 +400,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
         await invoke("db_delete_bookmark", { releaseId });
       } else if (typeof window !== "undefined") {
-        const raw = localStorage.getItem("aniplayer_bookmarks");
-        const list: BookmarkItem[] = raw ? JSON.parse(raw) : [];
-        const filtered = list.filter((b) => b.release_id !== releaseId);
-        localStorage.setItem("aniplayer_bookmarks", JSON.stringify(filtered));
+        deleteBrowserBookmark(releaseId);
       }
       await get().fetchAllBookmarks();
     } catch (e) {
