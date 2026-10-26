@@ -1,7 +1,5 @@
 # Dependencies
 node_modules/
-bun.lockb
-bun.lock
 
 # Build outputs
 dist/
@@ -9,14 +7,29 @@ dist_portable/
 target/
 src-tauri/target/
 
+# Generated Tauri capability schemas
+src-tauri/gen/schemas/
+
 # Local data & downloads
 data/
 downloads/
+test_e2e_data/
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 
 # Vendored binaries (libmpv, 7-Zip) — see README "Подготовка bin/"
 bin/
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Local tool configuration
+.qoder/
 
 # Temporary archives
 *.7z
