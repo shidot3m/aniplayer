@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { EpisodeItem, Release } from "../../shared/types";
 import { useCatalogStore } from "../../store/catalogStore";
 import { usePlayerStore } from "../../store/playerStore";
-import type { EpisodeItem, Release } from "../../types";
 import { EpisodeDrawer } from "./EpisodeDrawer";
 import { PlayerBottomBar } from "./PlayerBottomBar";
 import { PlayerSkipToasts } from "./PlayerSkipToasts";

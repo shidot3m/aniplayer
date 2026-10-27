@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { ContinueWatching } from "@/components/ContinueWatching";
 import { SettingsMenu } from "@/components/player/SettingsMenu";
 import { ReleaseDetails } from "@/components/ReleaseDetails";
+import type { HistoryItem, Release } from "@/shared/types";
 import { useCatalogStore } from "@/store/catalogStore";
-import type { HistoryItem, Release } from "@/types";
 
 const mockRelease: Release = {
   id: 1001,

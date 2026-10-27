@@ -1,9 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { GenreView } from "../src/components/GenreView";
-import { API_BASE_URL } from "../src/lib/constants";
+import { API_BASE_URL } from "../src/shared/lib/constants";
+import type { GenreItem, Release } from "../src/shared/types";
 import { useCatalogStore } from "../src/store/catalogStore";
-import type { GenreItem, Release } from "../src/types";
 
 const GENRE: GenreItem = { id: 21, name: "Комедия", total_releases: 45 };
 

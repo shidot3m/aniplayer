@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AnimeCard } from "../src/components/AnimeCard";
-import type { Release } from "../src/types";
+import type { Release } from "../src/shared/types";
 
 describe("AnimeCard", () => {
   it("renders correctly with API fields without fallback artifacts", () => {

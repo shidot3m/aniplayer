@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import type { EpisodeItem, Release, VideoQuality } from "../../shared/types";
 import { useCatalogStore } from "../../store/catalogStore";
 import { getAvailableQualities } from "../../store/playerStoreDefaults";
-import type { EpisodeItem, Release, VideoQuality } from "../../types";
 import { useHlsVideo } from "./useHlsVideo";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";
 

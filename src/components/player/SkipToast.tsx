@@ -1,6 +1,6 @@
 import { FastForward, Play } from "lucide-react";
 import { useEffect } from "react";
-import { Button } from "../ui/button";
+import { Button } from "../../shared/ui/button";
 
 interface SkipToastProps {
   type: "opening" | "ending" | "next_episode";

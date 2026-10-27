@@ -1,14 +1,14 @@
 import { Bookmark, CheckCircle2, Play } from "lucide-react";
-import { CDN_BASE_URL } from "../lib/constants";
-import { useCatalogStore } from "../store/catalogStore";
-import type { BookmarkCategory, Release } from "../types";
-import { Badge } from "./ui/badge";
+import { CDN_BASE_URL } from "../shared/lib/constants";
+import type { BookmarkCategory, Release } from "../shared/types";
+import { Badge } from "../shared/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "../shared/ui/dropdown-menu";
+import { useCatalogStore } from "../store/catalogStore";
 
 interface AnimeCardProps {
   release: Release;

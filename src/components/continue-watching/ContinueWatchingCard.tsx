@@ -1,7 +1,7 @@
 import { Play } from "lucide-react";
-import { formatPosterUrl } from "../../lib/releaseUtils";
-import { formatTime } from "../../lib/utils";
-import type { EpisodeItem, Release } from "../../types";
+import { formatPosterUrl } from "../../shared/lib/releaseUtils";
+import { formatTime } from "../../shared/lib/utils";
+import type { EpisodeItem, Release } from "../../shared/types";
 import type { ContinueWatchingCardItem } from "./continueWatchingItems";
 
 interface ContinueWatchingCardProps {

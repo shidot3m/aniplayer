@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
-import type { EpisodeItem, Release } from "../types";
+import type { EpisodeItem, Release } from "../shared/types";
 
 export function useReleaseDownloader(release: Release) {
   const [downloadingEpIds, setDownloadingEpIds] = useState<Record<string, boolean>>({});

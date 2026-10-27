@@ -1,8 +1,8 @@
 import { Keyboard, Sliders } from "lucide-react";
 import { useState } from "react";
+import { Dialog, DialogHeader, DialogTitle } from "../shared/ui/dialog";
 import { HotkeysTab } from "./settings/HotkeysTab";
 import { PlaybackTab } from "./settings/PlaybackTab";
-import { Dialog, DialogHeader, DialogTitle } from "./ui/dialog";
 
 export interface SettingsDialogProps {
   isOpen: boolean;

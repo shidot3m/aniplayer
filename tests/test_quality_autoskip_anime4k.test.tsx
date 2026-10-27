@@ -3,8 +3,8 @@ import { ModeA, ModeAA, ModeB, ModeBB, ModeC, ModeCA } from "anime4k-webgpu";
 import { describe, expect, it, vi } from "vitest";
 import { resolvePresetPipeline } from "../src/components/player/anime4kRenderer";
 import { SeekBar } from "../src/components/player/SeekBar";
+import type { EpisodeItem } from "../src/shared/types";
 import { getAvailableQualities, resolveEpisodeQuality } from "../src/store/playerStoreDefaults";
-import type { EpisodeItem } from "../src/types";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),

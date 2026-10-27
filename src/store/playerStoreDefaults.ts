@@ -5,7 +5,7 @@ import type {
   PlayerHotkeysConfig,
   ReleaseDetails,
   VideoQuality,
-} from "../types";
+} from "../shared/types";
 
 export const ANIME4K_PRESETS: Anime4kPresetItem[] = [
   {

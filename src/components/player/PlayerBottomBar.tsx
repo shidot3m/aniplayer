@@ -1,5 +1,5 @@
-import { formatTime } from "../../lib/utils";
-import type { EpisodeItem } from "../../types";
+import { formatTime } from "../../shared/lib/utils";
+import type { EpisodeItem } from "../../shared/types";
 import { ControlsBar } from "./ControlsBar";
 import { SeekBar } from "./SeekBar";
 

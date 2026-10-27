@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "../lib/constants";
-import type { FranchiseItem } from "../types";
+import { API_BASE_URL } from "../shared/lib/constants";
+import type { FranchiseItem } from "../shared/types";
 
 export function useFranchises(releaseId: number) {
   const [franchises, setFranchises] = useState<FranchiseItem[]>([]);

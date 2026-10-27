@@ -1,7 +1,7 @@
 import { Film, Loader2 } from "lucide-react";
-import type { FranchiseItem, Release } from "../types";
+import type { FranchiseItem, Release } from "../shared/types";
+import { Badge } from "../shared/ui/badge";
 import { AnimeCard } from "./AnimeCard";
-import { Badge } from "./ui/badge";
 
 export interface RelatedTabProps {
   isLoading: boolean;

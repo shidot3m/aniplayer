@@ -1,10 +1,10 @@
 import { Bookmark, FolderDown, Home, Search, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Badge } from "../shared/ui/badge";
+import { Button } from "../shared/ui/button";
+import { Input } from "../shared/ui/input";
 import { useCatalogStore } from "../store/catalogStore";
 import { useDownloadStore } from "../store/downloadStore";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 
 interface HeaderProps {
   onOpenSettings?: () => void;

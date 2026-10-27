@@ -1,7 +1,11 @@
 import { Settings, Sparkles, Zap } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "../../shared/ui/dropdown-menu";
+import { Switch } from "../../shared/ui/switch";
 import { usePlayerStore } from "../../store/playerStore";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { Switch } from "../ui/switch";
 
 interface SettingsMenuProps {
   currentQuality: "1080p" | "720p" | "480p";

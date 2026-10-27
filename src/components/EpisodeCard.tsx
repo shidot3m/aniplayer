@@ -1,15 +1,15 @@
 import { CheckCircle2, Download, MoreVertical, Play } from "lucide-react";
 import { useState } from "react";
-import { CDN_BASE_URL } from "../lib/constants";
-import { formatTime } from "../lib/utils";
-import type { EpisodeItem } from "../types";
-import { Badge } from "./ui/badge";
+import { CDN_BASE_URL } from "../shared/lib/constants";
+import { formatTime } from "../shared/lib/utils";
+import type { EpisodeItem } from "../shared/types";
+import { Badge } from "../shared/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "../shared/ui/dropdown-menu";
 
 function formatPosterUrl(rawUrl?: string | null): string {
   if (!rawUrl) return "";

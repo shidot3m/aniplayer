@@ -1,16 +1,16 @@
 import { Bookmark, CheckCircle2, ChevronDown, Clock, Download, Film, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CATEGORY_NAMES, formatPosterUrl } from "../../lib/releaseUtils";
-import { formatDurationMinutes, formatTotalWatchTime } from "../../lib/utils";
-import type { BookmarkCategory, EpisodeItem, Release } from "../../types";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { CATEGORY_NAMES, formatPosterUrl } from "../../shared/lib/releaseUtils";
+import { formatDurationMinutes, formatTotalWatchTime } from "../../shared/lib/utils";
+import type { BookmarkCategory, EpisodeItem, Release } from "../../shared/types";
+import { Badge } from "../../shared/ui/badge";
+import { Button } from "../../shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+} from "../../shared/ui/dropdown-menu";
 
 interface ReleaseHeroProps {
   release: Release;

@@ -1,4 +1,4 @@
-import type { BookmarkCategory, BookmarkItem, Release } from "../types";
+import type { BookmarkCategory, BookmarkItem, Release } from "../shared/types";
 
 export function createEmptyBookmarks(): Record<BookmarkCategory, BookmarkItem[]> {
   return {

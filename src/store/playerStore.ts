@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import { API_BASE_URL } from "../lib/constants";
-import type { PlayerHotkeysConfig, ReleaseDetails, VideoQuality } from "../types";
+import { API_BASE_URL } from "../shared/lib/constants";
+import type { PlayerHotkeysConfig, ReleaseDetails, VideoQuality } from "../shared/types";
 import {
   DEFAULT_HOTKEYS,
   fetchSettingsFromDb,

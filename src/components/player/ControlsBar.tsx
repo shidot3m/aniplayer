@@ -11,7 +11,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useState } from "react";
-import { Slider } from "../ui/slider";
+import { Slider } from "../../shared/ui/slider";
 import { SettingsMenu } from "./SettingsMenu";
 
 interface ControlsBarProps {

@@ -1,11 +1,11 @@
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { HistoryItem, Release } from "../shared/types";
+import { Badge } from "../shared/ui/badge";
 import { useCatalogStore } from "../store/catalogStore";
 import { usePlayerStore } from "../store/playerStore";
-import type { HistoryItem, Release } from "../types";
 import { ContinueWatchingCard } from "./continue-watching/ContinueWatchingCard";
 import { buildContinueWatchingItems } from "./continue-watching/continueWatchingItems";
-import { Badge } from "./ui/badge";
 
 interface ContinueWatchingProps {
   onSelectRelease: (release: Release) => void;

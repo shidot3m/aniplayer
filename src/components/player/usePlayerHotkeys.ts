@@ -1,6 +1,6 @@
 import { useEffect } from "react";
+import type { PlayerHotkeysConfig } from "../../shared/types";
 import { usePlayerStore } from "../../store/playerStore";
-import type { PlayerHotkeysConfig } from "../../types";
 
 export interface UsePlayerHotkeysProps {
   onUserActivity: () => void;

@@ -12,10 +12,10 @@ import { PlayerOverlay } from "./components/player/PlayerOverlay";
 import { ReleaseDetails } from "./components/ReleaseDetails";
 import { ReleaseSchedule } from "./components/ReleaseSchedule";
 import { SettingsDialog } from "./components/SettingsDialog";
+import type { Release } from "./shared/types";
 import { useCatalogStore } from "./store/catalogStore";
 import { useDownloadStore } from "./store/downloadStore";
 import { usePlayerStore } from "./store/playerStore";
-import type { Release } from "./types";
 
 export default function App() {
   const {

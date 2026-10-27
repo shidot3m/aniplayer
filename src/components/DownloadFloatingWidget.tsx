@@ -8,11 +8,11 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import { formatBytes } from "../lib/utils";
+import { formatBytes } from "../shared/lib/utils";
+import type { DownloadProgressEvent } from "../shared/types";
+import { Badge } from "../shared/ui/badge";
 import { useCatalogStore } from "../store/catalogStore";
 import { useDownloadStore } from "../store/downloadStore";
-import type { DownloadProgressEvent } from "../types";
-import { Badge } from "./ui/badge";
 
 function DownloadItemRow({
   item,

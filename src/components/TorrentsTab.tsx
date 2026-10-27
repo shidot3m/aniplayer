@@ -13,12 +13,12 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { API_BASE_URL } from "../lib/constants";
-import { formatBytes } from "../lib/utils";
+import { API_BASE_URL } from "../shared/lib/constants";
+import { formatBytes } from "../shared/lib/utils";
+import type { DownloadProgressEvent, TorrentItem } from "../shared/types";
+import { Badge } from "../shared/ui/badge";
+import { Button } from "../shared/ui/button";
 import { useDownloadStore } from "../store/downloadStore";
-import type { DownloadProgressEvent, TorrentItem } from "../types";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
 
 export interface TorrentsTabProps {
   releaseId: number;

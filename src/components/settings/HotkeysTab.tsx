@@ -1,8 +1,8 @@
 import { RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { PlayerHotkeysConfig } from "../../shared/types";
+import { Badge } from "../../shared/ui/badge";
 import { usePlayerStore } from "../../store/playerStore";
-import type { PlayerHotkeysConfig } from "../../types";
-import { Badge } from "../ui/badge";
 
 export function formatKeyName(code: string): string {
   if (!code) return "Не назначено";
