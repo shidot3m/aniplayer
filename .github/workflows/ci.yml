@@ -48,4 +48,4 @@ jobs:
       # so CI compiles them but only executes the hermetic suites.
       - name: Run hermetic tests
         working-directory: src-tauri
-        run: cargo test --locked --test test_db --test test_scanner
+        run: cargo test --locked --test test_db --test test_scanner --test test_security_config
