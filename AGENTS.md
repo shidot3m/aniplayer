@@ -1,6 +1,7 @@
 ﻿## Engineering rules
 
 - **Do not accumulate technical debt.** Fix the root cause instead of layering workarounds. Do not leave stubs, disabled checks, or known shortcuts behind. If a temporary compromise is unavoidable, create a tracked issue, reference it from the code, and remove it before the task is done.
+- **Search the tracker before filing.** Before creating an issue, list open issues and check whether the work is already tracked (`gh issue list --state open --json number,title`); if a ticket covers it, reference that one instead of opening a duplicate.
 - **Prefer the latest stable versions.** Use current releases of dependencies, runtimes, and CI actions instead of stale pinned majors. Outdated versions are technical debt: upgrade them as part of the work that touches them, not in a later cleanup. Confirm the current release against official sources before bumping.
 - **Verify current documentation first.** Before implementing or changing a dependency, check the current version, API, and deprecations against official docs or primary sources. Do not rely on memory for framework or library specifics.
 - **Use skills for all work.** Select the relevant installed skill before acting. If none fits, state that explicitly and proceed with the closest applicable practice.
