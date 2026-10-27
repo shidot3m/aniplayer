@@ -1,0 +1,21 @@
+# Line endings are decided by the repository, not by each machine's git config.
+# With core.autocrlf=true, a checkout rewrites LF sources as CRLF, and the
+# frontend toolchain (biome, aislop) then reports every untouched file as
+# unformatted. eol=lf keeps a Windows working tree byte-identical to CI.
+* text=auto eol=lf
+
+# Never touch binary payloads
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.dll binary
+*.exe binary
+*.zip binary
+*.7z binary
