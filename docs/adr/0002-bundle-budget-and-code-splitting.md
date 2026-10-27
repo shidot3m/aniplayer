@@ -15,13 +15,15 @@ Splitting these libraries further than "on demand" is not possible: each ships a
 - Player-only libraries load lazily. `src/features/player/index.ts` exposes `LazyPlayerOverlay` created with `React.lazy`; the barrel must never statically re-export `PlayerOverlay` or anything that transitively imports `hls.js`. The application shell renders it inside a `<Suspense>` boundary.
 - `anime4k-webgpu` is split one level deeper: `Anime4kCanvas` dynamic-imports `../renderer/anime4kRenderer` only when the enhancement is switched on, so opening the player without Anime4K costs ~0.6 MB (hls.js), not ~4 MB.
 - Explicit bundle budget (minified sizes):
-  - initial entry chunk: **≤ 500 kB** — this is the budget the Vite warning enforces by default;
-  - on-demand player chunk (`PlayerOverlay`): **≤ 1 MB**;
+  - JavaScript reachable from `index.html` at startup: **≤ 500 kB** (measured: ~386 kB entry + ~0.6 kB runtime);
+  - on-demand player chunk (`PlayerOverlay`, hls.js): **≤ 1 MB**;
   - on-demand Anime4K chunk (`anime4kRenderer`): **≤ 3.6 MB**, accepted because it loads only after an explicit user action; it is the vendor floor of `anime4k-webgpu` 1.0.0.
-- `build.chunkSizeWarningLimit` is set to the on-demand ceiling (3.6 MB) so the default build gate stays clean; the initial-budget half is enforced strictly by `tests/test_bundle_split.test.ts`, which builds the real artifact and asserts the entry chunk contains neither `hls.js` nor `anime4k-webgpu` signatures (and stays under 500 kB).
+- Every tier of the budget is enforced by `tests/test_bundle_split.test.ts`, which builds the real production artifact and asserts per-library chunk placement and sizes. `build.chunkSizeWarningLimit` is raised to the on-demand ceiling (3.6 MB) only so the default Vite gate stays clean for the two accepted on-demand chunks; it is not the initial-budget enforcement.
 
 ## Consequences
 
-- Startup JS drops from ~4.45 MB to ~0.39 MB (114 kB gzipped); the player chunk is fetched while the user transitions into playback.
+- Startup JS drops from ~4.45 MB to ~387 kB minified (115 kB gzipped for the
+  entry chunk); the player chunk is fetched while the user transitions into
+  playback, behind a shell-with-spinner `Suspense` fallback.
 - Re-introducing a static player-UI import into the barrel or the shell turns `test_bundle_split.test.ts` red with a concrete artifact diff, so the boundary is regression-protected.
 - Upgrading `anime4k-webgpu` should re-check the 3.6 MB ceiling; if a future version ships per-preset entry points, split per preset and lower the budget.

@@ -4,12 +4,20 @@ import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 // Seam A (bundle-split contract): player-only libraries must not ship in the
-// initial JavaScript load. Verified against the real build artifact: the entry
-// chunk (the module script referenced by index.html) must not contain these
-// signatures, and at least one non-entry chunk must.
-// Signatures are string literals that survive minification.
-const HLS_SIGNATURE = "FRAG_LOADING_WAITING_RETRY";
-const ANIME4K_SIGNATURE = "Denoise Bilateral Mean Compute Pipeline";
+// initial JavaScript load, and per-chunk sizes must stay inside the budget in
+// docs/adr/0002-bundle-budget-and-code-splitting.md. Verified against the real
+// production build artifact. Signatures are string literals that survive
+// minification.
+const LIBRARIES = [
+  { name: "hls.js", signature: "FRAG_LOADING_WAITING_RETRY", lazyBudgetKb: 1000 },
+  {
+    name: "anime4k-webgpu",
+    signature: "Denoise Bilateral Mean Compute Pipeline",
+    lazyBudgetKb: 3600,
+  },
+] as const;
+
+const ENTRY_BUDGET_KB = 500;
 
 const REPO_ROOT = resolve(import.meta.dirname, "..");
 const OUT_DIR = "dist-bundle-split-test";
@@ -17,25 +25,31 @@ const OUT_DIR = "dist-bundle-split-test";
 interface Chunk {
   name: string;
   code: string;
+  sizeKb: number;
 }
 
 function listChunks(dir: string): Chunk[] {
-  const outDir = join(dir, "assets");
-  return readdirSync(outDir)
+  const assets = join(dir, "assets");
+  return readdirSync(assets)
     .filter((f) => f.endsWith(".js"))
-    .map((f) => ({ name: f, code: readFileSync(join(outDir, f), "utf8") }));
+    .map((f) => {
+      const code = readFileSync(join(assets, f), "utf8");
+      return { name: f, code, sizeKb: Buffer.byteLength(code, "utf8") / 1024 };
+    });
 }
 
-function findEntryName(dir: string): string {
+function initialChunks(dir: string): string[] {
   const html = readFileSync(join(dir, "index.html"), "utf8");
-  const match = html.match(/<script type="module"[^>]*src="[^"]*\/([^"]+\.js)"/);
-  if (!match?.[1]) throw new Error("No module script entry found in index.html");
-  return match[1];
+  const names = [...html.matchAll(/<script type="module"[^>]*src="[^"]*\/([^"]+\.js)"/g)].map(
+    (m) => m[1],
+  );
+  if (names.length === 0) throw new Error("No module script entries found in index.html");
+  return names;
 }
 
 describe("bundle split", () => {
   let chunks: Chunk[] = [];
-  let entryName = "";
+  let initialNames: string[] = [];
 
   beforeAll(async () => {
     // Vitest pins NODE_ENV=test, which would select the development React
@@ -53,41 +67,41 @@ describe("bundle split", () => {
     } finally {
       process.env.NODE_ENV = previousNodeEnv;
     }
-    chunks = listChunks(join(REPO_ROOT, OUT_DIR));
-    entryName = findEntryName(join(REPO_ROOT, OUT_DIR));
+    const out = join(REPO_ROOT, OUT_DIR);
+    chunks = listChunks(out);
+    initialNames = initialChunks(out);
   }, 120_000);
 
   afterAll(() => {
     rmSync(join(REPO_ROOT, OUT_DIR), { recursive: true, force: true });
   });
 
-  function entryChunk(): Chunk {
-    const entry = chunks.find((c) => c.name === entryName);
-    if (!entry) throw new Error(`Entry chunk ${entryName} not found in build output`);
-    return entry;
+  function lazyChunksWith(signature: string): Chunk[] {
+    return chunks.filter((c) => !initialNames.includes(c.name) && c.code.includes(signature));
   }
 
-  it("initial entry chunk does not contain hls.js", () => {
-    expect(entryChunk().code).not.toContain(HLS_SIGNATURE);
+  it("chunks loaded by index.html together stay within the 500 kB initial budget", () => {
+    const initial = chunks.filter((c) => initialNames.includes(c.name));
+    expect(initial.length).toBe(initialNames.length);
+    const totalKb = initial.reduce((sum, c) => sum + c.sizeKb, 0);
+    expect(totalKb).toBeLessThanOrEqual(ENTRY_BUDGET_KB);
   });
 
-  it("initial entry chunk does not contain anime4k-webgpu", () => {
-    expect(entryChunk().code).not.toContain(ANIME4K_SIGNATURE);
-  });
+  for (const lib of LIBRARIES) {
+    it(`initial load does not contain ${lib.name}`, () => {
+      for (const name of initialNames) {
+        const chunk = chunks.find((c) => c.name === name);
+        expect(chunk?.code ?? "").not.toContain(lib.signature);
+      }
+    });
 
-  it("hls.js is still built into a lazily loaded chunk", () => {
-    const lazy = chunks.filter((c) => c.name !== entryName && c.code.includes(HLS_SIGNATURE));
-    expect(lazy.length).toBeGreaterThan(0);
-  });
+    it(`${lib.name} is still built into a lazily loaded chunk`, () => {
+      expect(lazyChunksWith(lib.signature).length).toBeGreaterThan(0);
+    });
 
-  it("anime4k-webgpu is still built into a lazily loaded chunk", () => {
-    const lazy = chunks.filter((c) => c.name !== entryName && c.code.includes(ANIME4K_SIGNATURE));
-    expect(lazy.length).toBeGreaterThan(0);
-  });
-
-  // Budget from docs/adr/0002-bundle-budget-and-code-splitting.md.
-  it("initial entry chunk stays within the 500 kB budget", () => {
-    const sizeKb = Buffer.byteLength(entryChunk().code, "utf8") / 1024;
-    expect(sizeKb).toBeLessThanOrEqual(500);
-  });
+    it(`${lib.name} lazy chunk(s) stay within the documented budget`, () => {
+      const totalKb = lazyChunksWith(lib.signature).reduce((sum, c) => sum + c.sizeKb, 0);
+      expect(totalKb).toBeLessThanOrEqual(lib.lazyBudgetKb);
+    });
+  }
 });

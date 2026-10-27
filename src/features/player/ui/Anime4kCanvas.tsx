@@ -19,13 +19,17 @@ export function Anime4kCanvas({ videoRef, enabled, preset }: Anime4kCanvasProps)
     let renderer: Anime4kRenderer | null = null;
 
     const start = async () => {
-      const { Anime4kRenderer } = await import("../renderer/anime4kRenderer");
-      if (cancelled) return;
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!video || !canvas) return;
-      renderer = new Anime4kRenderer(video, canvas, preset);
-      void renderer.start();
+      try {
+        const { Anime4kRenderer } = await import("../renderer/anime4kRenderer");
+        if (cancelled) return;
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        if (!video || !canvas) return;
+        renderer = new Anime4kRenderer(video, canvas, preset);
+        void renderer.start();
+      } catch (err) {
+        console.error("Anime4K renderer chunk failed to load", err);
+      }
     };
     void start();
 

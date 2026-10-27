@@ -10,8 +10,8 @@ const config = defineConfig({
     },
   },
   clearScreen: false,
-  // Budget: docs/adr/0002. Initial JS is guarded by tests/test_bundle_split.test.ts;
-  // this limit only silences the expected on-demand player/Anime4K chunk sizes.
+  // Budget: docs/adr/0002; every tier is enforced by tests/test_bundle_split.test.ts.
+  // This limit only silences the expected on-demand player/Anime4K chunk sizes.
   build: {
     chunkSizeWarningLimit: 3600,
   },

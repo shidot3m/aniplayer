@@ -64,7 +64,16 @@ export default function App() {
 
   if (isPlayerOpen && currentRelease && currentEpisode) {
     return (
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <div className="flex h-screen w-full flex-col bg-[#090A0F] text-slate-100 font-sans selection:bg-rose-600 selection:text-white overflow-hidden">
+            <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+            <div className="flex flex-1 items-center justify-center text-slate-400">
+              Загрузка плеера…
+            </div>
+          </div>
+        }
+      >
         <LazyPlayerOverlay
           release={currentRelease}
           episode={currentEpisode}
