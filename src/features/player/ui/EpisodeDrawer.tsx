@@ -1,7 +1,7 @@
 import { CheckCircle2, Play, X } from "lucide-react";
-import { CDN_BASE_URL } from "../../shared/lib/constants";
-import { formatTime } from "../../shared/lib/utils";
-import type { EpisodeItem, Release } from "../../shared/types";
+import { CDN_BASE_URL } from "@/shared/lib/constants";
+import { formatTime } from "@/shared/lib/utils";
+import type { EpisodeItem, Release } from "@/shared/types";
 
 interface EpisodeDrawerProps {
   isOpen: boolean;

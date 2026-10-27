@@ -47,9 +47,9 @@ The system defines 7 official Anime4K v4 presets:
     tier: "HQ" | "Fast";
   }
   ```
-- **Defaults & Constants (`src/store/playerStoreDefaults.ts`):**
+- **Defaults & Constants (`src/features/player/state/playerStoreDefaults.ts`):**
   Export `ANIME4K_PRESET_OPTIONS: Anime4kPresetItem[]`.
-- **Player Store (`src/store/playerStore.ts`):**
+- **Player Store (`src/features/player/state/playerStore.ts`):**
   - `anime4kPreset`: string (loaded from SQLite key `"anime4k_preset"`, default `"Mode A+A (HQ)"`).
   - `anime4kEnabled`: boolean (loaded from SQLite key `"anime4k_enabled"`, default `true`).
   - `setAnime4kPreset(preset: string)`: Updates store, calls `db_save_setting("anime4k_preset", preset)`, and if running native player, calls `player_set_shader_preset(preset)`.
@@ -60,10 +60,10 @@ The system defines 7 official Anime4K v4 presets:
 1. **Application Settings (`src/components/settings/PlaybackTab.tsx`):**
    - Renders a 7-item interactive card grid showing title, tier badge, and usage description for each preset.
    - Lets the user pick their default preferred preset.
-2. **Video Player (`src/components/player/SettingsMenu.tsx`):**
+2. **Video Player (`src/features/player/ui/SettingsMenu.tsx`):**
    - Clean UI: A simple switch labeled `Апскейлер Anime4K [Вкл/Выкл]`.
    - Displays subtitle with the currently active preset name (e.g., `Активен: Mode A+A (HQ)`), with no dropdown clutter.
-3. **Video Viewport (`src/components/player/PlayerVideoViewport.tsx`):**
+3. **Video Viewport (`src/features/player/ui/PlayerVideoViewport.tsx`):**
    - Cleans up the mock SVG `feConvolveMatrix` filter.
    - When `anime4kEnabled` is true, applies CSS sharpness and hardware acceleration hints, or passes shader state to the underlying native engine.
 

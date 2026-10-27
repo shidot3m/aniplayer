@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { usePlayerStore } from "@/features/player";
+import { ANIME4K_PRESETS } from "@/features/player/state/playerStoreDefaults";
 import { PlaybackTab } from "../src/components/settings/PlaybackTab";
-import { usePlayerStore } from "../src/store/playerStore";
-import { ANIME4K_PRESETS } from "../src/store/playerStoreDefaults";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn().mockResolvedValue(null),

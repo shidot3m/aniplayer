@@ -1,9 +1,9 @@
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCatalogStore } from "@/features/catalog";
+import { usePlayerStore } from "@/features/player";
 import type { HistoryItem, Release } from "@/shared/types";
 import { Badge } from "@/shared/ui/badge";
-import { usePlayerStore } from "@/store/playerStore";
 import { ContinueWatchingCard } from "./ContinueWatchingCard";
 import { buildContinueWatchingItems } from "./continueWatchingItems";
 

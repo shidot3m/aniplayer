@@ -1,5 +1,5 @@
 import { ArrowLeft, Sparkles } from "lucide-react";
-import type { Release } from "../../shared/types";
+import type { Release } from "@/shared/types";
 
 export interface PlayerTopBarProps {
   isVisible: boolean;

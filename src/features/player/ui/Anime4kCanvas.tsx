@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Anime4kRenderer } from "./anime4kRenderer";
+import { Anime4kRenderer } from "../renderer/anime4kRenderer";
 
 interface Anime4kCanvasProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;

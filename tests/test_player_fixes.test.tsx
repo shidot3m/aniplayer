@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
-import { SettingsMenu } from "@/components/player/SettingsMenu";
 import { useCatalogStore } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
+import { SettingsMenu } from "@/features/player/ui/SettingsMenu";
 import { ReleaseDetails } from "@/features/release";
 import type { HistoryItem, Release } from "@/shared/types";
 

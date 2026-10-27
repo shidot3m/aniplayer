@@ -1,7 +1,7 @@
 import type React from "react";
 import { useState } from "react";
-import { formatTime } from "../../shared/lib/utils";
-import type { SkipTimecode } from "../../shared/types";
+import { formatTime } from "@/shared/lib/utils";
+import type { SkipTimecode } from "@/shared/types";
 
 interface SeekBarProps {
   currentTime: number;

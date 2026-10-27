@@ -1,9 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PlayerOverlay } from "../src/components/player/PlayerOverlay";
-import { usePlayerHotkeys } from "../src/components/player/usePlayerHotkeys";
+import { PlayerOverlay, usePlayerStore } from "@/features/player";
+import { usePlayerHotkeys } from "@/features/player/hooks/usePlayerHotkeys";
 import type { EpisodeItem, Release } from "../src/shared/types";
-import { usePlayerStore } from "../src/store/playerStore";
 
 // Mock Tauri invoke
 const mockInvoke = vi.fn().mockResolvedValue(null);

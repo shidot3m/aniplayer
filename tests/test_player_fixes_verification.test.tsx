@@ -1,9 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { usePlayerStore } from "@/features/player";
+import { getInitialAnime4kPreset } from "@/features/player/state/playerStoreDefaults";
 import { PlaybackTab } from "../src/components/settings/PlaybackTab";
-import { usePlayerStore } from "../src/store/playerStore";
-import { getInitialAnime4kPreset } from "../src/store/playerStoreDefaults";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -75,11 +75,11 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
     const fs = await import("node:fs");
     const path = await import("node:path");
     const canvasCode = fs.readFileSync(
-      path.resolve(__dirname, "../src/components/player/Anime4kCanvas.tsx"),
+      path.resolve(__dirname, "../src/features/player/ui/Anime4kCanvas.tsx"),
       "utf-8",
     );
     const rendererCode = fs.readFileSync(
-      path.resolve(__dirname, "../src/components/player/anime4kRenderer.ts"),
+      path.resolve(__dirname, "../src/features/player/renderer/anime4kRenderer.ts"),
       "utf-8",
     );
 

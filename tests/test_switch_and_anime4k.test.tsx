@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
-import { Anime4kCanvas } from "../src/components/player/Anime4kCanvas";
-import { SettingsMenu } from "../src/components/player/SettingsMenu";
+import { Anime4kCanvas } from "@/features/player/ui/Anime4kCanvas";
+import { SettingsMenu } from "@/features/player/ui/SettingsMenu";
 import { Switch } from "../src/shared/ui/switch";
 
 function ControlledSwitch() {

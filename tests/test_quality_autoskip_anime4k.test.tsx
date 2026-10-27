@@ -1,10 +1,13 @@
 import { render } from "@testing-library/react";
 import { ModeA, ModeAA, ModeB, ModeBB, ModeC, ModeCA } from "anime4k-webgpu";
 import { describe, expect, it, vi } from "vitest";
-import { resolvePresetPipeline } from "../src/components/player/anime4kRenderer";
-import { SeekBar } from "../src/components/player/SeekBar";
+import { resolvePresetPipeline } from "@/features/player/renderer/anime4kRenderer";
+import {
+  getAvailableQualities,
+  resolveEpisodeQuality,
+} from "@/features/player/state/playerStoreDefaults";
+import { SeekBar } from "@/features/player/ui/SeekBar";
 import type { EpisodeItem } from "../src/shared/types";
-import { getAvailableQualities, resolveEpisodeQuality } from "../src/store/playerStoreDefaults";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),

@@ -1,11 +1,11 @@
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useCatalogStore } from "@/features/catalog";
+import { usePlayerStore } from "@/features/player";
 import { findBookmarkCategory, formatPosterUrl, isReleaseWatched } from "@/shared/lib/releaseUtils";
 import type { Release } from "@/shared/types";
 import { Button } from "@/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
-import { usePlayerStore } from "@/store/playerStore";
 import { useFranchises } from "../hooks/useFranchises";
 import { useReleaseDownloader } from "../hooks/useReleaseDownloader";
 import { useStartEpisode } from "../hooks/useStartEpisode";

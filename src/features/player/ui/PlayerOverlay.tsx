@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCatalogStore } from "@/features/catalog";
-import type { EpisodeItem, Release } from "../../shared/types";
-import { usePlayerStore } from "../../store/playerStore";
+import type { EpisodeItem, Release } from "@/shared/types";
+import { usePlayerControllers } from "../hooks/usePlayerControllers";
+import { useAutoHide, useFullscreen } from "../hooks/usePlayerOverlayState";
+import { usePlayerStore } from "../state/playerStore";
 import { EpisodeDrawer } from "./EpisodeDrawer";
 import { PlayerBottomBar } from "./PlayerBottomBar";
 import { PlayerSkipToasts } from "./PlayerSkipToasts";
 import { PlayerTopBar } from "./PlayerTopBar";
 import { PlayerVideoViewport } from "./PlayerVideoViewport";
-import { usePlayerControllers } from "./usePlayerControllers";
-import { useAutoHide, useFullscreen } from "./usePlayerOverlayState";
 
 interface PlayerOverlayProps {
   release: Release;

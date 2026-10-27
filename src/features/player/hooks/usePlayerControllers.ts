@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useCatalogStore } from "@/features/catalog";
-import type { EpisodeItem, Release, VideoQuality } from "../../shared/types";
-import { getAvailableQualities } from "../../store/playerStoreDefaults";
-import { useHlsVideo } from "./useHlsVideo";
+import type { EpisodeItem, Release, VideoQuality } from "@/shared/types";
+import { useHlsVideo } from "../renderer/useHlsVideo";
+import { getAvailableQualities } from "../state/playerStoreDefaults";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";
 
 interface UsePlayerControllersOptions {

@@ -1,16 +1,14 @@
 import { Sparkles, Tv, Volume2 } from "lucide-react";
+import { ANIME4K_PRESETS, usePlayerStore } from "@/features/player";
 import type { VideoQuality } from "../../shared/types";
 import { Slider } from "../../shared/ui/slider";
 import { Switch } from "../../shared/ui/switch";
-import { usePlayerStore } from "../../store/playerStore";
 
 const QUALITY_OPTIONS: { id: VideoQuality; title: string; desc: string }[] = [
   { id: "1080p", title: "1080p (Full HD)", desc: "Максимальная четкость" },
   { id: "720p", title: "720p (HD)", desc: "Баланс качества и трафика" },
   { id: "480p", title: "480p (SD)", desc: "Экономия трафика" },
 ];
-
-import { ANIME4K_PRESETS } from "../../store/playerStoreDefaults";
 
 export function PlaybackTab() {
   const {
