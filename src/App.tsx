@@ -1,19 +1,21 @@
 import { Film, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { AnimeCard } from "./components/AnimeCard";
+import {
+  AnimeCard,
+  GenreSelector,
+  GenreView,
+  ReleaseSchedule,
+  useCatalogStore,
+} from "@/features/catalog";
+import { ContinueWatching } from "@/features/continue-watching";
+import { ReleaseDetails } from "@/features/release";
 import { BookmarksView } from "./components/BookmarksView";
-import { ContinueWatching } from "./components/ContinueWatching";
 import { DownloadFloatingWidget } from "./components/DownloadFloatingWidget";
 import { DownloadsView } from "./components/DownloadsView";
-import { GenreSelector } from "./components/GenreSelector";
-import { GenreView } from "./components/GenreView";
 import { Header } from "./components/Header";
 import { PlayerOverlay } from "./components/player/PlayerOverlay";
-import { ReleaseDetails } from "./components/ReleaseDetails";
-import { ReleaseSchedule } from "./components/ReleaseSchedule";
 import { SettingsDialog } from "./components/SettingsDialog";
 import type { Release } from "./shared/types";
-import { useCatalogStore } from "./store/catalogStore";
 import { useDownloadStore } from "./store/downloadStore";
 import { usePlayerStore } from "./store/playerStore";
 

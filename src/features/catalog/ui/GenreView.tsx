@@ -1,9 +1,9 @@
 import { ArrowLeft, Film, Loader2, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
-import type { GenreItem, Release } from "../shared/types";
-import { Badge } from "../shared/ui/badge";
-import { Button } from "../shared/ui/button";
-import { useCatalogStore } from "../store/catalogStore";
+import type { GenreItem, Release } from "@/shared/types";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { useCatalogStore } from "../state/catalogStore";
 import { AnimeCard } from "./AnimeCard";
 import { GenrePagination } from "./GenrePagination";
 

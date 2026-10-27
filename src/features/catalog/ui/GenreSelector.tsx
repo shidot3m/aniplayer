@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
-import { CDN_BASE_URL } from "../shared/lib/constants";
-import type { GenreItem } from "../shared/types";
-import { useCatalogStore } from "../store/catalogStore";
+import { CDN_BASE_URL } from "@/shared/lib/constants";
+import type { GenreItem } from "@/shared/types";
+import { useCatalogStore } from "../state/catalogStore";
 
 interface GenreSelectorProps {
   selectedGenre: GenreItem | null;

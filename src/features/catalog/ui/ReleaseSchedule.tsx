@@ -1,7 +1,7 @@
 import { Calendar } from "lucide-react";
 import { useState } from "react";
-import type { Release } from "../shared/types";
-import { Tabs, TabsList, TabsTrigger } from "../shared/ui/tabs";
+import type { Release } from "@/shared/types";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { AnimeCard } from "./AnimeCard";
 
 interface ReleaseScheduleProps {

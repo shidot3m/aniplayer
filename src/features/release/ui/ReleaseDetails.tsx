@@ -1,21 +1,17 @@
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { useCatalogStore } from "@/features/catalog";
+import { findBookmarkCategory, formatPosterUrl, isReleaseWatched } from "@/shared/lib/releaseUtils";
+import type { Release } from "@/shared/types";
+import { Button } from "@/shared/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { usePlayerStore } from "@/store/playerStore";
 import { useFranchises } from "../hooks/useFranchises";
 import { useReleaseDownloader } from "../hooks/useReleaseDownloader";
 import { useStartEpisode } from "../hooks/useStartEpisode";
-import {
-  findBookmarkCategory,
-  formatPosterUrl,
-  isReleaseWatched,
-} from "../shared/lib/releaseUtils";
-import type { Release } from "../shared/types";
-import { Button } from "../shared/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../shared/ui/tabs";
-import { useCatalogStore } from "../store/catalogStore";
-import { usePlayerStore } from "../store/playerStore";
+import { EpisodesTabContent } from "./EpisodesTabContent";
 import { RelatedTab } from "./RelatedTab";
-import { EpisodesTabContent } from "./release-details/EpisodesTabContent";
-import { ReleaseHero } from "./release-details/ReleaseHero";
+import { ReleaseHero } from "./ReleaseHero";
 import { TorrentsTab } from "./TorrentsTab";
 
 interface ReleaseDetailsProps {

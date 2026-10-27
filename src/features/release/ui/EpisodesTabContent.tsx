@@ -1,7 +1,7 @@
 import { CheckCircle2, Download } from "lucide-react";
-import type { EpisodeItem, HistoryItem } from "../../shared/types";
-import { Button } from "../../shared/ui/button";
-import { EpisodeCard } from "../EpisodeCard";
+import type { EpisodeItem, HistoryItem } from "@/shared/types";
+import { Button } from "@/shared/ui/button";
+import { EpisodeCard } from "./EpisodeCard";
 
 interface EpisodesTabContentProps {
   episodes?: EpisodeItem[];

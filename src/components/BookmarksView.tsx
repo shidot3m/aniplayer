@@ -1,11 +1,10 @@
 import { ArrowLeft, Bookmark, FolderHeart, Search } from "lucide-react";
 import { useState } from "react";
+import { AnimeCard, useCatalogStore } from "@/features/catalog";
 import type { BookmarkCategory, Release } from "../shared/types";
 import { Badge } from "../shared/ui/badge";
 import { Button } from "../shared/ui/button";
 import { Input } from "../shared/ui/input";
-import { useCatalogStore } from "../store/catalogStore";
-import { AnimeCard } from "./AnimeCard";
 
 interface BookmarksViewProps {
   onSelectRelease: (release: Release) => void;

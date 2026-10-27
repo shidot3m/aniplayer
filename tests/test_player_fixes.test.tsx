@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
-import { ContinueWatching } from "@/components/ContinueWatching";
 import { SettingsMenu } from "@/components/player/SettingsMenu";
-import { ReleaseDetails } from "@/components/ReleaseDetails";
+import { useCatalogStore } from "@/features/catalog";
+import { ContinueWatching } from "@/features/continue-watching";
+import { ReleaseDetails } from "@/features/release";
 import type { HistoryItem, Release } from "@/shared/types";
-import { useCatalogStore } from "@/store/catalogStore";
 
 const mockRelease: Release = {
   id: 1001,

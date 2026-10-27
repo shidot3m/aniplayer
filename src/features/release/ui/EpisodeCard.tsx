@@ -1,15 +1,15 @@
 import { CheckCircle2, Download, MoreVertical, Play } from "lucide-react";
 import { useState } from "react";
-import { formatPosterUrl } from "../shared/lib/releaseUtils";
-import { formatTime } from "../shared/lib/utils";
-import type { EpisodeItem } from "../shared/types";
-import { Badge } from "../shared/ui/badge";
+import { formatPosterUrl } from "@/shared/lib/releaseUtils";
+import { formatTime } from "@/shared/lib/utils";
+import type { EpisodeItem } from "@/shared/types";
+import { Badge } from "@/shared/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../shared/ui/dropdown-menu";
+} from "@/shared/ui/dropdown-menu";
 
 export interface EpisodeCardProps {
   ep: EpisodeItem;

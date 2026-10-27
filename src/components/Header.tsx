@@ -1,9 +1,9 @@
 import { Bookmark, FolderDown, Home, Search, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useCatalogStore } from "@/features/catalog";
 import { Badge } from "../shared/ui/badge";
 import { Button } from "../shared/ui/button";
 import { Input } from "../shared/ui/input";
-import { useCatalogStore } from "../store/catalogStore";
 import { useDownloadStore } from "../store/downloadStore";
 
 interface HeaderProps {

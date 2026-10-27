@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { EpisodeItem, HistoryItem } from "../shared/types";
+import type { EpisodeItem, HistoryItem } from "@/shared/types";
 
 interface StartEpisodeInfo {
   startEpisode: EpisodeItem | null;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCatalogStore } from "@/features/catalog";
 import type { EpisodeItem, Release, VideoQuality } from "../../shared/types";
-import { useCatalogStore } from "../../store/catalogStore";
 import { getAvailableQualities } from "../../store/playerStoreDefaults";
 import { useHlsVideo } from "./useHlsVideo";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";

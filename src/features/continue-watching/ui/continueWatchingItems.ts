@@ -1,4 +1,4 @@
-import type { EpisodeItem, HistoryItem, Release } from "../../shared/types";
+import type { EpisodeItem, HistoryItem, Release } from "@/shared/types";
 
 export interface ContinueWatchingCardItem {
   releaseId: number;

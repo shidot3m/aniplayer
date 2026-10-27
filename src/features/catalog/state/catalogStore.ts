@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import { API_BASE_URL } from "../shared/lib/constants";
+import { API_BASE_URL } from "@/shared/lib/constants";
 import type {
   BookmarkCategory,
   BookmarkItem,
@@ -8,7 +8,7 @@ import type {
   GenreItem,
   HistoryItem,
   Release,
-} from "../shared/types";
+} from "@/shared/types";
 import {
   deleteBrowserBookmark,
   getBrowserBookmarks,
