@@ -7,7 +7,7 @@ import type { ContinueWatchingCardItem } from "./continueWatchingItems";
 interface ContinueWatchingCardProps {
   item: ContinueWatchingCardItem;
   onSelectRelease: (release: Release) => void;
-  onPlayEpisode: (release: Release, episode: EpisodeItem) => void;
+  onPlayEpisode: (release: Release, episode: EpisodeItem, startPosition: number) => void;
 }
 
 export function ContinueWatchingCard({
@@ -28,7 +28,7 @@ export function ContinueWatchingCard({
 
   const handlePlay = () => {
     if (release && targetEpisode) {
-      onPlayEpisode(release, targetEpisode);
+      onPlayEpisode(release, targetEpisode, item.lastPosition);
     } else if (release) {
       onSelectRelease(release);
     }
