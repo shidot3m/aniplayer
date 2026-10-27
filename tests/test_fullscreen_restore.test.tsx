@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PlayerOverlay, usePlayerStore } from "@/features/player";
+import { usePlayerStore } from "@/features/player";
 import { usePlayerHotkeys } from "@/features/player/hooks/usePlayerHotkeys";
+import { PlayerOverlay } from "@/features/player/ui/PlayerOverlay";
 import type { EpisodeItem, Release } from "../src/shared/types";
 
 // Mock Tauri invoke
@@ -127,9 +128,14 @@ describe("Fullscreen restore on player exit", () => {
       />,
     );
 
+    // let the mount-time fullscreen status check settle inside act
+    await act(async () => {});
+
     // Clicking back button should invoke app_set_fullscreen false
     const backBtn = screen.getByTestId("player-back-btn");
-    fireEvent.click(backBtn);
+    await act(async () => {
+      fireEvent.click(backBtn);
+    });
 
     await vi.waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith("app_set_fullscreen", { fullscreen: false });
@@ -138,7 +144,9 @@ describe("Fullscreen restore on player exit", () => {
 
     // Unmounting component also cleans up fullscreen
     mockInvoke.mockClear();
-    unmount();
+    await act(async () => {
+      unmount();
+    });
     await vi.waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith("app_set_fullscreen", { fullscreen: false });
     });

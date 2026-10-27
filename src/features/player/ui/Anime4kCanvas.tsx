@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Anime4kRenderer } from "../renderer/anime4kRenderer";
+import type { Anime4kRenderer } from "../renderer/anime4kRenderer";
 
 interface Anime4kCanvasProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -13,13 +13,26 @@ export function Anime4kCanvas({ videoRef, enabled, preset }: Anime4kCanvasProps)
   useEffect(() => {
     if (!enabled) return;
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    // anime4k-webgpu (~3.4 MB) stays out of the player chunk until the
+    // enhancement is actually switched on.
+    let cancelled = false;
+    let renderer: Anime4kRenderer | null = null;
 
-    const renderer = new Anime4kRenderer(video, canvas, preset);
-    void renderer.start();
-    return () => renderer.destroy();
+    const start = async () => {
+      const { Anime4kRenderer } = await import("../renderer/anime4kRenderer");
+      if (cancelled) return;
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas) return;
+      renderer = new Anime4kRenderer(video, canvas, preset);
+      void renderer.start();
+    };
+    void start();
+
+    return () => {
+      cancelled = true;
+      if (renderer) renderer.destroy();
+    };
   }, [enabled, preset, videoRef]);
 
   if (!enabled) return null;

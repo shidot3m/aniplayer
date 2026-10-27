@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { BookmarksView } from "@/features/bookmarks";
 import {
   GenreSelector,
@@ -9,7 +9,7 @@ import {
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
 import { DownloadFloatingWidget, DownloadsView, useDownloadStore } from "@/features/downloads";
-import { PlayerOverlay, usePlayerBackendSync, usePlayerStore } from "@/features/player";
+import { LazyPlayerOverlay, usePlayerBackendSync, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
 import { SettingsDialog } from "@/features/settings";
 import type { Release } from "@/shared/types";
@@ -64,23 +64,25 @@ export default function App() {
 
   if (isPlayerOpen && currentRelease && currentEpisode) {
     return (
-      <PlayerOverlay
-        release={currentRelease}
-        episode={currentEpisode}
-        onBack={async () => {
-          await closePlayer();
-          if (selectedRelease) {
+      <Suspense fallback={null}>
+        <LazyPlayerOverlay
+          release={currentRelease}
+          episode={currentEpisode}
+          onBack={async () => {
+            await closePlayer();
+            if (selectedRelease) {
+              setActiveScreen("details");
+            } else {
+              setActiveScreen("home");
+            }
+          }}
+          onGoToRelease={async () => {
+            setSelectedRelease(currentRelease);
             setActiveScreen("details");
-          } else {
-            setActiveScreen("home");
-          }
-        }}
-        onGoToRelease={async () => {
-          setSelectedRelease(currentRelease);
-          setActiveScreen("details");
-          await closePlayer();
-        }}
-      />
+            await closePlayer();
+          }}
+        />
+      </Suspense>
     );
   }
 

@@ -10,6 +10,11 @@ const config = defineConfig({
     },
   },
   clearScreen: false,
+  // Budget: docs/adr/0002. Initial JS is guarded by tests/test_bundle_split.test.ts;
+  // this limit only silences the expected on-demand player/Anime4K chunk sizes.
+  build: {
+    chunkSizeWarningLimit: 3600,
+  },
   server: {
     host: "127.0.0.1",
     port: 1420,

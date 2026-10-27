@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { PlayerOverlay } from "@/features/player";
+import { PlayerOverlay } from "@/features/player/ui/PlayerOverlay";
 import type { EpisodeItem, Release } from "../src/shared/types";
 
 // Mock Tauri invoke
