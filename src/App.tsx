@@ -8,15 +8,17 @@ import {
   useCatalogStore,
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
+import {
+  DownloadFloatingWidget,
+  DownloadsView,
+  useDownloadStore,
+} from "@/features/downloads";
 import { PlayerOverlay, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
 import { BookmarksView } from "./components/BookmarksView";
-import { DownloadFloatingWidget } from "./components/DownloadFloatingWidget";
-import { DownloadsView } from "./components/DownloadsView";
 import { Header } from "./components/Header";
 import { SettingsDialog } from "./components/SettingsDialog";
 import type { Release } from "./shared/types";
-import { useDownloadStore } from "./store/downloadStore";
 
 export default function App() {
   const {

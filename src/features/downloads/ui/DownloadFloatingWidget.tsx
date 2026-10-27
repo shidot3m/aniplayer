@@ -9,10 +9,10 @@ import {
   X,
 } from "lucide-react";
 import { useCatalogStore } from "@/features/catalog";
-import { formatBytes } from "../shared/lib/utils";
-import type { DownloadProgressEvent } from "../shared/types";
-import { Badge } from "../shared/ui/badge";
-import { useDownloadStore } from "../store/downloadStore";
+import { formatBytes } from "@/shared/lib/utils";
+import type { DownloadProgressEvent } from "@/shared/types";
+import { Badge } from "@/shared/ui/badge";
+import { useDownloadStore } from "../state/downloadStore";
 
 function DownloadItemRow({
   item,

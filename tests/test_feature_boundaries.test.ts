@@ -71,11 +71,32 @@ describe("feature boundaries", () => {
     expect(violations, violations.join("\n")).toEqual([]);
   });
 
+  it("code outside features reaches them only through their index", () => {
+    const violations: string[] = [];
+    for (const file of listFiles(SRC_DIR).filter((f) => !featureOf(f))) {
+      for (const spec of specsOf(file)) {
+        const target = featureTarget(spec, file);
+        if (!target || target.subpath === "") continue;
+        violations.push(`${toSrcRelative(file)} imports ${spec}`);
+      }
+    }
+    expect(violations, violations.join("\n")).toEqual([]);
+  });
+
   it("every feature exposes an index barrel", () => {
     const missing = readdirSync(FEATURES_DIR)
       .filter((name) => statSync(join(FEATURES_DIR, name)).isDirectory())
       .filter((name) => !existsSync(join(FEATURES_DIR, name, "index.ts")))
       .join(", ");
     expect(missing).toBe("");
+  });
+
+  it("downloads feature owns its state and UI", () => {
+    const strays = [
+      "store",
+      "components/DownloadsView.tsx",
+      "components/DownloadFloatingWidget.tsx",
+    ].filter((p) => existsSync(join(SRC_DIR, p)));
+    expect(strays, strays.join(", ")).toEqual([]);
   });
 });

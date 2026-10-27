@@ -18,7 +18,7 @@ import { formatBytes } from "@/shared/lib/utils";
 import type { DownloadProgressEvent, TorrentItem } from "@/shared/types";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { useDownloadStore } from "@/store/downloadStore";
+import { useDownloadStore } from "@/features/downloads";
 
 export interface TorrentsTabProps {
   releaseId: number;

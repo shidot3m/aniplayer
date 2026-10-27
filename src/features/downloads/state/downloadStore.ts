@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { create } from "zustand";
-import type { DownloadedEpisodeMeta, DownloadProgressEvent } from "../shared/types";
+import type { DownloadedEpisodeMeta, DownloadProgressEvent } from "@/shared/types";
 
 interface DownloadState {
   downloadedEpisodes: DownloadedEpisodeMeta[];

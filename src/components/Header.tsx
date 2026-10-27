@@ -4,7 +4,7 @@ import { useCatalogStore } from "@/features/catalog";
 import { Badge } from "../shared/ui/badge";
 import { Button } from "../shared/ui/button";
 import { Input } from "../shared/ui/input";
-import { useDownloadStore } from "../store/downloadStore";
+import { useDownloadStore } from "@/features/downloads";
 
 interface HeaderProps {
   onOpenSettings?: () => void;
