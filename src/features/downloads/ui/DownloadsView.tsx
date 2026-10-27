@@ -1,4 +1,3 @@
-import { convertFileSrc } from "@tauri-apps/api/core";
 import { CheckCircle2, Film, FolderDown, FolderOpen, HardDrive, Play, Trash2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useCatalogStore } from "@/features/catalog";
@@ -8,6 +7,7 @@ import { formatBytes } from "@/shared/lib/utils";
 import type { DownloadedEpisodeMeta, EpisodeItem, Release } from "@/shared/types";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+import { offlineStreamUrl } from "../lib/offlineSource";
 import { useDownloadStore } from "../state/downloadStore";
 
 function DownloadedEpisodeRow({
@@ -219,14 +219,7 @@ export function DownloadsView() {
       .slice()
       .sort((a, b) => a.episode_ordinal - b.episode_ordinal)
       .map((m) => {
-        let stream = m.file_path;
-        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-          try {
-            stream = convertFileSrc(m.file_path);
-          } catch (_e) {
-            stream = m.file_path;
-          }
-        }
+        const stream = offlineStreamUrl(m.file_path);
         return {
           id: m.episode_id,
           ordinal: m.episode_ordinal,

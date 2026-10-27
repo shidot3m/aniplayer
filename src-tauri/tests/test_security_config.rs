@@ -10,7 +10,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
-use tauri_utils::config::{Config, Csp, CspDirectiveSources};
+use tauri_utils::config::{Config, Csp, CspDirectiveSources, FsScope};
 
 fn app_config() -> Config {
     let path = Path::new("tauri.conf.json");
@@ -177,6 +177,44 @@ fn development_and_production_policies_differ_only_where_the_dev_server_needs_it
             "policy must declare `{required}` instead of leaning on default-src alone"
         );
     }
+}
+
+/// A downloaded episode reaches the webview only through the asset protocol,
+/// whose scope is the second half of the protection: an enabled protocol with
+/// a wide scope would expose every file on disk. The downloads folder lives
+/// next to the executable, which `$RESOURCE` resolves to on Windows; `$EXE`
+/// cannot be used there because `dirs::executable_dir()` returns `None`.
+#[test]
+fn asset_protocol_is_enabled_and_confined_to_downloads() {
+    let config = app_config();
+    let asset = config.app.security.asset_protocol;
+    assert!(
+        asset.enable,
+        "the asset protocol must be enabled for offline playback"
+    );
+
+    let (allowed, forbidden) = match asset.scope {
+        FsScope::AllowedPaths(paths) => (paths, Vec::new()),
+        FsScope::Scope { allow, deny, .. } => (allow, deny),
+    };
+    let allowed: Vec<String> = allowed
+        .iter()
+        .map(|path| path.to_string_lossy().replace('\\', "/"))
+        .collect();
+    let forbidden: Vec<String> = forbidden
+        .iter()
+        .map(|path| path.to_string_lossy().replace('\\', "/"))
+        .collect();
+
+    assert!(
+        forbidden.is_empty(),
+        "the asset protocol scope must not carve out denials: {forbidden:?}"
+    );
+    assert_eq!(
+        allowed,
+        vec!["$RESOURCE/downloads/**"],
+        "the asset protocol must expose exactly the downloads folder"
+    );
 }
 
 #[test]

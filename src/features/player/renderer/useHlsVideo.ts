@@ -1,6 +1,10 @@
 import Hls from "hls.js";
 import { useCallback, useEffect, useRef } from "react";
 
+function isHlsStream(streamUrl: string): boolean {
+  return /\.m3u8(?:[?#]|$)/i.test(streamUrl);
+}
+
 interface UseHlsVideoOptions {
   streamUrl: string;
   isPlaying: boolean;
@@ -36,7 +40,7 @@ export function useHlsVideo({
     settingsRef.current = { volume, isMuted, speed, initialTime, isPlaying };
   }, [volume, isMuted, speed, initialTime, isPlaying]);
 
-  // Initialize and attach HLS stream
+  // Attach the stream: playlists go through hls.js, plain files natively
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !streamUrl) return;
@@ -59,7 +63,7 @@ export function useHlsVideo({
       }
     };
 
-    if (Hls.isSupported()) {
+    if (isHlsStream(streamUrl) && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -88,12 +92,15 @@ export function useHlsVideo({
           }
         }
       });
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    } else {
+      // Downloaded episodes are plain files served by the asset protocol;
+      // hls.js only understands playlists, so the element loads them directly.
+      video.addEventListener("loadedmetadata", applyInitialSettings, { once: true });
       video.src = streamUrl;
-      applyInitialSettings();
     }
 
     return () => {
+      video.removeEventListener("loadedmetadata", applyInitialSettings);
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
