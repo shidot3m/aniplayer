@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import { usePlayerStore } from "@/features/player";
 import { findBookmarkCategory, formatPosterUrl, isReleaseWatched } from "@/shared/lib/releaseUtils";
-import type { Release } from "@/shared/types";
+import type { EpisodeItem, Release } from "@/shared/types";
 import { Button } from "@/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { useFranchises } from "../hooks/useFranchises";
@@ -35,6 +35,14 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
   const { franchises, isLoading: isLoadingFranchises } = useFranchises(release.id);
   const { startEpisode, playButtonText } = useStartEpisode(release.id, release.episodes, history);
 
+  const handlePlay = (episode: EpisodeItem) => {
+    const entry = history.find(
+      (item) => item.release_id === release.id && item.episode_id === episode.id,
+    );
+    const startPos = entry && !entry.is_completed ? entry.last_position : 0;
+    playEpisode(release, episode, startPos);
+  };
+
   const fallbackPoster = formatPosterUrl(
     release.poster?.preview || release.poster?.src || release.poster?.thumbnail,
   );
@@ -65,7 +73,7 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         currentCategory={currentCategory}
         startEpisode={startEpisode}
         playButtonText={playButtonText}
-        onPlay={(episode) => playEpisode(release, episode)}
+        onPlay={handlePlay}
         onBookmarkChange={(category) => setBookmark(release.id, category, release)}
         onRemoveBookmark={() => removeBookmark(release.id)}
         onOpenTorrents={() => setActiveTab("torrents")}
@@ -92,7 +100,7 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
             history={history}
             downloadingEpIds={downloadingEpIds}
             isDownloadingAll={isDownloadingAll}
-            onPlay={(episode) => playEpisode(release, episode)}
+            onPlay={handlePlay}
             onToggleWatched={(episodeId, ordinal, completed) =>
               setEpisodeWatched(release.id, episodeId, ordinal, completed)
             }
