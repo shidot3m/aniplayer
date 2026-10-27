@@ -93,7 +93,12 @@ impl TorrentDownloader {
         let base_url = crate::api::client::ApiConfig::default().base_url;
         let url = format!("{}/anime/torrents/{}/file", base_url, torrent_id);
 
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
         if !resp.status().is_success() {
             return Err(format!("Server returned error status: {}", resp.status()));
         }

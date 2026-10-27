@@ -1,7 +1,7 @@
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use crate::player::ffi::{MpvContext, MpvFfi};
 use crate::player::shaders::Anime4kPreset;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 pub struct MpvCore {
     ffi: Arc<MpvFfi>,
@@ -11,7 +11,12 @@ pub struct MpvCore {
 }
 
 impl MpvCore {
-    fn build(ffi: Arc<MpvFfi>, shaders_dir: &Path, hwnd: Option<usize>, headless: bool) -> Result<Self, String> {
+    fn build(
+        ffi: Arc<MpvFfi>,
+        shaders_dir: &Path,
+        hwnd: Option<usize>,
+        headless: bool,
+    ) -> Result<Self, String> {
         let ctx = ffi.create_context()?;
 
         // Base player options
@@ -44,7 +49,11 @@ impl MpvCore {
             ffi,
             ctx,
             shaders_dir: shaders_dir.to_path_buf(),
-            current_preset: if headless { "OFF".to_string() } else { "A+A".to_string() },
+            current_preset: if headless {
+                "OFF".to_string()
+            } else {
+                "A+A".to_string()
+            },
         };
 
         // Apply default A+A preset if shaders directory exists
@@ -67,7 +76,9 @@ impl MpvCore {
             PathBuf::from("../bin/mpv-dev/libmpv-2.dll"),
             PathBuf::from("../dist_portable/libmpv-2.dll"),
         ];
-        let dll_path = candidates.into_iter().find(|p| p.exists())
+        let dll_path = candidates
+            .into_iter()
+            .find(|p| p.exists())
             .ok_or_else(|| "libmpv-2.dll not found in candidates".to_string())?;
 
         let ffi = Arc::new(MpvFfi::load(&dll_path)?);
@@ -140,11 +151,14 @@ impl MpvCore {
     }
 
     pub fn set_shader_preset(&mut self, preset_name: &str) -> Result<(), String> {
-        let preset = Anime4kPreset::from_str(preset_name);
+        let preset = preset_name
+            .parse::<Anime4kPreset>()
+            .unwrap_or(Anime4kPreset::Off);
         let glsl_chain = preset.build_glsl_shaders_string(&self.shaders_dir);
 
         if glsl_chain.is_empty() {
-            self.ffi.command_string(&self.ctx, "change-list glsl-shaders clr \"\"")?;
+            self.ffi
+                .command_string(&self.ctx, "change-list glsl-shaders clr \"\"")?;
         } else {
             let cmd = format!("change-list glsl-shaders set \"{}\"", glsl_chain);
             self.ffi.command_string(&self.ctx, &cmd)?;

@@ -2,7 +2,9 @@ use aniplayer_lib::downloader::torrent::validate_magnet;
 
 #[test]
 fn test_validate_magnet_accepts_valid_magnet_urls() {
-    assert!(validate_magnet("magnet:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367105b").is_ok());
+    assert!(
+        validate_magnet("magnet:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367105b").is_ok()
+    );
     assert!(validate_magnet(
         "magnet:?xt=urn:btih:d24b1f45l9a90a5f0d8a0f0c6b6d5e5f4a3b2c1d&dn=Anime+Title+01&tr=udp://tracker.example:6969"
     )
@@ -13,7 +15,9 @@ fn test_validate_magnet_accepts_valid_magnet_urls() {
 fn test_validate_magnet_rejects_wrong_scheme() {
     assert!(validate_magnet("http://example.com/magnet?xt=urn:btih:deadbeef").is_err());
     assert!(validate_magnet("xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367105b").is_err());
-    assert!(validate_magnet("MAGNET:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367105b").is_err());
+    assert!(
+        validate_magnet("MAGNET:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367105b").is_err()
+    );
     assert!(validate_magnet("").is_err());
 }
 

@@ -2,20 +2,22 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Anime4kPreset {
-    ModeAA,     // Mode A+A (HQ) - User default
-    ModeA,      // Mode A (HQ)
-    ModeB,      // Mode B (HQ)
-    ModeBB,     // Mode B+B (HQ)
-    ModeC,      // Mode C (HQ)
-    ModeCA,     // Mode C+A (HQ)
-    ModeFast,   // Fast APU (S / M)
+    ModeAA,   // Mode A+A (HQ) - User default
+    ModeA,    // Mode A (HQ)
+    ModeB,    // Mode B (HQ)
+    ModeBB,   // Mode B+B (HQ)
+    ModeC,    // Mode C (HQ)
+    ModeCA,   // Mode C+A (HQ)
+    ModeFast, // Fast APU (S / M)
     Off,
 }
 
-impl Anime4kPreset {
-    pub fn from_str(s: &str) -> Self {
+impl std::str::FromStr for Anime4kPreset {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let upper = s.to_uppercase();
-        if upper.contains("A+A") || upper.contains("AA") {
+        Ok(if upper.contains("A+A") || upper.contains("AA") {
             Anime4kPreset::ModeAA
         } else if upper.contains("B+B") || upper.contains("BB") {
             Anime4kPreset::ModeBB
@@ -31,9 +33,11 @@ impl Anime4kPreset {
             Anime4kPreset::ModeC
         } else {
             Anime4kPreset::Off
-        }
+        })
     }
+}
 
+impl Anime4kPreset {
     pub fn get_shader_filenames(&self) -> Vec<&'static str> {
         match self {
             Anime4kPreset::ModeAA => vec![

@@ -1,7 +1,7 @@
+use crate::db::models::{BookmarkItem, DownloadedEpisodeMeta, HistoryItem};
+use rusqlite::{params, Connection, Result};
 use std::path::Path;
 use std::sync::Mutex;
-use rusqlite::{params, Connection, Result};
-use crate::db::models::{BookmarkItem, DownloadedEpisodeMeta, HistoryItem};
 
 pub struct Database {
     conn: Mutex<Connection>,
@@ -28,10 +28,7 @@ impl Database {
 
     fn lock_conn(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
         self.conn.lock().map_err(|e| {
-            rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                e.to_string(),
-            )))
+            rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::other(e.to_string())))
         })
     }
 
@@ -150,7 +147,10 @@ impl Database {
 
     pub fn delete_bookmark(&self, release_id: i64) -> Result<()> {
         let conn = self.lock_conn()?;
-        conn.execute("DELETE FROM bookmarks WHERE release_id = ?1", params![release_id])?;
+        conn.execute(
+            "DELETE FROM bookmarks WHERE release_id = ?1",
+            params![release_id],
+        )?;
         Ok(())
     }
 
@@ -250,7 +250,10 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_downloaded_episode(&self, episode_id: &str) -> Result<Option<DownloadedEpisodeMeta>> {
+    pub fn get_downloaded_episode(
+        &self,
+        episode_id: &str,
+    ) -> Result<Option<DownloadedEpisodeMeta>> {
         let conn = self.lock_conn()?;
         let mut stmt = conn.prepare(
             r#"SELECT episode_id, release_id, episode_ordinal, file_path, file_size, quality, opening_start, opening_stop, ending_start, ending_stop, download_status 
@@ -306,7 +309,10 @@ impl Database {
 
     pub fn delete_downloaded_episode(&self, episode_id: &str) -> Result<()> {
         let conn = self.lock_conn()?;
-        conn.execute("DELETE FROM downloaded_episodes WHERE episode_id = ?1", params![episode_id])?;
+        conn.execute(
+            "DELETE FROM downloaded_episodes WHERE episode_id = ?1",
+            params![episode_id],
+        )?;
         Ok(())
     }
 }

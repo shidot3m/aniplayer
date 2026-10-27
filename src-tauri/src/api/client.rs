@@ -1,6 +1,6 @@
+use crate::api::models::*;
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
 use reqwest::Client;
-use crate::api::models::*;
 
 pub struct ApiConfig {
     pub base_url: String,
@@ -47,26 +47,55 @@ impl AnilibriaClient {
 
     pub async fn get_status(&self) -> Result<ApiStatus, String> {
         let url = format!("{}/app/status", self.config.base_url);
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
         resp.json::<ApiStatus>().await.map_err(|e| e.to_string())
     }
 
     pub async fn get_latest_releases(&self, limit: u32) -> Result<Vec<ReleasePreview>, String> {
-        let url = format!("{}/anime/releases/latest?limit={}", self.config.base_url, limit);
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        resp.json::<Vec<ReleasePreview>>().await.map_err(|e| e.to_string())
+        let url = format!(
+            "{}/anime/releases/latest?limit={}",
+            self.config.base_url, limit
+        );
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        resp.json::<Vec<ReleasePreview>>()
+            .await
+            .map_err(|e| e.to_string())
     }
 
     pub async fn get_schedule_week(&self) -> Result<serde_json::Value, String> {
         let url = format!("{}/anime/schedule/week", self.config.base_url);
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        resp.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        resp.json::<serde_json::Value>()
+            .await
+            .map_err(|e| e.to_string())
     }
 
     pub async fn get_genres(&self) -> Result<Vec<GenreItem>, String> {
         let url = format!("{}/anime/genres", self.config.base_url);
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        resp.json::<Vec<GenreItem>>().await.map_err(|e| e.to_string())
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        resp.json::<Vec<GenreItem>>()
+            .await
+            .map_err(|e| e.to_string())
     }
 
     pub async fn get_genre_releases(
@@ -81,7 +110,12 @@ impl AnilibriaClient {
             "{}/anime/genres/{}/releases?page={}&limit={}",
             self.config.base_url, genre_id, page, limit
         );
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
         let result = resp
             .json::<GenreReleasesResponse>()
             .await
@@ -102,26 +136,67 @@ impl AnilibriaClient {
 
     pub async fn get_release(&self, id_or_alias: &str) -> Result<ReleaseDetails, String> {
         let url = format!("{}/anime/releases/{}", self.config.base_url, id_or_alias);
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        resp.json::<ReleaseDetails>().await.map_err(|e| e.to_string())
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        resp.json::<ReleaseDetails>()
+            .await
+            .map_err(|e| e.to_string())
     }
 
     pub async fn get_release_torrents(&self, release_id: i64) -> Result<Vec<TorrentItem>, String> {
-        let url = format!("{}/anime/torrents/release/{}", self.config.base_url, release_id);
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        resp.json::<Vec<TorrentItem>>().await.map_err(|e| e.to_string())
+        let url = format!(
+            "{}/anime/torrents/release/{}",
+            self.config.base_url, release_id
+        );
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        resp.json::<Vec<TorrentItem>>()
+            .await
+            .map_err(|e| e.to_string())
     }
 
-    pub async fn get_release_franchises(&self, release_id: i64) -> Result<Vec<FranchiseItem>, String> {
-        let url = format!("{}/anime/franchises/release/{}", self.config.base_url, release_id);
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        resp.json::<Vec<FranchiseItem>>().await.map_err(|e| e.to_string())
+    pub async fn get_release_franchises(
+        &self,
+        release_id: i64,
+    ) -> Result<Vec<FranchiseItem>, String> {
+        let url = format!(
+            "{}/anime/franchises/release/{}",
+            self.config.base_url, release_id
+        );
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        resp.json::<Vec<FranchiseItem>>()
+            .await
+            .map_err(|e| e.to_string())
     }
 
     pub async fn search_releases(&self, query: &str) -> Result<Vec<ReleasePreview>, String> {
-        let url = format!("{}/app/search/releases?query={}", self.config.base_url, urlencoding_encode(query));
-        let resp = self.client.get(&url).send().await.map_err(|e| e.to_string())?;
-        resp.json::<Vec<ReleasePreview>>().await.map_err(|e| e.to_string())
+        let url = format!(
+            "{}/app/search/releases?query={}",
+            self.config.base_url,
+            urlencoding_encode(query)
+        );
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        resp.json::<Vec<ReleasePreview>>()
+            .await
+            .map_err(|e| e.to_string())
     }
 }
 

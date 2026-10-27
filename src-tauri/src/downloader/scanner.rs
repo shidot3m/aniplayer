@@ -1,13 +1,17 @@
-use std::fs;
-use std::path::Path;
-use regex::Regex;
 use crate::db::models::DownloadedEpisodeMeta;
 use crate::db::Database;
+use regex::Regex;
+use std::fs;
+use std::path::Path;
 
 /// Extracts the episode ordinal from a video filename
 pub fn extract_episode_ordinal(filename: &str) -> Option<f64> {
     let lower = filename.to_lowercase();
-    if !lower.ends_with(".mkv") && !lower.ends_with(".mp4") && !lower.ends_with(".avi") && !lower.ends_with(".webm") {
+    if !lower.ends_with(".mkv")
+        && !lower.ends_with(".mp4")
+        && !lower.ends_with(".avi")
+        && !lower.ends_with(".webm")
+    {
         return None;
     }
 
@@ -75,7 +79,9 @@ pub fn scan_and_index_torrent_files(
                             "1080p".to_string()
                         } else if filename.to_lowercase().contains("720") {
                             "720p".to_string()
-                        } else if filename.to_lowercase().contains("hevc") || filename.to_lowercase().contains("x265") {
+                        } else if filename.to_lowercase().contains("hevc")
+                            || filename.to_lowercase().contains("x265")
+                        {
                             "HEVC".to_string()
                         } else {
                             "1080p".to_string()

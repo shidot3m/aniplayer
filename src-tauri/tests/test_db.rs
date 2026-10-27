@@ -4,21 +4,26 @@ use aniplayer_lib::db::repository::Database;
 #[test]
 fn test_database_settings_crud() {
     let db = Database::init_in_memory().expect("Failed to init in-memory db");
-    
+
     // Save settings
-    db.save_setting("volume", "85").expect("Save setting failed");
-    db.save_setting("anime4k_preset", "A+A").expect("Save setting failed");
-    
+    db.save_setting("volume", "85")
+        .expect("Save setting failed");
+    db.save_setting("anime4k_preset", "A+A")
+        .expect("Save setting failed");
+
     // Retrieve settings
     assert_eq!(db.get_setting("volume").unwrap(), Some("85".to_string()));
-    assert_eq!(db.get_setting("anime4k_preset").unwrap(), Some("A+A".to_string()));
+    assert_eq!(
+        db.get_setting("anime4k_preset").unwrap(),
+        Some("A+A".to_string())
+    );
     assert_eq!(db.get_setting("non_existent").unwrap(), None);
 }
 
 #[test]
 fn test_database_bookmarks_crud() {
     let db = Database::init_in_memory().expect("Failed to init in-memory db");
-    
+
     let bookmark1 = BookmarkItem {
         release_id: 10239,
         category: "WATCHING".to_string(),
@@ -40,7 +45,9 @@ fn test_database_bookmarks_crud() {
     assert_eq!(all.len(), 2);
 
     // Filter by category
-    let watching = db.get_bookmarks(Some("WATCHING".to_string())).expect("Get watching failed");
+    let watching = db
+        .get_bookmarks(Some("WATCHING".to_string()))
+        .expect("Get watching failed");
     assert_eq!(watching.len(), 1);
     assert_eq!(watching[0].release_id, 10239);
 
@@ -53,7 +60,7 @@ fn test_database_bookmarks_crud() {
 #[test]
 fn test_database_history_and_continue_watching() {
     let db = Database::init_in_memory().expect("Failed to init in-memory db");
-    
+
     let hist1 = HistoryItem {
         release_id: 10239,
         episode_id: "ep-1".to_string(),
@@ -74,7 +81,7 @@ fn test_database_history_and_continue_watching() {
 #[test]
 fn test_database_downloaded_episodes_with_skip_codes() {
     let db = Database::init_in_memory().expect("Failed to init in-memory db");
-    
+
     let dl = DownloadedEpisodeMeta {
         episode_id: "ep-1".to_string(),
         release_id: 10239,
@@ -90,7 +97,10 @@ fn test_database_downloaded_episodes_with_skip_codes() {
     };
     db.save_downloaded_episode(&dl).expect("Save dl failed");
 
-    let retrieved = db.get_downloaded_episode("ep-1").expect("Get dl failed").unwrap();
+    let retrieved = db
+        .get_downloaded_episode("ep-1")
+        .expect("Get dl failed")
+        .unwrap();
     assert_eq!(retrieved.file_path, "downloads/10239/1.mp4");
     assert_eq!(retrieved.opening_start, Some(23.0));
     assert_eq!(retrieved.ending_stop, Some(1511.0));

@@ -15,15 +15,17 @@ export function useReleaseDownloader(release: Release) {
         return;
       }
       await invoke("downloader_start_episode", {
-        episodeId: ep.id,
         releaseId: release.id,
-        ordinal: ep.ordinal,
-        m3u8Url: hlsUrl,
-        quality: "1080p",
-        opStart: ep.opening?.start ?? null,
-        opStop: ep.opening?.stop ?? null,
-        edStart: ep.ending?.start ?? null,
-        edStop: ep.ending?.stop ?? null,
+        episode: {
+          episodeId: ep.id,
+          ordinal: ep.ordinal,
+          m3u8Url: hlsUrl,
+          quality: "1080p",
+          opStart: ep.opening?.start ?? null,
+          opStop: ep.opening?.stop ?? null,
+          edStart: ep.ending?.start ?? null,
+          edStop: ep.ending?.stop ?? null,
+        },
       });
       alert(`Загрузка эпизода ${ep.ordinal} начата. Опенинг и эндинг сохранены.`);
     } catch (err) {

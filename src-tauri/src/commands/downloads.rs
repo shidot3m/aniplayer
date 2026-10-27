@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use tauri::State;
 
+use crate::downloader::hls::EpisodeDownloadSpec;
 use crate::downloader::TorrentDownloader;
 use crate::state::AppState;
 
@@ -28,34 +29,28 @@ pub struct DownloadEpisodeItem {
 pub(crate) async fn downloader_start_episode(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
-    episode_id: String,
     release_id: i64,
-    ordinal: f64,
-    m3u8_url: String,
-    quality: String,
-    op_start: Option<f64>,
-    op_stop: Option<f64>,
-    ed_start: Option<f64>,
-    ed_stop: Option<f64>,
+    episode: DownloadEpisodeItem,
 ) -> Result<String, String> {
     let downloader = state.downloader.clone();
     let app_dir = state.app_dir.clone();
+    let ordinal = episode.ordinal;
 
     tokio::spawn(async move {
+        let quality = episode.quality.unwrap_or_else(|| "1080p".to_string());
+        let spec = EpisodeDownloadSpec {
+            episode_id: &episode.episode_id,
+            release_id,
+            ordinal: episode.ordinal,
+            m3u8_url: &episode.m3u8_url,
+            quality: &quality,
+            op_start: episode.op_start,
+            op_stop: episode.op_stop,
+            ed_start: episode.ed_start,
+            ed_stop: episode.ed_stop,
+        };
         let _ = downloader
-            .download_episode(
-                &app_dir,
-                &episode_id,
-                release_id,
-                ordinal,
-                &m3u8_url,
-                &quality,
-                op_start,
-                op_stop,
-                ed_start,
-                ed_stop,
-                Some(app),
-            )
+            .download_episode(&app_dir, &spec, Some(app))
             .await;
     });
 
@@ -80,20 +75,19 @@ pub(crate) async fn downloader_start_release(
     tokio::spawn(async move {
         for ep in episodes {
             let quality = ep.quality.unwrap_or_else(|| "1080p".to_string());
+            let spec = EpisodeDownloadSpec {
+                episode_id: &ep.episode_id,
+                release_id,
+                ordinal: ep.ordinal,
+                m3u8_url: &ep.m3u8_url,
+                quality: &quality,
+                op_start: ep.op_start,
+                op_stop: ep.op_stop,
+                ed_start: ep.ed_start,
+                ed_stop: ep.ed_stop,
+            };
             let _ = downloader
-                .download_episode(
-                    &app_dir,
-                    &ep.episode_id,
-                    release_id,
-                    ep.ordinal,
-                    &ep.m3u8_url,
-                    &quality,
-                    ep.op_start,
-                    ep.op_stop,
-                    ep.ed_start,
-                    ep.ed_stop,
-                    Some(app.clone()),
-                )
+                .download_episode(&app_dir, &spec, Some(app.clone()))
                 .await;
         }
     });

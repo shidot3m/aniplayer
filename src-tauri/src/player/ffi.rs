@@ -27,9 +27,12 @@ impl Drop for MpvContext {
 type FnMpvCreate = unsafe extern "C" fn() -> *mut c_void;
 type FnMpvInitialize = unsafe extern "C" fn(ctx: *mut c_void) -> c_int;
 type FnMpvTerminateDestroy = unsafe extern "C" fn(ctx: *mut c_void);
-type FnMpvSetOptionString = unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char, data: *const c_char) -> c_int;
-type FnMpvSetPropertyString = unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char, data: *const c_char) -> c_int;
-type FnMpvGetPropertyString = unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char) -> *mut c_char;
+type FnMpvSetOptionString =
+    unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char, data: *const c_char) -> c_int;
+type FnMpvSetPropertyString =
+    unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char, data: *const c_char) -> c_int;
+type FnMpvGetPropertyString =
+    unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char) -> *mut c_char;
 type FnMpvFree = unsafe extern "C" fn(data: *mut c_void);
 type FnMpvCommandString = unsafe extern "C" fn(ctx: *mut c_void, args: *const c_char) -> c_int;
 type FnMpvClientApiVersion = unsafe extern "C" fn() -> c_ulong;
@@ -48,7 +51,10 @@ pub struct MpvFfi {
 
 impl MpvFfi {
     pub fn load(dll_path: &Path) -> Result<Self, String> {
-        let lib = unsafe { Library::new(dll_path).map_err(|e| format!("Failed to load {}: {}", dll_path.display(), e))? };
+        let lib = unsafe {
+            Library::new(dll_path)
+                .map_err(|e| format!("Failed to load {}: {}", dll_path.display(), e))?
+        };
         let lib = Arc::new(lib);
 
         unsafe {
@@ -78,9 +84,9 @@ impl MpvFfi {
             let mpv_free: Symbol<FnMpvFree> = lib
                 .get(b"mpv_free\0")
                 .map_err(|e| format!("Failed to resolve mpv_free: {}", e))?;
-            let mpv_command_string: Symbol<FnMpvCommandString> = lib
-                .get(b"mpv_command_string\0")
-                .map_err(|e| format!("Failed to resolve mpv_command_string: {}", e))?;
+            let mpv_command_string: Symbol<FnMpvCommandString> =
+                lib.get(b"mpv_command_string\0")
+                    .map_err(|e| format!("Failed to resolve mpv_command_string: {}", e))?;
 
             Ok(Self {
                 _lib: lib.clone(),
@@ -98,7 +104,8 @@ impl MpvFfi {
 
     pub fn create_context(self: &Arc<Self>) -> Result<Arc<MpvContext>, String> {
         let raw = unsafe { (self.mpv_create)() };
-        let handle = NonNull::new(raw).ok_or_else(|| "mpv_create returned null pointer".to_string())?;
+        let handle =
+            NonNull::new(raw).ok_or_else(|| "mpv_create returned null pointer".to_string())?;
         Ok(Arc::new(MpvContext {
             ffi: self.clone(),
             handle,
@@ -114,35 +121,61 @@ impl MpvFfi {
         }
     }
 
-    pub fn set_option_string(&self, ctx: &MpvContext, name: &str, data: &str) -> Result<(), String> {
+    pub fn set_option_string(
+        &self,
+        ctx: &MpvContext,
+        name: &str,
+        data: &str,
+    ) -> Result<(), String> {
         let c_name = CString::new(name).map_err(|e| e.to_string())?;
         let c_data = CString::new(data).map_err(|e| e.to_string())?;
-        let ret = unsafe { (self.mpv_set_option_string)(ctx.handle.as_ptr(), c_name.as_ptr(), c_data.as_ptr()) };
+        let ret = unsafe {
+            (self.mpv_set_option_string)(ctx.handle.as_ptr(), c_name.as_ptr(), c_data.as_ptr())
+        };
         if ret < 0 {
-            Err(format!("mpv_set_option_string({}, {}) error: {}", name, data, ret))
+            Err(format!(
+                "mpv_set_option_string({}, {}) error: {}",
+                name, data, ret
+            ))
         } else {
             Ok(())
         }
     }
 
-    pub fn set_property_string(&self, ctx: &MpvContext, name: &str, data: &str) -> Result<(), String> {
+    pub fn set_property_string(
+        &self,
+        ctx: &MpvContext,
+        name: &str,
+        data: &str,
+    ) -> Result<(), String> {
         let c_name = CString::new(name).map_err(|e| e.to_string())?;
         let c_data = CString::new(data).map_err(|e| e.to_string())?;
-        let ret = unsafe { (self.mpv_set_property_string)(ctx.handle.as_ptr(), c_name.as_ptr(), c_data.as_ptr()) };
+        let ret = unsafe {
+            (self.mpv_set_property_string)(ctx.handle.as_ptr(), c_name.as_ptr(), c_data.as_ptr())
+        };
         if ret < 0 {
-            Err(format!("mpv_set_property_string({}, {}) error: {}", name, data, ret))
+            Err(format!(
+                "mpv_set_property_string({}, {}) error: {}",
+                name, data, ret
+            ))
         } else {
             Ok(())
         }
     }
 
-    pub fn get_property_string(&self, ctx: &MpvContext, name: &str) -> Result<Option<String>, String> {
+    pub fn get_property_string(
+        &self,
+        ctx: &MpvContext,
+        name: &str,
+    ) -> Result<Option<String>, String> {
         let c_name = CString::new(name).map_err(|e| e.to_string())?;
         let ptr = unsafe { (self.mpv_get_property_string)(ctx.handle.as_ptr(), c_name.as_ptr()) };
         if ptr.is_null() {
             Ok(None)
         } else {
-            let s = unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned();
+            let s = unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned();
             unsafe { (self.mpv_free)(ptr as *mut c_void) };
             Ok(Some(s))
         }

@@ -1,15 +1,15 @@
+use crate::db::models::DownloadedEpisodeMeta;
+use crate::db::Database;
+use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
-use reqwest::Client;
-use serde::{Deserialize, Serialize};
 use tauri::Emitter;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
-use crate::db::models::DownloadedEpisodeMeta;
-use crate::db::Database;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,6 +23,19 @@ pub struct DownloadProgressEvent {
     pub percent: f64,
     pub status: String, // "DOWNLOADING", "COMPLETED", "FAILED", "CANCELLED"
     pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct EpisodeDownloadSpec<'a> {
+    pub episode_id: &'a str,
+    pub release_id: i64,
+    pub ordinal: f64,
+    pub m3u8_url: &'a str,
+    pub quality: &'a str,
+    pub op_start: Option<f64>,
+    pub op_stop: Option<f64>,
+    pub ed_start: Option<f64>,
+    pub ed_stop: Option<f64>,
 }
 
 pub struct HlsDownloader {
@@ -104,17 +117,20 @@ impl HlsDownloader {
     pub async fn download_episode(
         &self,
         base_dir: &Path,
-        episode_id: &str,
-        release_id: i64,
-        ordinal: f64,
-        m3u8_url: &str,
-        quality: &str,
-        op_start: Option<f64>,
-        op_stop: Option<f64>,
-        ed_start: Option<f64>,
-        ed_stop: Option<f64>,
+        spec: &EpisodeDownloadSpec<'_>,
         app: Option<tauri::AppHandle>,
     ) -> Result<PathBuf, String> {
+        let EpisodeDownloadSpec {
+            episode_id,
+            release_id,
+            ordinal,
+            m3u8_url,
+            quality,
+            op_start,
+            op_stop,
+            ed_start,
+            ed_stop,
+        } = *spec;
         let cancel_flag = Arc::new(AtomicBool::new(false));
         {
             let mut tasks = self.active_tasks.lock().unwrap_or_else(|e| e.into_inner());
@@ -126,7 +142,9 @@ impl HlsDownloader {
         }
 
         let rel_folder = base_dir.join("downloads").join(release_id.to_string());
-        fs::create_dir_all(&rel_folder).await.map_err(|e| e.to_string())?;
+        fs::create_dir_all(&rel_folder)
+            .await
+            .map_err(|e| e.to_string())?;
 
         let file_name = format!("{}.mp4", ordinal);
         let dest_path = rel_folder.join(&file_name);
@@ -167,7 +185,7 @@ impl HlsDownloader {
         }
 
         if cancel_flag.load(Ordering::Relaxed) {
-            self.cleanup_cancelled(episode_id, &dest_path, release_id, ordinal, &app).await;
+            self.cleanup_cancelled(spec, &dest_path, &app).await;
             return Err("Download cancelled by user".to_string());
         }
 
@@ -176,9 +194,7 @@ impl HlsDownloader {
             Ok(r) => r,
             Err(e) => {
                 let err_msg = format!("Failed to fetch m3u8 playlist: {}", e);
-                self.record_failure(episode_id, release_id, ordinal, &dest_str, quality, op_start, op_stop, ed_start, ed_stop, &err_msg, &app);
-                self.remove_task(episode_id);
-                return Err(err_msg);
+                return Err(self.fail(spec, &dest_str, err_msg, &app));
             }
         };
 
@@ -186,14 +202,12 @@ impl HlsDownloader {
             Ok(t) => t,
             Err(e) => {
                 let err_msg = format!("Failed to read m3u8 body: {}", e);
-                self.record_failure(episode_id, release_id, ordinal, &dest_str, quality, op_start, op_stop, ed_start, ed_stop, &err_msg, &app);
-                self.remove_task(episode_id);
-                return Err(err_msg);
+                return Err(self.fail(spec, &dest_str, err_msg, &app));
             }
         };
 
         if cancel_flag.load(Ordering::Relaxed) {
-            self.cleanup_cancelled(episode_id, &dest_path, release_id, ordinal, &app).await;
+            self.cleanup_cancelled(spec, &dest_path, &app).await;
             return Err("Download cancelled by user".to_string());
         }
 
@@ -219,9 +233,7 @@ impl HlsDownloader {
 
         if segment_urls.is_empty() {
             let err_msg = "No media segments found in m3u8 playlist".to_string();
-            self.record_failure(episode_id, release_id, ordinal, &dest_str, quality, op_start, op_stop, ed_start, ed_stop, &err_msg, &app);
-            self.remove_task(episode_id);
-            return Err(err_msg);
+            return Err(self.fail(spec, &dest_str, err_msg, &app));
         }
 
         let total_segments = segment_urls.len();
@@ -231,9 +243,7 @@ impl HlsDownloader {
             Ok(f) => f,
             Err(e) => {
                 let err_msg = format!("Failed to create destination file: {}", e);
-                self.record_failure(episode_id, release_id, ordinal, &dest_str, quality, op_start, op_stop, ed_start, ed_stop, &err_msg, &app);
-                self.remove_task(episode_id);
-                return Err(err_msg);
+                return Err(self.fail(spec, &dest_str, err_msg, &app));
             }
         };
 
@@ -242,7 +252,7 @@ impl HlsDownloader {
         for (i, seg_url) in segment_urls.into_iter().enumerate() {
             if cancel_flag.load(Ordering::Relaxed) {
                 drop(outfile);
-                self.cleanup_cancelled(episode_id, &dest_path, release_id, ordinal, &app).await;
+                self.cleanup_cancelled(spec, &dest_path, &app).await;
                 return Err("Download cancelled by user".to_string());
             }
 
@@ -250,9 +260,7 @@ impl HlsDownloader {
                 Ok(r) => r,
                 Err(e) => {
                     let err_msg = format!("Segment {} network request error: {}", i, e);
-                    self.record_failure(episode_id, release_id, ordinal, &dest_str, quality, op_start, op_stop, ed_start, ed_stop, &err_msg, &app);
-                    self.remove_task(episode_id);
-                    return Err(err_msg);
+                    return Err(self.fail(spec, &dest_str, err_msg, &app));
                 }
             };
 
@@ -260,24 +268,20 @@ impl HlsDownloader {
                 Ok(b) => b,
                 Err(e) => {
                     let err_msg = format!("Segment {} bytes read error: {}", i, e);
-                    self.record_failure(episode_id, release_id, ordinal, &dest_str, quality, op_start, op_stop, ed_start, ed_stop, &err_msg, &app);
-                    self.remove_task(episode_id);
-                    return Err(err_msg);
+                    return Err(self.fail(spec, &dest_str, err_msg, &app));
                 }
             };
 
             if cancel_flag.load(Ordering::Relaxed) {
                 drop(outfile);
-                self.cleanup_cancelled(episode_id, &dest_path, release_id, ordinal, &app).await;
+                self.cleanup_cancelled(spec, &dest_path, &app).await;
                 return Err("Download cancelled by user".to_string());
             }
 
             total_bytes += bytes.len() as i64;
             if let Err(e) = outfile.write_all(&bytes).await {
                 let err_msg = format!("File write error: {}", e);
-                self.record_failure(episode_id, release_id, ordinal, &dest_str, quality, op_start, op_stop, ed_start, ed_stop, &err_msg, &app);
-                self.remove_task(episode_id);
-                return Err(err_msg);
+                return Err(self.fail(spec, &dest_str, err_msg, &app));
             }
 
             let downloaded = i + 1;
@@ -294,7 +298,11 @@ impl HlsDownloader {
                         downloaded_segments: downloaded,
                         total_bytes,
                         percent,
-                        status: if downloaded == total_segments { "COMPLETED".to_string() } else { "DOWNLOADING".to_string() },
+                        status: if downloaded == total_segments {
+                            "COMPLETED".to_string()
+                        } else {
+                            "DOWNLOADING".to_string()
+                        },
                         error: None,
                     },
                 );
@@ -325,23 +333,21 @@ impl HlsDownloader {
 
     async fn cleanup_cancelled(
         &self,
-        episode_id: &str,
+        spec: &EpisodeDownloadSpec<'_>,
         dest_path: &Path,
-        release_id: i64,
-        ordinal: f64,
         app: &Option<tauri::AppHandle>,
     ) {
         let _ = fs::remove_file(dest_path).await;
-        let _ = self.db.delete_downloaded_episode(episode_id);
-        self.remove_task(episode_id);
+        let _ = self.db.delete_downloaded_episode(spec.episode_id);
+        self.remove_task(spec.episode_id);
 
         if let Some(ref a) = app {
             let _ = a.emit(
                 "download-progress",
                 DownloadProgressEvent {
-                    episode_id: episode_id.to_string(),
-                    release_id,
-                    episode_ordinal: ordinal,
+                    episode_id: spec.episode_id.to_string(),
+                    release_id: spec.release_id,
+                    episode_ordinal: spec.ordinal,
                     total_segments: 0,
                     downloaded_segments: 0,
                     total_bytes: 0,
@@ -358,32 +364,36 @@ impl HlsDownloader {
         tasks.remove(episode_id);
     }
 
-    #[allow(clippy::too_many_arguments)]
+    fn fail(
+        &self,
+        spec: &EpisodeDownloadSpec<'_>,
+        file_path: &str,
+        error_msg: String,
+        app: &Option<tauri::AppHandle>,
+    ) -> String {
+        self.record_failure(spec, file_path, &error_msg, app);
+        self.remove_task(spec.episode_id);
+        error_msg
+    }
+
     fn record_failure(
         &self,
-        episode_id: &str,
-        release_id: i64,
-        ordinal: f64,
+        spec: &EpisodeDownloadSpec<'_>,
         file_path: &str,
-        quality: &str,
-        op_start: Option<f64>,
-        op_stop: Option<f64>,
-        ed_start: Option<f64>,
-        ed_stop: Option<f64>,
         error_msg: &str,
         app: &Option<tauri::AppHandle>,
     ) {
         let failed_meta = DownloadedEpisodeMeta {
-            episode_id: episode_id.to_string(),
-            release_id,
-            episode_ordinal: ordinal,
+            episode_id: spec.episode_id.to_string(),
+            release_id: spec.release_id,
+            episode_ordinal: spec.ordinal,
             file_path: file_path.to_string(),
             file_size: 0,
-            quality: quality.to_string(),
-            opening_start: op_start,
-            opening_stop: op_stop,
-            ending_start: ed_start,
-            ending_stop: ed_stop,
+            quality: spec.quality.to_string(),
+            opening_start: spec.op_start,
+            opening_stop: spec.op_stop,
+            ending_start: spec.ed_start,
+            ending_stop: spec.ed_stop,
             download_status: "FAILED".to_string(),
         };
         let _ = self.db.save_downloaded_episode(&failed_meta);
@@ -392,9 +402,9 @@ impl HlsDownloader {
             let _ = a.emit(
                 "download-progress",
                 DownloadProgressEvent {
-                    episode_id: episode_id.to_string(),
-                    release_id,
-                    episode_ordinal: ordinal,
+                    episode_id: spec.episode_id.to_string(),
+                    release_id: spec.release_id,
+                    episode_ordinal: spec.ordinal,
                     total_segments: 0,
                     downloaded_segments: 0,
                     total_bytes: 0,
