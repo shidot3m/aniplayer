@@ -4,7 +4,7 @@
 - **Prefer the latest stable versions.** Use current releases of dependencies, runtimes, and CI actions instead of stale pinned majors. Outdated versions are technical debt: upgrade them as part of the work that touches them, not in a later cleanup. Confirm the current release against official sources before bumping.
 - **Verify current documentation first.** Before implementing or changing a dependency, check the current version, API, and deprecations against official docs or primary sources. Do not rely on memory for framework or library specifics.
 - **Use skills for all work.** Select the relevant installed skill before acting. If none fits, state that explicitly and proceed with the closest applicable practice.
-- **Commit and push immediately.** Once a change is complete and verified, commit it and push to the remote in the same turn. Do not leave finished work uncommitted and do not ask for permission to commit or push.
+- **Land finished work yourself.** Once a change is complete and verified, commit and push it in the same turn, without waiting for a go-ahead. When every acceptance criterion of the ticket is met with evidence — automated gates green and behavior confirmed, including any manual runtime pass the ticket asks for — land the branch on `master` (`git push origin HEAD:master`) and delete it on the spot. A rejected push means `master` moved: rebase onto it and retry; never force. While a criterion is still open, keep the branch pushed and name the open criterion.
 - **Keep aislop at 100/100.** Run `npx aislop scan` before committing; the score must be 100 out of 100. Fix every finding instead of ignoring it.
 - **Ответы в чате — кратко и на русском.** Все ответы пользователю в чате должны быть короткими и на русском языке.
 
