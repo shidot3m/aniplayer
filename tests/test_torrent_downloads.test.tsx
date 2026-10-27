@@ -1,8 +1,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useDownloadStore } from "@/features/downloads";
 import { TorrentsTab } from "@/features/release/ui/TorrentsTab";
 import type { TorrentItem } from "../src/shared/types";
-import { useDownloadStore } from "@/features/downloads";
 
 const mockTorrents: TorrentItem[] = [
   {

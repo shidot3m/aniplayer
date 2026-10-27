@@ -1,5 +1,6 @@
 import { Film, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { BookmarksView } from "@/features/bookmarks";
 import {
   AnimeCard,
   GenreSelector,
@@ -8,16 +9,11 @@ import {
   useCatalogStore,
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
-import {
-  DownloadFloatingWidget,
-  DownloadsView,
-  useDownloadStore,
-} from "@/features/downloads";
+import { DownloadFloatingWidget, DownloadsView, useDownloadStore } from "@/features/downloads";
 import { PlayerOverlay, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
-import { BookmarksView } from "./components/BookmarksView";
+import { SettingsDialog } from "@/features/settings";
 import { Header } from "./components/Header";
-import { SettingsDialog } from "./components/SettingsDialog";
 import type { Release } from "./shared/types";
 
 export default function App() {

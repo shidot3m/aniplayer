@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { usePlayerStore } from "@/features/player";
-import { SettingsDialog } from "../src/components/SettingsDialog";
+import { SettingsDialog } from "@/features/settings";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn().mockResolvedValue(null),

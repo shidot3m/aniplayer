@@ -99,4 +99,13 @@ describe("feature boundaries", () => {
     ].filter((p) => existsSync(join(SRC_DIR, p)));
     expect(strays, strays.join(", ")).toEqual([]);
   });
+
+  it("bookmarks and settings features own their UI", () => {
+    const strays = [
+      "components/BookmarksView.tsx",
+      "components/SettingsDialog.tsx",
+      "components/settings",
+    ].filter((p) => existsSync(join(SRC_DIR, p)));
+    expect(strays, strays.join(", ")).toEqual([]);
+  });
 });

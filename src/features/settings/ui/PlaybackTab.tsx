@@ -1,8 +1,8 @@
 import { Sparkles, Tv, Volume2 } from "lucide-react";
 import { ANIME4K_PRESETS, usePlayerStore } from "@/features/player";
-import type { VideoQuality } from "../../shared/types";
-import { Slider } from "../../shared/ui/slider";
-import { Switch } from "../../shared/ui/switch";
+import type { VideoQuality } from "@/shared/types";
+import { Slider } from "@/shared/ui/slider";
+import { Switch } from "@/shared/ui/switch";
 
 const QUALITY_OPTIONS: { id: VideoQuality; title: string; desc: string }[] = [
   { id: "1080p", title: "1080p (Full HD)", desc: "Максимальная четкость" },
