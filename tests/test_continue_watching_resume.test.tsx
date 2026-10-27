@@ -34,7 +34,7 @@ function baseHistoryItem(overrides: Partial<HistoryItem>): HistoryItem {
     release_id: mockRelease.id,
     episode_id: "ep-2",
     episode_ordinal: 2,
-    last_position: 76,
+    last_position: 0,
     duration: 2924,
     is_completed: false,
     updated_at: new Date().toISOString(),
