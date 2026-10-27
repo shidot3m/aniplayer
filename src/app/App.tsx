@@ -1,11 +1,10 @@
-import { Film, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BookmarksView } from "@/features/bookmarks";
 import {
-  AnimeCard,
   GenreSelector,
   GenreView,
   ReleaseSchedule,
+  ReleasesGrid,
   useCatalogStore,
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
@@ -13,8 +12,8 @@ import { DownloadFloatingWidget, DownloadsView, useDownloadStore } from "@/featu
 import { PlayerOverlay, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
 import { SettingsDialog } from "@/features/settings";
-import { Header } from "./components/Header";
-import type { Release } from "./shared/types";
+import type { Release } from "@/shared/types";
+import { Header } from "./Header";
 
 export default function App() {
   const {
@@ -114,34 +113,12 @@ export default function App() {
             {/* Continue Watching Section */}
             {!searchQuery && <ContinueWatching onSelectRelease={handleSelectRelease} />}
 
-            {/* Releases Header */}
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                <Film className="h-4 w-4 text-rose-500" />
-                {searchQuery ? `Результаты поиска (${searchResults.length})` : "Свежие релизы"}
-              </h2>
-            </div>
-
-            {/* Loading / Grid */}
-            {isSearching ? (
-              <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-              </div>
-            ) : displayedReleases.length > 0 ? (
-              <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 mb-12">
-                {displayedReleases.map((release) => (
-                  <AnimeCard
-                    key={release.id}
-                    release={release}
-                    onClick={() => handleSelectRelease(release)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-md text-center mb-12">
-                <p className="text-sm text-slate-400">Релизы не найдены</p>
-              </div>
-            )}
+            <ReleasesGrid
+              searchQuery={searchQuery}
+              isSearching={isSearching}
+              releases={displayedReleases}
+              onSelectRelease={handleSelectRelease}
+            />
 
             {/* Release Schedule Section (Section 5.3 of spec) */}
             {!searchQuery && latestReleases.length > 0 && (
