@@ -2,8 +2,7 @@ use std::path::PathBuf;
 
 use tauri::State;
 
-use crate::downloader::hls::EpisodeDownloadSpec;
-use crate::downloader::TorrentDownloader;
+use crate::downloader::{EpisodeDownloadSpec, TorrentDownloader};
 use crate::state::AppState;
 
 #[derive(Debug, serde::Deserialize)]
@@ -25,30 +24,39 @@ pub struct DownloadEpisodeItem {
     pub ed_stop: Option<f64>,
 }
 
+impl DownloadEpisodeItem {
+    fn as_spec<'a>(&'a self, release_id: i64, quality: &'a str) -> EpisodeDownloadSpec<'a> {
+        EpisodeDownloadSpec {
+            episode_id: &self.episode_id,
+            release_id,
+            ordinal: self.ordinal,
+            m3u8_url: &self.m3u8_url,
+            quality,
+            op_start: self.op_start,
+            op_stop: self.op_stop,
+            ed_start: self.ed_start,
+            ed_stop: self.ed_stop,
+        }
+    }
+}
+
 #[tauri::command]
 pub(crate) async fn downloader_start_episode(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
+    mut episode: DownloadEpisodeItem,
     release_id: i64,
-    episode: DownloadEpisodeItem,
 ) -> Result<String, String> {
+    let quality = episode
+        .quality
+        .take()
+        .ok_or_else(|| "quality is required to download an episode".to_string())?;
     let downloader = state.downloader.clone();
     let app_dir = state.app_dir.clone();
     let ordinal = episode.ordinal;
 
     tokio::spawn(async move {
-        let quality = episode.quality.unwrap_or_else(|| "1080p".to_string());
-        let spec = EpisodeDownloadSpec {
-            episode_id: &episode.episode_id,
-            release_id,
-            ordinal: episode.ordinal,
-            m3u8_url: &episode.m3u8_url,
-            quality: &quality,
-            op_start: episode.op_start,
-            op_stop: episode.op_stop,
-            ed_start: episode.ed_start,
-            ed_stop: episode.ed_stop,
-        };
+        let spec = episode.as_spec(release_id, &quality);
         let _ = downloader
             .download_episode(&app_dir, &spec, Some(app))
             .await;
@@ -73,19 +81,9 @@ pub(crate) async fn downloader_start_release(
     let app_dir = state.app_dir.clone();
 
     tokio::spawn(async move {
-        for ep in episodes {
-            let quality = ep.quality.unwrap_or_else(|| "1080p".to_string());
-            let spec = EpisodeDownloadSpec {
-                episode_id: &ep.episode_id,
-                release_id,
-                ordinal: ep.ordinal,
-                m3u8_url: &ep.m3u8_url,
-                quality: &quality,
-                op_start: ep.op_start,
-                op_stop: ep.op_stop,
-                ed_start: ep.ed_start,
-                ed_stop: ep.ed_stop,
-            };
+        for mut ep in episodes {
+            let quality = ep.quality.take().unwrap_or_else(|| "1080p".to_string());
+            let spec = ep.as_spec(release_id, &quality);
             let _ = downloader
                 .download_episode(&app_dir, &spec, Some(app.clone()))
                 .await;

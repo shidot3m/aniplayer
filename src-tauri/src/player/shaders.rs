@@ -13,11 +13,11 @@ pub enum Anime4kPreset {
 }
 
 impl std::str::FromStr for Anime4kPreset {
-    type Err = std::convert::Infallible;
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let upper = s.to_uppercase();
-        Ok(if upper.contains("A+A") || upper.contains("AA") {
+        let preset = if upper.contains("A+A") || upper.contains("AA") {
             Anime4kPreset::ModeAA
         } else if upper.contains("B+B") || upper.contains("BB") {
             Anime4kPreset::ModeBB
@@ -31,9 +31,12 @@ impl std::str::FromStr for Anime4kPreset {
             Anime4kPreset::ModeB
         } else if upper.contains("MODE C") || upper == "C" {
             Anime4kPreset::ModeC
-        } else {
+        } else if upper == "OFF" {
             Anime4kPreset::Off
-        })
+        } else {
+            return Err(format!("Unknown Anime4K preset: {s}"));
+        };
+        Ok(preset)
     }
 }
 

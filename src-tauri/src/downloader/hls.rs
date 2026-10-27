@@ -25,6 +25,7 @@ pub struct DownloadProgressEvent {
     pub error: Option<String>,
 }
 
+/// Episode metadata required to download a single stream.
 #[derive(Debug, Clone, Copy)]
 pub struct EpisodeDownloadSpec<'a> {
     pub episode_id: &'a str,
@@ -194,7 +195,7 @@ impl HlsDownloader {
             Ok(r) => r,
             Err(e) => {
                 let err_msg = format!("Failed to fetch m3u8 playlist: {}", e);
-                return Err(self.fail(spec, &dest_str, err_msg, &app));
+                return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
             }
         };
 
@@ -202,7 +203,7 @@ impl HlsDownloader {
             Ok(t) => t,
             Err(e) => {
                 let err_msg = format!("Failed to read m3u8 body: {}", e);
-                return Err(self.fail(spec, &dest_str, err_msg, &app));
+                return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
             }
         };
 
@@ -233,7 +234,7 @@ impl HlsDownloader {
 
         if segment_urls.is_empty() {
             let err_msg = "No media segments found in m3u8 playlist".to_string();
-            return Err(self.fail(spec, &dest_str, err_msg, &app));
+            return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
         }
 
         let total_segments = segment_urls.len();
@@ -243,7 +244,7 @@ impl HlsDownloader {
             Ok(f) => f,
             Err(e) => {
                 let err_msg = format!("Failed to create destination file: {}", e);
-                return Err(self.fail(spec, &dest_str, err_msg, &app));
+                return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
             }
         };
 
@@ -260,7 +261,7 @@ impl HlsDownloader {
                 Ok(r) => r,
                 Err(e) => {
                     let err_msg = format!("Segment {} network request error: {}", i, e);
-                    return Err(self.fail(spec, &dest_str, err_msg, &app));
+                    return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
                 }
             };
 
@@ -268,7 +269,7 @@ impl HlsDownloader {
                 Ok(b) => b,
                 Err(e) => {
                     let err_msg = format!("Segment {} bytes read error: {}", i, e);
-                    return Err(self.fail(spec, &dest_str, err_msg, &app));
+                    return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
                 }
             };
 
@@ -281,7 +282,7 @@ impl HlsDownloader {
             total_bytes += bytes.len() as i64;
             if let Err(e) = outfile.write_all(&bytes).await {
                 let err_msg = format!("File write error: {}", e);
-                return Err(self.fail(spec, &dest_str, err_msg, &app));
+                return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
             }
 
             let downloaded = i + 1;
@@ -364,25 +365,13 @@ impl HlsDownloader {
         tasks.remove(episode_id);
     }
 
-    fn fail(
+    fn record_failure_and_stop(
         &self,
         spec: &EpisodeDownloadSpec<'_>,
         file_path: &str,
         error_msg: String,
         app: &Option<tauri::AppHandle>,
     ) -> String {
-        self.record_failure(spec, file_path, &error_msg, app);
-        self.remove_task(spec.episode_id);
-        error_msg
-    }
-
-    fn record_failure(
-        &self,
-        spec: &EpisodeDownloadSpec<'_>,
-        file_path: &str,
-        error_msg: &str,
-        app: &Option<tauri::AppHandle>,
-    ) {
         let failed_meta = DownloadedEpisodeMeta {
             episode_id: spec.episode_id.to_string(),
             release_id: spec.release_id,
@@ -410,9 +399,12 @@ impl HlsDownloader {
                     total_bytes: 0,
                     percent: 0.0,
                     status: "FAILED".to_string(),
-                    error: Some(error_msg.to_string()),
+                    error: Some(error_msg.clone()),
                 },
             );
         }
+
+        self.remove_task(spec.episode_id);
+        error_msg
     }
 }
