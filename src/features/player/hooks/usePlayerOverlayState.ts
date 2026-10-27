@@ -1,26 +1,40 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+function isTauriWindow() {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
 export function useAutoHide(isPlaying: boolean, isDrawerOpen: boolean) {
   const [isVisible, setIsVisible] = useState(true);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+
+  const writeVisible = useCallback((value: boolean) => {
+    if (isMountedRef.current) setIsVisible(value);
+  }, []);
 
   const scheduleAutoHide = useCallback(() => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     if (!isDrawerOpen && isPlaying) {
-      hideTimerRef.current = setTimeout(() => setIsVisible(false), 2500);
+      hideTimerRef.current = setTimeout(() => writeVisible(false), 2500);
     }
-  }, [isDrawerOpen, isPlaying]);
+  }, [isDrawerOpen, isPlaying, writeVisible]);
 
   const handleUserActivity = useCallback(() => {
-    setIsVisible(true);
+    writeVisible(true);
     scheduleAutoHide();
-  }, [scheduleAutoHide]);
+  }, [scheduleAutoHide, writeVisible]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     scheduleAutoHide();
     return () => {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      isMountedRef.current = false;
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
     };
   }, [scheduleAutoHide]);
 
@@ -36,83 +50,99 @@ export function useAutoHide(isPlaying: boolean, isDrawerOpen: boolean) {
   return { isVisible, handleUserActivity };
 }
 
+function fullscreenStatus(): Promise<boolean> {
+  if (isTauriWindow()) {
+    return invoke<boolean>("app_is_fullscreen").then(Boolean);
+  }
+  if (typeof document !== "undefined") {
+    return Promise.resolve(Boolean(document.fullscreenElement));
+  }
+  return Promise.resolve(false);
+}
+
+async function runExitFullscreen() {
+  try {
+    if (isTauriWindow()) {
+      await invoke("app_set_fullscreen", { fullscreen: false });
+    }
+  } catch {
+    /* ignore */
+  }
+
+  try {
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+async function setWindowFullscreen(next: boolean) {
+  try {
+    if (isTauriWindow()) {
+      await invoke("app_set_fullscreen", { fullscreen: next });
+      return;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  try {
+    if (next) {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 export function useFullscreen() {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isMountedRef = useRef(true);
+  const stateRef = useRef(false);
+
+  const apply = useCallback((value: boolean) => {
+    stateRef.current = value;
+    if (isMountedRef.current) setIsFullscreen(value);
+  }, []);
+
+  const sync = useCallback(() => {
+    fullscreenStatus()
+      .then((v) => apply(v))
+      .catch(() => {
+        /* keep last known state */
+      });
+  }, [apply]);
 
   useEffect(() => {
-    let isMounted = true;
-    const checkStatus = async () => {
-      try {
-        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-          const full = await invoke<boolean>("app_is_fullscreen");
-          if (isMounted) setIsFullscreen(full);
-        } else if (typeof document !== "undefined") {
-          if (isMounted) setIsFullscreen(Boolean(document.fullscreenElement));
-        }
-      } catch {
-        if (typeof document !== "undefined" && isMounted) {
-          setIsFullscreen(Boolean(document.fullscreenElement));
-        }
-      }
-    };
-
-    checkStatus();
-
-    const handleDocChange = () => {
-      if (isMounted) setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener("fullscreenchange", handleDocChange);
-
+    isMountedRef.current = true;
+    sync();
+    document.addEventListener("fullscreenchange", sync);
     return () => {
-      isMounted = false;
-      document.removeEventListener("fullscreenchange", handleDocChange);
+      isMountedRef.current = false;
+      document.removeEventListener("fullscreenchange", sync);
     };
+  }, [sync]);
+
+  const exitFullscreenSideEffect = useCallback(async () => {
+    await runExitFullscreen();
   }, []);
 
   const exitFullscreen = useCallback(async () => {
-    try {
-      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-        await invoke("app_set_fullscreen", { fullscreen: false });
-      }
-    } catch {
-      /* ignore */
-    }
-
-    try {
-      if (typeof document !== "undefined" && document.fullscreenElement) {
-        await document.exitFullscreen().catch(() => {});
-      }
-    } catch {
-      /* ignore */
-    }
-
-    setIsFullscreen(false);
-  }, []);
+    apply(false);
+    await runExitFullscreen();
+  }, [apply]);
 
   const toggleFullscreen = useCallback(async () => {
-    try {
-      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-        const current = await invoke<boolean>("app_is_fullscreen");
-        await invoke("app_set_fullscreen", { fullscreen: !current });
-        setIsFullscreen(!current);
-        return;
-      }
-    } catch {
-      /* ignore */
-    }
+    const next = !stateRef.current;
+    apply(next);
+    await setWindowFullscreen(next);
+  }, [apply]);
 
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen().catch(() => {});
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen().catch(() => {});
-        setIsFullscreen(false);
-      }
-    } catch {
-      setIsFullscreen((prev) => !prev);
-    }
-  }, []);
-
-  return { isFullscreen, toggleFullscreen, exitFullscreen };
+  return { isFullscreen, toggleFullscreen, exitFullscreen, exitFullscreenSideEffect };
 }

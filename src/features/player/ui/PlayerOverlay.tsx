@@ -23,7 +23,8 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { isVisible, handleUserActivity } = useAutoHide(playerStore.isPlaying, isDrawerOpen);
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreen();
+  const { isFullscreen, toggleFullscreen, exitFullscreen, exitFullscreenSideEffect } =
+    useFullscreen();
 
   const handleBack = useCallback(async () => {
     await exitFullscreen();
@@ -37,9 +38,9 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
 
   useEffect(() => {
     return () => {
-      exitFullscreen();
+      exitFullscreenSideEffect();
     };
-  }, [exitFullscreen]);
+  }, [exitFullscreenSideEffect]);
 
   const {
     videoRef,

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PlayerOverlay } from "@/features/player/ui/PlayerOverlay";
 import type { EpisodeItem, Release } from "../src/shared/types";
@@ -9,7 +9,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 describe("PlayerOverlay Layout", () => {
-  it("places episode number above seekbar and controls in proper positions", () => {
+  it("places episode number above seekbar and controls in proper positions", async () => {
     const mockRelease: Release = {
       id: 10239,
       name: { main: "Адский режим", english: "Hell Mode", alternative: "ヘルモード" },
@@ -38,6 +38,9 @@ describe("PlayerOverlay Layout", () => {
         onGoToRelease={() => {}}
       />,
     );
+
+    // let the mount-time fullscreen status check settle inside act
+    await act(async () => {});
 
     // Check back arrow top-left
     expect(screen.getByTestId("player-back-btn")).toBeDefined();
