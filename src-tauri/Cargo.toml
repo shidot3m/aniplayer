@@ -24,7 +24,7 @@ libloading = "0.8"
 librqbit = "9.0.1"
 regex = "1.13.1"
 tauri-plugin-opener = "2"
-rfd = "0.16.1"
+rfd = { version = "0.16.1", default-features = false }
 
 [dev-dependencies]
 tauri-utils = "2"
