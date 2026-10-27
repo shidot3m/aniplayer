@@ -1,12 +1,12 @@
+use crate::db::Database;
+use crate::downloader::scanner::scan_and_index_torrent_files;
+use librqbit::{AddTorrent, AddTorrentOptions, Session, SessionOptions};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use librqbit::{AddTorrent, AddTorrentOptions, Session, SessionOptions};
-use serde::{Deserialize, Serialize};
 use tauri::Emitter;
 use tokio::task::JoinHandle;
-use crate::db::Database;
-use crate::downloader::scanner::scan_and_index_torrent_files;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TorrentDownloadProgress {
@@ -27,17 +27,31 @@ pub struct TorrentEngine {
     active_tasks: Arc<Mutex<HashMap<i64, JoinHandle<()>>>>,
 }
 
-impl TorrentEngine {
-    pub async fn new(base_dir: PathBuf, db: Arc<Database>) -> Result<Self, String> {
-        let torrents_dir = super::torrent::torrents_root(&base_dir);
-        let _ = tokio::fs::create_dir_all(&torrents_dir).await;
+/// Why the torrent engine could not be brought up, classified so startup can
+/// turn each variant into its own actionable message.
+#[derive(Debug)]
+pub enum EngineInitError {
+    /// The folder the engine stores downloads in is unusable.
+    Folder { path: PathBuf, reason: String },
+    /// The librqbit session (network listeners, DHT) failed to initialize.
+    Session { reason: String },
+}
 
-        let session = Session::new_with_opts(
-            torrents_dir.clone(),
-            SessionOptions::default(),
-        )
-        .await
-        .map_err(|e| format!("Failed to create torrent session: {}", e))?;
+impl TorrentEngine {
+    pub async fn try_new(base_dir: PathBuf, db: Arc<Database>) -> Result<Self, EngineInitError> {
+        let torrents_dir = super::torrent::torrents_root(&base_dir);
+        tokio::fs::create_dir_all(&torrents_dir)
+            .await
+            .map_err(|e| EngineInitError::Folder {
+                path: torrents_dir.clone(),
+                reason: e.to_string(),
+            })?;
+
+        let session = Session::new_with_opts(torrents_dir.clone(), SessionOptions::default())
+            .await
+            .map_err(|e| EngineInitError::Session {
+                reason: format!("failed to create torrent session: {e}"),
+            })?;
 
         Ok(Self {
             session,
@@ -157,14 +171,24 @@ impl TorrentEngine {
             tasks.remove(&torrent_id);
         });
 
-        let mut tasks = self.active_tasks.lock().expect("active_tasks mutex poisoned");
+        let mut tasks = self
+            .active_tasks
+            .lock()
+            .expect("active_tasks mutex poisoned");
         tasks.insert(torrent_id, task);
 
         Ok(download_id)
     }
 
-    pub fn cancel_download(&self, app_handle: &tauri::AppHandle, torrent_id: i64) -> Result<(), String> {
-        let mut tasks = self.active_tasks.lock().expect("active_tasks mutex poisoned");
+    pub fn cancel_download(
+        &self,
+        app_handle: &tauri::AppHandle,
+        torrent_id: i64,
+    ) -> Result<(), String> {
+        let mut tasks = self
+            .active_tasks
+            .lock()
+            .expect("active_tasks mutex poisoned");
         if let Some(handle) = tasks.remove(&torrent_id) {
             handle.abort();
             let _ = app_handle.emit(

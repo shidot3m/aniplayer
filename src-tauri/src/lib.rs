@@ -3,51 +3,25 @@ mod commands;
 pub mod db;
 pub mod downloader;
 pub mod player;
+pub mod startup;
 mod state;
 
+pub use startup::StartupError;
 pub use state::AppState;
 
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-
-use api::AnilibriaClient;
-use db::Database;
-use downloader::{HlsDownloader, TorrentDownloader, TorrentEngine};
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    let app_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_else(|| PathBuf::from("."));
+pub fn run() -> Result<(), StartupError> {
+    let result = startup::bootstrap().and_then(run_with_state);
+    if let Err(error) = &result {
+        startup::report(error);
+    }
+    result
+}
 
-    let db_dir = app_dir.join("data");
-    let _ = std::fs::create_dir_all(&db_dir);
-    let db_path = db_dir.join("aniplayer.db");
-    let database = Arc::new(Database::new(&db_path).unwrap_or_else(|_| {
-        Database::init_in_memory().expect("Fatal: SQLite initialization failed")
-    }));
-    let api_client = Arc::new(AnilibriaClient::new());
-    let downloader = Arc::new(HlsDownloader::new(database.clone()));
-    let torrent_downloader = Arc::new(TorrentDownloader::new());
-    let torrent_engine = tauri::async_runtime::block_on(async {
-        TorrentEngine::new(app_dir.clone(), database.clone()).await
-    })
-    .expect("Fatal: Torrent engine initialization failed");
-    let torrent_engine = Arc::new(torrent_engine);
-    let player_state = Arc::new(Mutex::new(None));
-
+fn run_with_state(state: AppState) -> Result<(), StartupError> {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(AppState {
-            db: database,
-            api: api_client,
-            downloader,
-            torrent_downloader,
-            torrent_engine,
-            player: player_state,
-            app_dir,
-        })
+        .manage(state)
         .invoke_handler(tauri::generate_handler![
             commands::app::ping,
             commands::db::db_save_bookmark,
@@ -100,5 +74,7 @@ pub fn run() {
             commands::app::app_is_fullscreen,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .map_err(|e| StartupError::Run {
+            reason: e.to_string(),
+        })
 }
