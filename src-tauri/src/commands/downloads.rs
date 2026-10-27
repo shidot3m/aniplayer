@@ -133,17 +133,7 @@ pub(crate) fn downloader_open_folder(
     };
     std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
 
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("explorer")
-            .arg(&folder)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let _ = folder;
-    }
+    tauri_plugin_opener::open_path(&folder, None::<&str>).map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -177,7 +167,8 @@ pub(crate) async fn downloader_download_torrent(
         .download_torrent_file(&state.app_dir, torrent_id, &filename)
         .await?;
     if auto_open.unwrap_or(true) {
-        let _ = TorrentDownloader::open_torrent_file(&path);
+        let torrents_root = crate::downloader::torrent::torrents_root(&state.app_dir);
+        let _ = TorrentDownloader::open_torrent_file(&path, &torrents_root);
     }
     Ok(path.to_string_lossy().to_string())
 }

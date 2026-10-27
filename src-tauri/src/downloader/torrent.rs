@@ -3,6 +3,42 @@ use reqwest::Client;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 
+const MAX_MAGNET_LEN: usize = 4096;
+
+pub fn torrents_root(base_dir: &Path) -> PathBuf {
+    base_dir.join("downloads").join("torrents")
+}
+
+pub fn validate_magnet(magnet_url: &str) -> Result<(), String> {
+    if !magnet_url.starts_with("magnet:?") {
+        return Err("Invalid magnet link: wrong scheme".to_string());
+    }
+    if magnet_url.len() > MAX_MAGNET_LEN {
+        return Err(format!(
+            "Invalid magnet link: exceeds {} characters",
+            MAX_MAGNET_LEN
+        ));
+    }
+    if magnet_url.chars().any(|c| c.is_control()) {
+        return Err("Invalid magnet link: contains control characters".to_string());
+    }
+    Ok(())
+}
+
+pub fn validate_torrent_path(path: &Path, downloads_root: &Path) -> Result<PathBuf, String> {
+    let canonical = path
+        .canonicalize()
+        .map_err(|_| "Torrent file not found".to_string())?;
+    let root = downloads_root
+        .canonicalize()
+        .map_err(|_| "Torrents downloads folder not found".to_string())?;
+    if canonical.starts_with(&root) {
+        Ok(canonical)
+    } else {
+        Err("Torrent file is outside the downloads folder".to_string())
+    }
+}
+
 pub struct TorrentDownloader {
     client: Client,
 }
@@ -34,7 +70,7 @@ impl TorrentDownloader {
         torrent_id: i64,
         suggested_filename: &str,
     ) -> Result<PathBuf, String> {
-        let torrents_folder = base_dir.join("downloads").join("torrents");
+        let torrents_folder = torrents_root(base_dir);
         fs::create_dir_all(&torrents_folder)
             .await
             .map_err(|e| e.to_string())?;
@@ -71,39 +107,14 @@ impl TorrentDownloader {
     }
 
     pub fn open_magnet(magnet_url: &str) -> Result<(), String> {
-        #[cfg(target_os = "windows")]
-        {
-            std::process::Command::new("cmd")
-                .args(["/C", "start", "", magnet_url])
-                .spawn()
-                .map_err(|e| format!("Failed to open magnet link: {}", e))?;
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            std::process::Command::new("xdg-open")
-                .arg(magnet_url)
-                .spawn()
-                .map_err(|e| format!("Failed to open magnet link: {}", e))?;
-        }
-        Ok(())
+        validate_magnet(magnet_url)?;
+        tauri_plugin_opener::open_url(magnet_url, None::<&str>)
+            .map_err(|e| format!("Failed to open magnet link: {}", e))
     }
 
-    pub fn open_torrent_file(path: &Path) -> Result<(), String> {
-        let path_str = path.to_string_lossy().to_string();
-        #[cfg(target_os = "windows")]
-        {
-            std::process::Command::new("cmd")
-                .args(["/C", "start", "", &path_str])
-                .spawn()
-                .map_err(|e| format!("Failed to open torrent file: {}", e))?;
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            std::process::Command::new("xdg-open")
-                .arg(&path_str)
-                .spawn()
-                .map_err(|e| format!("Failed to open torrent file: {}", e))?;
-        }
-        Ok(())
+    pub fn open_torrent_file(path: &Path, downloads_root: &Path) -> Result<(), String> {
+        let validated = validate_torrent_path(path, downloads_root)?;
+        tauri_plugin_opener::open_path(validated, None::<&str>)
+            .map_err(|e| format!("Failed to open torrent file: {}", e))
     }
 }

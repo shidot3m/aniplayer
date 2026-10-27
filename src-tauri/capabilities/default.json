@@ -3,5 +3,12 @@
   "identifier": "default",
   "description": "Default capabilities for Aniplayer",
   "windows": ["main"],
-  "permissions": ["core:default", "core:window:default", "shell:allow-open"]
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "magnet:*" }]
+    }
+  ]
 }

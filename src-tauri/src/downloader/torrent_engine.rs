@@ -29,7 +29,7 @@ pub struct TorrentEngine {
 
 impl TorrentEngine {
     pub async fn new(base_dir: PathBuf, db: Arc<Database>) -> Result<Self, String> {
-        let torrents_dir = base_dir.join("downloads").join("torrents");
+        let torrents_dir = super::torrent::torrents_root(&base_dir);
         let _ = tokio::fs::create_dir_all(&torrents_dir).await;
 
         let session = Session::new_with_opts(
@@ -63,6 +63,7 @@ impl TorrentEngine {
         };
 
         let add_torrent = if magnet_or_url.starts_with("magnet:") {
+            super::torrent::validate_magnet(magnet_or_url)?;
             AddTorrent::from_url(magnet_or_url)
         } else if magnet_or_url.starts_with("http://") || magnet_or_url.starts_with("https://") {
             AddTorrent::from_url(magnet_or_url)

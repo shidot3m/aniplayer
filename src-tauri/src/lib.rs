@@ -38,7 +38,7 @@ pub fn run() {
     let player_state = Arc::new(Mutex::new(None));
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(AppState {
             db: database,
             api: api_client,
