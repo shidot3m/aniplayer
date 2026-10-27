@@ -1,5 +1,6 @@
 import { Bookmark, CheckCircle2, Play } from "lucide-react";
 import { CDN_BASE_URL } from "../shared/lib/constants";
+import { CATEGORY_NAMES } from "../shared/lib/releaseUtils";
 import type { BookmarkCategory, Release } from "../shared/types";
 import { Badge } from "../shared/ui/badge";
 import {
@@ -14,16 +15,6 @@ interface AnimeCardProps {
   release: Release;
   onClick: () => void;
 }
-
-const CATEGORY_NAMES: Record<BookmarkCategory, string> = {
-  WATCHING: "Смотрю",
-  PLANNED: "В планах",
-  POSTPONED: "Отложено",
-  ABANDONED: "Брошено",
-  NOT_INTERESTED: "Не интересно",
-  FAVORITES: "Любимое",
-  WATCHED: "Просмотрено",
-};
 
 export function AnimeCard({ release, onClick }: AnimeCardProps) {
   const { bookmarks, history, setBookmark, removeBookmark } = useCatalogStore();

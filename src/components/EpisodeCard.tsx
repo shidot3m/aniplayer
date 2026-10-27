@@ -1,6 +1,6 @@
 import { CheckCircle2, Download, MoreVertical, Play } from "lucide-react";
 import { useState } from "react";
-import { CDN_BASE_URL } from "../shared/lib/constants";
+import { formatPosterUrl } from "../shared/lib/releaseUtils";
 import { formatTime } from "../shared/lib/utils";
 import type { EpisodeItem } from "../shared/types";
 import { Badge } from "../shared/ui/badge";
@@ -10,13 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../shared/ui/dropdown-menu";
-
-function formatPosterUrl(rawUrl?: string | null): string {
-  if (!rawUrl) return "";
-  if (rawUrl.startsWith("http") || rawUrl.startsWith("data:")) return rawUrl;
-  const cleanPath = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
-  return `${CDN_BASE_URL}${cleanPath}`;
-}
 
 export interface EpisodeCardProps {
   ep: EpisodeItem;

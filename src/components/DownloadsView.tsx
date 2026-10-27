@@ -1,7 +1,7 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { CheckCircle2, Film, FolderDown, FolderOpen, HardDrive, Play, Trash2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
-import { CDN_BASE_URL } from "../shared/lib/constants";
+import { formatPosterUrl } from "../shared/lib/releaseUtils";
 import { formatBytes } from "../shared/lib/utils";
 import type { DownloadedEpisodeMeta, EpisodeItem, Release } from "../shared/types";
 import { Badge } from "../shared/ui/badge";
@@ -9,13 +9,6 @@ import { Button } from "../shared/ui/button";
 import { useCatalogStore } from "../store/catalogStore";
 import { useDownloadStore } from "../store/downloadStore";
 import { usePlayerStore } from "../store/playerStore";
-
-function formatPosterUrl(rawUrl?: string | null): string {
-  if (!rawUrl) return "";
-  if (rawUrl.startsWith("http") || rawUrl.startsWith("data:")) return rawUrl;
-  const cleanPath = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
-  return `${CDN_BASE_URL}${cleanPath}`;
-}
 
 function DownloadedEpisodeRow({
   meta,
