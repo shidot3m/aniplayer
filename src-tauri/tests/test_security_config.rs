@@ -1,7 +1,13 @@
-//! Contract tests for the shipped Tauri configuration: the application must boot
-//! with an enforced Content Security Policy and with the smallest capability set.
+//! Contract tests for the shipped Tauri configuration.
+//!
+//! The production policy is enforced through the `Content-Security-Policy`
+//! response header of the custom protocol. In `tauri dev` the document is served
+//! by the Vite dev server instead, so `devCsp` is the declared development policy
+//! and is what a dev-profile build serving bundled assets gets; keeping it
+//! explicit stops the development relaxation from silently becoming the shipped
+//! policy.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use tauri_utils::config::{Config, Csp, CspDirectiveSources};
@@ -13,12 +19,28 @@ fn app_config() -> Config {
         .expect("tauri.conf.json must be a valid Tauri configuration")
 }
 
-fn directives(csp: &Csp) -> HashMap<String, CspDirectiveSources> {
+fn production() -> HashMap<String, CspDirectiveSources> {
+    let csp = app_config()
+        .app
+        .security
+        .csp
+        .expect("production CSP must be configured instead of null");
+    to_directives(&csp)
+}
+
+fn development() -> HashMap<String, CspDirectiveSources> {
+    let csp = app_config()
+        .app
+        .security
+        .dev_csp
+        .expect("development CSP must be configured explicitly, not inherited");
+    to_directives(&csp)
+}
+
+fn to_directives(csp: &Csp) -> HashMap<String, CspDirectiveSources> {
     csp.clone().into()
 }
 
-/// Sources of a directive. A missing directive yields no sources, so the
-/// assertions below report it as a violation.
 fn sources(map: &HashMap<String, CspDirectiveSources>, directive: &str) -> Vec<String> {
     map.get(directive)
         .cloned()
@@ -27,7 +49,10 @@ fn sources(map: &HashMap<String, CspDirectiveSources>, directive: &str) -> Vec<S
 }
 
 fn assert_contains(map: &HashMap<String, CspDirectiveSources>, directive: &str, wanted: &[&str]) {
-    let present = sources(map, directive);
+    let present = match map.get(directive) {
+        Some(directive) => Vec::from(directive.clone()),
+        None => panic!("`{directive}` must be declared in the policy"),
+    };
     for source in wanted {
         assert!(
             present.iter().any(|s| s == source),
@@ -46,15 +71,11 @@ fn assert_excludes(map: &HashMap<String, CspDirectiveSources>, directive: &str, 
     }
 }
 
-/// Origins the player needs: HLS playlists and segments plus posters come from
-/// whatever host the API hands back, MediaSource attaches a blob, and downloaded
-/// episodes are served by the asset protocol.
-const PLAYBACK_SOURCES: &[&str] = &[
-    "https:",                 // HLS playlists/segments and posters served by the API
-    "blob:",                  // MediaSource buffer attached to <video> by hls.js
-    "asset:",                 // downloaded episodes served by the asset protocol
-    "http://asset.localhost", // Windows form of the asset protocol origin
-];
+/// Origins playback needs in any environment: the API hands out HLS playlists and
+/// posters for whatever host serves them, hls.js attaches a MediaSource blob to
+/// `<video>`, and a downloaded episode is fetched over the asset protocol.
+const PLAYBACK_SOURCES: &[&str] = &["https:", "blob:", "asset:", "http://asset.localhost"];
+const IPC_SOURCES: &[&str] = &["ipc:", "http://ipc.localhost"];
 
 #[test]
 fn security_policy_is_enabled() {
@@ -67,12 +88,11 @@ fn security_policy_is_enabled() {
 
 #[test]
 fn production_policy_anchors_on_self_and_blocks_injection() {
-    let csp = app_config().app.security.csp.expect("production CSP");
-    let map = directives(&csp);
+    let map = production();
 
     assert_contains(&map, "default-src", &["'self'"]);
-    // Tauri injects a nonce for its own bootstrap script, so the app never needs
-    // inline script execution; inline style attributes are used by React.
+    // Tauri injects the hash of its own bootstrap script, so the application
+    // never needs inline script execution. Inline style attributes do.
     assert_contains(&map, "script-src", &["'self'"]);
     assert_excludes(
         &map,
@@ -88,59 +108,75 @@ fn production_policy_anchors_on_self_and_blocks_injection() {
 
 #[test]
 fn production_policy_allows_the_ipc_origins() {
-    let csp = app_config().app.security.csp.expect("production CSP");
-    let map = directives(&csp);
-
-    assert_contains(&map, "connect-src", &["ipc:", "http://ipc.localhost"]);
+    assert_contains(&production(), "connect-src", IPC_SOURCES);
 }
 
 #[test]
 fn production_policy_allows_hls_playback_and_image_loading() {
-    let csp = app_config().app.security.csp.expect("production CSP");
-    let map = directives(&csp);
+    let map = production();
 
     assert_contains(&map, "connect-src", &["'self'", "https:"]);
     assert_contains(&map, "media-src", PLAYBACK_SOURCES);
     // Posters are remote or inline placeholders; local files never reach an <img>.
     assert_contains(&map, "img-src", &["'self'", "https:", "data:"]);
-    assert_excludes(
-        &map,
-        "img-src",
-        &["http:", "asset:", "http://asset.localhost"],
-    );
-    // hls.js runs demuxing in a blob-backed worker.
+    assert_excludes(&map, "img-src", &["http:", "asset:"]);
+    // hls.js demuxes in a blob-backed worker and fetches segments itself.
     assert_contains(&map, "worker-src", &["blob:"]);
+    assert_contains(&map, "connect-src", &["asset:", "http://asset.localhost"]);
 }
 
 #[test]
-fn development_policy_is_explicit_and_relaxes_only_the_dev_server() {
-    let config = app_config();
-    let csp = config
-        .app
-        .security
-        .dev_csp
-        .clone()
-        .expect("development CSP must be configured explicitly instead of inheriting nothing");
-    let map = directives(&csp);
+fn development_policy_relaxes_only_the_dev_server() {
+    let map = development();
 
-    // The Vite dev server injects an inline React Refresh preamble and opens a
-    // HMR socket on the dev URL; the dev page origin itself is covered by 'self'.
+    // The Vite dev server injects an inline React Refresh preamble and opens an
+    // HMR socket on the dev URL. The dev page origin itself is already 'self'.
     assert_contains(&map, "script-src", &["'self'", "'unsafe-inline'"]);
     assert_contains(
         &map,
         "connect-src",
         &[
-            "ipc:",
-            "http://ipc.localhost",
             "http://127.0.0.1:1420",
             "ws://127.0.0.1:1420",
+            "http://ipc.localhost",
         ],
     );
-    // Everything the production policy pins down stays pinned in development.
-    assert_contains(&map, "default-src", &["'self'"]);
-    assert_contains(&map, "media-src", PLAYBACK_SOURCES);
     assert_excludes(&map, "script-src", &["'unsafe-eval'"]);
     assert_excludes(&map, "connect-src", &["ws:", "http:"]);
+}
+
+#[test]
+fn development_and_production_policies_differ_only_where_the_dev_server_needs_it() {
+    let prod = production();
+    let dev = development();
+    let relaxed = ["script-src", "connect-src"];
+
+    let declared: HashSet<&String> = prod.keys().chain(dev.keys()).collect();
+    for directive in declared {
+        if relaxed.contains(&directive.as_str()) {
+            continue;
+        }
+        assert_eq!(
+            sources(&prod, directive),
+            sources(&dev, directive),
+            "`{directive}` must not drift between the development and production policies",
+        );
+    }
+
+    for required in [
+        "default-src",
+        "script-src",
+        "style-src",
+        "img-src",
+        "media-src",
+        "connect-src",
+        "worker-src",
+    ] {
+        assert!(
+            prod.contains_key(required),
+            "policy must declare `{required}` instead of leaning on default-src alone"
+        );
+    }
 }
 
 #[test]
@@ -166,15 +202,11 @@ fn capabilities_grant_only_the_magnet_opener() {
         !identifiers.iter().any(|id| id.starts_with("shell:")),
         "the removed shell plugin must not come back: {identifiers:?}"
     );
-    assert!(
-        identifiers.contains(&"opener:allow-open-url"),
-        "magnet opening needs opener:allow-open-url"
-    );
 
     let opener = permissions
         .iter()
         .find(|p| p.get("identifier").and_then(|i| i.as_str()) == Some("opener:allow-open-url"))
-        .expect("opener:allow-open-url permission");
+        .expect("magnet opening needs opener:allow-open-url");
     let scoped = opener
         .get("allow")
         .and_then(|a| a.as_array())
