@@ -72,7 +72,7 @@ export function EpisodeCard({
           }}
         />
       ) : (
-        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-linear-to-br from-black to-[#121318] p-4 text-center">
+        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-linear-to-br/srgb from-black to-[#121318] p-4 text-center">
           <span className="text-xs text-slate-400">Эпизод {ep.ordinal}</span>
         </div>
       )}
@@ -134,7 +134,7 @@ export function EpisodeCard({
       </div>
 
       {/* Hover Glass Darkening Overlay with Details */}
-      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-end bg-linear-to-t from-black/95 via-black/75 to-transparent p-3.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
+      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-end bg-linear-to-t/srgb from-black/95 via-black/75 to-transparent p-3.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
         <h4 className="text-xs font-bold text-white line-clamp-1 leading-tight">
           Эпизод {ep.ordinal}
         </h4>

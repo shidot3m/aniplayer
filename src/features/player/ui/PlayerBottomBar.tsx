@@ -50,7 +50,7 @@ export function PlayerBottomBar({
 }: PlayerBottomBarProps) {
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 z-30 bg-linear-to-t from-black/90 via-black/60 to-transparent px-6 pb-6 pt-12 transition-opacity duration-300 ${
+      className={`absolute bottom-0 left-0 right-0 z-30 bg-linear-to-t/srgb from-black/90 via-black/60 to-transparent px-6 pb-6 pt-12 transition-opacity duration-300 ${
         isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
     >

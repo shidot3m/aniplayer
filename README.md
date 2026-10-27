@@ -15,7 +15,7 @@
 
 | Слой         | Технологии                                                                |
 | ------------ | ------------------------------------------------------------------------- |
-| UI           | React 19, TypeScript, Vite 6, Tailwind 3, Zustand, Radix UI, lucide-react |
+| UI           | React 19, TypeScript, Vite 8, Tailwind 4, Zustand, Radix UI, lucide-react |
 | Оболочка     | Tauri 2 (Rust 2021)                                                       |
 | Бэкенд       | `libmpv` через `libloading`, `librqbit`, `rusqlite`, `reqwest`            |
 | Тесты / линт | Vitest, Testing Library, Biome                                            |

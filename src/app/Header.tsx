@@ -12,7 +12,7 @@ interface HeaderProps {
 
 function AniplayerLogoMark() {
   return (
-    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-rose-600 to-rose-700 shadow-md shadow-rose-900/30 border border-white/20 transition-transform group-hover:scale-105">
+    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br/srgb from-rose-600 to-rose-700 shadow-md shadow-rose-900/30 border border-white/20 transition-transform group-hover:scale-105">
       <svg
         viewBox="0 0 32 32"
         fill="none"

@@ -16,7 +16,7 @@ export function PlayerTopBar({
 }: PlayerTopBarProps) {
   return (
     <div
-      className={`absolute left-0 right-0 top-0 z-30 flex items-center justify-between bg-linear-to-b from-black/80 via-black/40 to-transparent p-6 transition-opacity duration-300 ${
+      className={`absolute left-0 right-0 top-0 z-30 flex items-center justify-between bg-linear-to-b/srgb from-black/80 via-black/40 to-transparent p-6 transition-opacity duration-300 ${
         isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
     >

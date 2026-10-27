@@ -98,7 +98,9 @@ export function ContinueWatchingCard({
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                item.isNextEpisode ? "bg-emerald-500" : "bg-linear-to-r from-rose-600 to-rose-400"
+                item.isNextEpisode
+                  ? "bg-emerald-500"
+                  : "bg-linear-to-r/srgb from-rose-600 to-rose-400"
               }`}
               style={{
                 width: item.isNextEpisode ? "100%" : `${item.progressPercent}%`,

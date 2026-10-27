@@ -70,16 +70,16 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
                   }}
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-black to-[#121318]" />
+                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br/srgb from-black to-[#121318]" />
               )}
 
               {/* Dark subtle gradient overlay to keep text readable */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t/srgb from-black/95 via-black/40 to-transparent" />
 
               {/* Genre info at bottom */}
               <div className="relative z-10 flex h-full flex-col justify-end">
                 <span
-                  className={`block text-sm font-bold leading-tight truncate drop-shadow-sm ${
+                  className={`block text-sm font-bold leading-tight truncate drop-shadow ${
                     isSelected ? "text-rose-400" : "text-white group-hover:text-rose-300"
                   }`}
                 >
