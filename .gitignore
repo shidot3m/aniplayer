@@ -10,9 +10,10 @@ src-tauri/target/
 # Generated Tauri capability schemas
 src-tauri/gen/schemas/
 
-# Local data & downloads
-data/
-downloads/
+# Local data & downloads (runtime artifacts at repo root only; anchored so
+# src/features/downloads/ stays trackable)
+/data/
+/downloads/
 test_e2e_data/
 *.db
 *.db-journal

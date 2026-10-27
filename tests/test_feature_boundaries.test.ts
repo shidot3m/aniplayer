@@ -91,17 +91,11 @@ describe("feature boundaries", () => {
     expect(missing).toBe("");
   });
 
-  it("downloads feature owns its state and UI", () => {
+  it("migrated features leave no stray files outside src/features", () => {
     const strays = [
       "store",
       "components/DownloadsView.tsx",
       "components/DownloadFloatingWidget.tsx",
-    ].filter((p) => existsSync(join(SRC_DIR, p)));
-    expect(strays, strays.join(", ")).toEqual([]);
-  });
-
-  it("bookmarks and settings features own their UI", () => {
-    const strays = [
       "components/BookmarksView.tsx",
       "components/SettingsDialog.tsx",
       "components/settings",
