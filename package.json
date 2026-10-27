@@ -16,7 +16,7 @@
     "anime4k-webgpu": "^1.0.0",
     "clsx": "^2.1.1",
     "hls.js": "^1.7.3",
-    "lucide-react": "^1.61.0",
+    "lucide-react": "^1.62.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "tailwind-merge": "^3.0.2",
