@@ -9,7 +9,7 @@ import {
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
 import { DownloadFloatingWidget, DownloadsView, useDownloadStore } from "@/features/downloads";
-import { PlayerOverlay, usePlayerStore } from "@/features/player";
+import { PlayerOverlay, usePlayerBackendSync, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
 import { SettingsDialog } from "@/features/settings";
 import type { Release } from "@/shared/types";
@@ -23,22 +23,14 @@ export default function App() {
     setSelectedRelease,
     selectReleaseWithDetails,
     latestReleases,
-    searchResults,
-    isSearching,
     searchQuery,
     selectedGenre,
     selectGenre,
     loadInitialData,
   } = useCatalogStore();
 
-  const {
-    isPlayerOpen,
-    closePlayer,
-    currentRelease,
-    currentEpisode,
-    syncWithBackend,
-    initSettings,
-  } = usePlayerStore();
+  const { isPlayerOpen, closePlayer, currentRelease, currentEpisode, initSettings } =
+    usePlayerStore();
 
   const { listenToProgress, fetchDownloadedEpisodes } = useDownloadStore();
 
@@ -61,13 +53,7 @@ export default function App() {
     };
   }, [loadInitialData, initSettings, listenToProgress, fetchDownloadedEpisodes]);
 
-  // Periodic player sync with backend
-  useEffect(() => {
-    const interval = setInterval(() => {
-      syncWithBackend();
-    }, 500);
-    return () => clearInterval(interval);
-  }, [syncWithBackend]);
+  usePlayerBackendSync();
 
   const handleSelectRelease = (release: Release) => {
     if (activeScreen !== "details") {
@@ -75,9 +61,6 @@ export default function App() {
     }
     selectReleaseWithDetails(release);
   };
-
-  // Determine which releases to display in the main grid
-  const displayedReleases = searchQuery.trim() ? searchResults : latestReleases;
 
   if (isPlayerOpen && currentRelease && currentEpisode) {
     return (
@@ -113,12 +96,7 @@ export default function App() {
             {/* Continue Watching Section */}
             {!searchQuery && <ContinueWatching onSelectRelease={handleSelectRelease} />}
 
-            <ReleasesGrid
-              searchQuery={searchQuery}
-              isSearching={isSearching}
-              releases={displayedReleases}
-              onSelectRelease={handleSelectRelease}
-            />
+            <ReleasesGrid onSelectRelease={handleSelectRelease} />
 
             {/* Release Schedule Section (Section 5.3 of spec) */}
             {!searchQuery && latestReleases.length > 0 && (

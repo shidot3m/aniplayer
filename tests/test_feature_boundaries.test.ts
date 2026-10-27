@@ -92,20 +92,13 @@ describe("feature boundaries", () => {
   });
 
   it("migrated features leave no stray files outside src/features", () => {
-    const strays = [
-      "store",
-      "components",
-      "App.tsx",
-      "components/DownloadsView.tsx",
-      "components/DownloadFloatingWidget.tsx",
-      "components/BookmarksView.tsx",
-      "components/SettingsDialog.tsx",
-      "components/settings",
-    ].filter((p) => existsSync(join(SRC_DIR, p)));
+    const strays = ["store", "components", "hooks", "App.tsx"].filter((p) =>
+      existsSync(join(SRC_DIR, p)),
+    );
     expect(strays, strays.join(", ")).toEqual([]);
   });
 
-  it("application shell is composition-only under src/app", () => {
+  it("application shell lives in src/app as the composition root", () => {
     expect(existsSync(join(SRC_DIR, "app", "App.tsx"))).toBe(true);
     expect(existsSync(join(SRC_DIR, "app", "Header.tsx"))).toBe(true);
   });

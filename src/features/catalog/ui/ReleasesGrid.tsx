@@ -1,26 +1,22 @@
 import { Film, Loader2 } from "lucide-react";
 import type { Release } from "@/shared/types";
+import { useCatalogStore } from "../state/catalogStore";
 import { AnimeCard } from "./AnimeCard";
 
 interface ReleasesGridProps {
-  searchQuery: string;
-  isSearching: boolean;
-  releases: Release[];
   onSelectRelease: (release: Release) => void;
 }
 
-export function ReleasesGrid({
-  searchQuery,
-  isSearching,
-  releases,
-  onSelectRelease,
-}: ReleasesGridProps) {
+export function ReleasesGrid({ onSelectRelease }: ReleasesGridProps) {
+  const { latestReleases, searchResults, isSearching, searchQuery } = useCatalogStore();
+  const displayedReleases = searchQuery.trim() ? searchResults : latestReleases;
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
           <Film className="h-4 w-4 text-rose-500" />
-          {searchQuery ? `Результаты поиска (${releases.length})` : "Свежие релизы"}
+          {searchQuery ? `Результаты поиска (${searchResults.length})` : "Свежие релизы"}
         </h2>
       </div>
 
@@ -28,9 +24,9 @@ export function ReleasesGrid({
         <div className="flex h-64 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
         </div>
-      ) : releases.length > 0 ? (
+      ) : displayedReleases.length > 0 ? (
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 mb-12">
-          {releases.map((release) => (
+          {displayedReleases.map((release) => (
             <AnimeCard
               key={release.id}
               release={release}

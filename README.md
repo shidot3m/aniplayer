@@ -112,7 +112,9 @@ npx tsc --noEmit   # типы
 ## Структура
 
 ```
-src/                 React-приложение (components, hooks, store, shared: ui/lib/types)
+src/app/             Оболочка приложения: композиция фичер (App, Header)
+src/features/        Фичеры: catalog, release, continue-watching, player, downloads, bookmarks, settings
+src/shared/          Общие ui-компоненты, утилиты и доменные типы (ui/lib/types)
 src-tauri/           Rust-бэкенд: плеер (mpv.rs), торренты, БД, IPC-команды
 shaders/anime4k/     GLSL-шейдеры Anime4K (в репозитории)
 bin/                 локальные бинарники libmpv / 7-Zip (см. выше, не в git)
