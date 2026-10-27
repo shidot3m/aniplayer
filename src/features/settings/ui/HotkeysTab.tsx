@@ -98,7 +98,7 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
               <button
                 type="button"
                 onClick={() => setRecordingAction(isRecording ? null : action.id)}
-                className="cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 rounded-lg"
+                className="cursor-pointer focus:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 rounded-lg"
               >
                 {isRecording ? (
                   <Badge
@@ -108,7 +108,7 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
                     Нажмите клавишу...
                   </Badge>
                 ) : (
-                  <kbd className="inline-flex min-w-8 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-2 py-1 font-mono text-[11px] font-semibold text-white shadow-sm hover:bg-white/20 hover:border-white/30 transition-colors">
+                  <kbd className="inline-flex min-w-8 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-2 py-1 font-mono text-[11px] font-semibold text-white shadow-xs hover:bg-white/20 hover:border-white/30 transition-colors">
                     {formatKeyName(currentKey)}
                   </kbd>
                 )}

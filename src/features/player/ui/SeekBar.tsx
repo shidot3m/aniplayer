@@ -70,7 +70,7 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
       {/* Tooltip on Hover */}
       {hoverPosition !== null && duration > 0 && (
         <div
-          className="absolute -top-7 -translate-x-1/2 rounded bg-black/90 px-2 py-0.5 text-[11px] font-medium text-white shadow backdrop-blur pointer-events-none whitespace-nowrap z-30 flex items-center gap-1.5"
+          className="absolute -top-7 -translate-x-1/2 rounded bg-black/90 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm backdrop-blur-sm pointer-events-none whitespace-nowrap z-30 flex items-center gap-1.5"
           style={{ left: `${Math.min(95, Math.max(5, hoverPercent))}%` }}
         >
           <span>{formatTime(hoverPosition)}</span>
@@ -90,7 +90,7 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
           <div
             data-testid="seekbar-opening-marker"
             title="Опенинг"
-            className="absolute top-0 h-full bg-amber-400/80 shadow-sm pointer-events-none"
+            className="absolute top-0 h-full bg-amber-400/80 shadow-xs pointer-events-none"
             style={{ left: `${opStartPercent}%`, width: `${opWidthPercent}%` }}
           />
         )}
@@ -100,7 +100,7 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
           <div
             data-testid="seekbar-ending-marker"
             title="Эндинг"
-            className="absolute top-0 h-full bg-indigo-400/80 shadow-sm pointer-events-none"
+            className="absolute top-0 h-full bg-indigo-400/80 shadow-xs pointer-events-none"
             style={{ left: `${edStartPercent}%`, width: `${edWidthPercent}%` }}
           />
         )}
@@ -115,7 +115,7 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
 
         {/* Played Progress */}
         <div
-          className="absolute left-0 top-0 h-full rounded-full bg-rose-600 shadow-sm transition-all"
+          className="absolute left-0 top-0 h-full rounded-full bg-rose-600 shadow-xs transition-all"
           style={{ width: `${progressPercent}%` }}
         />
 

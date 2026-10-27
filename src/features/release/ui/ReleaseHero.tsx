@@ -69,7 +69,7 @@ export function ReleaseHero({
 
   return (
     <div className="mb-10 flex flex-col gap-8 md:flex-row">
-      <div className="relative aspect-[2/3] w-full max-w-[280px] flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#12131A] shadow-2xl mx-auto md:mx-0">
+      <div className="relative aspect-[2/3] w-full max-w-[280px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#12131A] shadow-2xl mx-auto md:mx-0">
         {formattedPoster ? (
           <img
             src={formattedPoster}
@@ -151,7 +151,7 @@ export function ReleaseHero({
                 <button
                   type="button"
                   onClick={() => setIsDescExpanded(!isDescExpanded)}
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-400 hover:text-rose-300 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-md py-0.5"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-400 hover:text-rose-300 cursor-pointer transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 rounded-md py-0.5"
                 >
                   <span>{isDescExpanded ? "Свернуть" : "Развернуть описание"}</span>
                   <ChevronDown

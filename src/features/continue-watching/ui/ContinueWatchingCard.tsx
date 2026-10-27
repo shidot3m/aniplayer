@@ -35,8 +35,8 @@ export function ContinueWatchingCard({
   };
 
   return (
-    <div className="group relative flex w-[310px] sm:w-[330px] flex-shrink-0 snap-start overflow-hidden rounded-2xl border border-white/10 bg-[#12131A] p-3 transition-all duration-300 hover:border-rose-500/40 hover:bg-[#161824] hover:shadow-xl hover:shadow-rose-950/20">
-      <div className="relative h-28 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-black/50 border border-white/10">
+    <div className="group relative flex w-[310px] sm:w-[330px] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/10 bg-[#12131A] p-3 transition-all duration-300 hover:border-rose-500/40 hover:bg-[#161824] hover:shadow-xl hover:shadow-rose-950/20">
+      <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl bg-black/50 border border-white/10">
         {formattedPoster ? (
           <img
             src={formattedPoster}
@@ -98,7 +98,7 @@ export function ContinueWatchingCard({
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                item.isNextEpisode ? "bg-emerald-500" : "bg-gradient-to-r from-rose-600 to-rose-400"
+                item.isNextEpisode ? "bg-emerald-500" : "bg-linear-to-r from-rose-600 to-rose-400"
               }`}
               style={{
                 width: item.isNextEpisode ? "100%" : `${item.progressPercent}%`,

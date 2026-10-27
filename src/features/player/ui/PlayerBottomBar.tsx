@@ -50,14 +50,14 @@ export function PlayerBottomBar({
 }: PlayerBottomBarProps) {
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-6 pb-6 pt-12 transition-opacity duration-300 ${
+      className={`absolute bottom-0 left-0 right-0 z-30 bg-linear-to-t from-black/90 via-black/60 to-transparent px-6 pb-6 pt-12 transition-opacity duration-300 ${
         isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}
     >
       <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-200">
         <div
           data-testid="player-episode-badge-above-timeline"
-          className="flex items-center gap-2 rounded-lg bg-black/40 px-2.5 py-1 text-xs text-rose-400 backdrop-blur"
+          className="flex items-center gap-2 rounded-lg bg-black/40 px-2.5 py-1 text-xs text-rose-400 backdrop-blur-sm"
         >
           <span>Эпизод {episode.ordinal}</span>
           {episode.name && (
@@ -67,7 +67,7 @@ export function PlayerBottomBar({
 
         <div
           data-testid="player-timecodes-above-timeline"
-          className="rounded-lg bg-black/40 px-2.5 py-1 text-xs text-slate-300 backdrop-blur"
+          className="rounded-lg bg-black/40 px-2.5 py-1 text-xs text-slate-300 backdrop-blur-sm"
         >
           <span>{formatTime(currentTime)}</span>
           <span className="text-slate-500 mx-1">/</span>

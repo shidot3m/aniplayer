@@ -55,7 +55,7 @@ export function EpisodeCard({
         type="button"
         aria-label={`Воспроизвести эпизод ${ep.ordinal}`}
         onClick={onPlay}
-        className="absolute inset-0 z-10 h-full w-full cursor-pointer rounded-2xl border-0 bg-transparent p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+        className="absolute inset-0 z-10 h-full w-full cursor-pointer rounded-2xl border-0 bg-transparent p-0 text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       />
 
       {/* Preview Image with Fallback */}
@@ -72,7 +72,7 @@ export function EpisodeCard({
           }}
         />
       ) : (
-        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-gradient-to-br from-black to-[#121318] p-4 text-center">
+        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-linear-to-br from-black to-[#121318] p-4 text-center">
           <span className="text-xs text-slate-400">Эпизод {ep.ordinal}</span>
         </div>
       )}
@@ -107,7 +107,7 @@ export function EpisodeCard({
       {/* Quick Actions Dropdown (Three dots) - Only visible on hover */}
       <div className="absolute right-2.5 top-2.5 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
         <DropdownMenu>
-          <DropdownMenuTrigger className="focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg">
+          <DropdownMenuTrigger className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg">
             <div
               className="flex h-7 w-7 items-center justify-center rounded-lg backdrop-blur-xl bg-black/70 text-slate-300 hover:bg-white/20 hover:text-white border border-white/10 transition-colors cursor-pointer"
               title="Действия с эпизодом"
@@ -134,7 +134,7 @@ export function EpisodeCard({
       </div>
 
       {/* Hover Glass Darkening Overlay with Details */}
-      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent p-3.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
+      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-end bg-linear-to-t from-black/95 via-black/75 to-transparent p-3.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100">
         <h4 className="text-xs font-bold text-white line-clamp-1 leading-tight">
           Эпизод {ep.ordinal}
         </h4>

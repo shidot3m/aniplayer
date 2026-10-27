@@ -1,6 +1,67 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source(none);
+
+@source "../index.html";
+@source "./";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: #090a0f;
+  --color-card: #12131a;
+  --color-card-hover: #1a1c26;
+  --color-primary: #e11d48;
+  --color-primary-hover: #be123c;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #1e1b4b;
+  --color-secondary-foreground: #f8fafc;
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-foreground: #ffffff;
+  --color-muted: #1e202e;
+  --color-muted-foreground: #94a3b8;
+  --color-border: rgba(255, 255, 255, 0.08);
+  /* v4 ships an OKLCH palette; keep the v3 sRGB values used by the app. */
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+  --color-indigo-400: #818cf8;
+  --color-red-600: #dc2626;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+  --color-rose-900: #881337;
+  --color-rose-950: #4c0519;
+  --color-sky-300: #7dd3fc;
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-900: #0f172a;
+  --radius-lg: var(--radius, 0.75rem);
+  --radius-md: calc(var(--radius, 0.75rem) - 2px);
+  --radius-sm: calc(var(--radius, 0.75rem) - 4px);
+  /* v4 named text utilities default to relative line-heights; v3 used these
+     absolute values, which nested arbitrary font sizes inherit. */
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+}
 
 :root {
   --radius: 0.75rem;

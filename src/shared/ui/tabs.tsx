@@ -66,9 +66,9 @@ export function TabsTrigger({ value, children, className }: TabItemProps) {
       type="button"
       onClick={() => context.onValueChange(value)}
       className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none cursor-pointer",
+        "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-hidden cursor-pointer",
         isSelected
-          ? "bg-rose-600 text-white shadow-sm"
+          ? "bg-rose-600 text-white shadow-xs"
           : "hover:bg-white/5 hover:text-slate-200 text-slate-400",
         className,
       )}

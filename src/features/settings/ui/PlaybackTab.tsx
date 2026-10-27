@@ -91,14 +91,14 @@ export function PlaybackTab() {
               onClick={() => setAnime4kPreset(p.id)}
               className={`rounded-xl p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                 anime4kPreset === p.id
-                  ? "border-rose-500 bg-rose-500/15 text-white shadow-sm ring-1 ring-rose-500/30"
+                  ? "border-rose-500 bg-rose-500/15 text-white shadow-xs ring-1 ring-rose-500/30"
                   : "border-white/10 bg-white/[0.02] backdrop-blur-md text-slate-300 hover:text-white hover:bg-white/[0.06]"
               }`}
             >
               <div className="flex items-center justify-between gap-1.5 mb-1">
                 <span className="font-bold text-[11px] text-white leading-tight">{p.label}</span>
                 <span
-                  className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-md ${
+                  className={`text-[9px] font-semibold px-1.5 rounded-md ${
                     p.tier === "Fast"
                       ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                       : "bg-rose-500/20 text-rose-300 border border-rose-500/30"

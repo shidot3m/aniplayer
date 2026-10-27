@@ -12,7 +12,7 @@ interface HeaderProps {
 
 function AniplayerLogoMark() {
   return (
-    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-600 to-rose-700 shadow-md shadow-rose-900/30 border border-white/20 transition-transform group-hover:scale-105">
+    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-rose-600 to-rose-700 shadow-md shadow-rose-900/30 border border-white/20 transition-transform group-hover:scale-105">
       <svg
         viewBox="0 0 32 32"
         fill="none"
@@ -57,7 +57,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
         <button
           type="button"
           onClick={() => setActiveScreen("home")}
-          className="flex items-center gap-2.5 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-xl cursor-pointer"
+          className="flex items-center gap-2.5 text-left group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 rounded-xl cursor-pointer"
         >
           <AniplayerLogoMark />
           <div>
@@ -143,7 +143,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
                 setLocalQuery("");
                 setSearchQuery("");
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-500 rounded"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 rounded"
             >
               ✕
             </button>

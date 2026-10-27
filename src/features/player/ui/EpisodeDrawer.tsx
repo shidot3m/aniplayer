@@ -29,7 +29,7 @@ export function EpisodeDrawer({
         type="button"
         aria-label="Закрыть список эпизодов"
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm cursor-default"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs cursor-default"
       />
 
       {/* Drawer Body */}
@@ -86,7 +86,7 @@ export function EpisodeDrawer({
                 }`}
               >
                 {/* Thumbnail */}
-                <div className="relative h-14 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-black/40">
+                <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-black/40">
                   {formattedThumb ? (
                     <img
                       src={formattedThumb}

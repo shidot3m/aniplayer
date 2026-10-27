@@ -32,7 +32,7 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
           <button
             type="button"
             onClick={() => onSelectGenre(null)}
-            className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+            className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
           >
             Сбросить фильтр ({selectedGenre.name})
           </button>
@@ -52,7 +52,7 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
               type="button"
               aria-label={`Жанр ${g.name}`}
               onClick={() => onSelectGenre(isSelected ? null : g)}
-              className={`group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 hover:-translate-y-1 hover:shadow-2xl ${
+              className={`group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 hover:-translate-y-1 hover:shadow-2xl ${
                 isSelected
                   ? "border-rose-500 bg-rose-500/20 ring-2 ring-rose-500/40"
                   : "border-white/10 bg-white/[0.02] backdrop-blur-md hover:border-white/25 hover:shadow-rose-950/30"
@@ -70,16 +70,16 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
                   }}
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-black to-[#121318]" />
+                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-black to-[#121318]" />
               )}
 
               {/* Dark subtle gradient overlay to keep text readable */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/40 to-transparent" />
 
               {/* Genre info at bottom */}
               <div className="relative z-10 flex h-full flex-col justify-end">
                 <span
-                  className={`block text-sm font-bold leading-tight truncate drop-shadow ${
+                  className={`block text-sm font-bold leading-tight truncate drop-shadow-sm ${
                     isSelected ? "text-rose-400" : "text-white group-hover:text-rose-300"
                   }`}
                 >

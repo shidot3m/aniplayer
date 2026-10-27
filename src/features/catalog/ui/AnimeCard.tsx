@@ -68,7 +68,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
         type="button"
         aria-label={`Открыть ${release.name.main}`}
         onClick={onClick}
-        className="absolute inset-0 z-10 h-full w-full cursor-pointer rounded-2xl border-0 bg-transparent p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+        className="absolute inset-0 z-10 h-full w-full cursor-pointer rounded-2xl border-0 bg-transparent p-0 text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       />
 
       {/* Poster Image */}
@@ -84,7 +84,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
           }}
         />
       ) : (
-        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-gradient-to-br from-black to-[#121318] p-4 text-center">
+        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-linear-to-br from-black to-[#121318] p-4 text-center">
           <span className="text-xs text-slate-400 line-clamp-3">{release.name.main}</span>
         </div>
       )}
@@ -125,7 +125,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       {/* Quick Bookmark Action Menu - Only visible on hover */}
       <div className="absolute right-2.5 top-10 z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300">
         <DropdownMenu>
-          <DropdownMenuTrigger className="focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg">
+          <DropdownMenuTrigger className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg">
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-lg backdrop-blur-xl transition-colors ${
                 currentCategory
@@ -162,7 +162,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       </div>
 
       {/* Hover Glass Darkening Overlay with Details - Only visible on hover */}
-      <div className="absolute inset-0 z-10 flex flex-col justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent p-3.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none">
+      <div className="absolute inset-0 z-10 flex flex-col justify-end bg-linear-to-t from-black/95 via-black/75 to-transparent p-3.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none">
         <h4 className="text-xs font-bold text-white line-clamp-2 leading-tight">
           {release.name.main}
         </h4>

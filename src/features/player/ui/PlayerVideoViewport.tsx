@@ -33,7 +33,7 @@ export function PlayerVideoViewport({
       type="button"
       tabIndex={-1}
       aria-label="Переключить воспроизведение"
-      className="absolute inset-0 z-0 flex items-center justify-center bg-black cursor-pointer border-0 p-0 outline-none w-full h-full"
+      className="absolute inset-0 z-0 flex items-center justify-center bg-black cursor-pointer border-0 p-0 outline-hidden w-full h-full"
       onClick={onTogglePlay}
       onDoubleClick={onToggleFullscreen}
     >

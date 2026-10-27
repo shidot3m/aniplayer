@@ -27,7 +27,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           onClick={() => setActiveTab("playback")}
           className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-medium transition-all cursor-pointer ${
             activeTab === "playback"
-              ? "bg-rose-600 text-white shadow-sm font-semibold"
+              ? "bg-rose-600 text-white shadow-xs font-semibold"
               : "text-slate-400 hover:text-white"
           }`}
         >
@@ -40,7 +40,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           onClick={() => setActiveTab("hotkeys")}
           className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-medium transition-all cursor-pointer ${
             activeTab === "hotkeys"
-              ? "bg-rose-600 text-white shadow-sm font-semibold"
+              ? "bg-rose-600 text-white shadow-xs font-semibold"
               : "text-slate-400 hover:text-white"
           }`}
         >
