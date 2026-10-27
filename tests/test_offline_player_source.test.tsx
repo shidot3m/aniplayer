@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useHlsVideo } from "@/features/player/renderer/useHlsVideo";
 
@@ -24,13 +24,14 @@ vi.mock("hls.js", () => {
   return { default: HlsMock };
 });
 
-function VideoHarness({ src }: { src: string }) {
+function VideoHarness({ src, initialTime = 0 }: { src: string; initialTime?: number }) {
   const { videoRef } = useHlsVideo({
     streamUrl: src,
     isPlaying: false,
     volume: 100,
     isMuted: false,
     speed: 1,
+    initialTime,
   });
 
   return (
@@ -58,8 +59,32 @@ describe("offline video source", () => {
     expect(hls.loadSource).not.toHaveBeenCalled();
   });
 
+  it("applies the initial playback settings once the file metadata is loaded", () => {
+    render(
+      <VideoHarness
+        src="http://asset.localhost/C%3A%5Cdownloads%5C10239%5C1.mp4"
+        initialTime={5}
+      />,
+    );
+    const video = renderedVideo();
+
+    expect(video.currentTime).toBe(0);
+    fireEvent.loadedMetadata(video);
+    expect(video.currentTime).toBe(5);
+    expect(video.volume).toBe(1);
+  });
+
   it("still routes HLS playlists through hls.js", () => {
     const streamUrl = "https://cache.libria.fun/videos/10329/1080/index.m3u8?token=abc";
+
+    render(<VideoHarness src={streamUrl} />);
+
+    expect(hls.loadSource).toHaveBeenCalledWith(streamUrl);
+    expect(renderedVideo().getAttribute("src")).toBeNull();
+  });
+
+  it("leaves remote streams that are not asset URLs on the hls.js path", () => {
+    const streamUrl = "https://cache.libria.fun/videos/10329/1080/stream";
 
     render(<VideoHarness src={streamUrl} />);
 

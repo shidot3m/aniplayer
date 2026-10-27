@@ -1,8 +1,10 @@
 import Hls from "hls.js";
 import { useCallback, useEffect, useRef } from "react";
 
-function isHlsStream(streamUrl: string): boolean {
-  return /\.m3u8(?:[?#]|$)/i.test(streamUrl);
+function isLocalAssetUrl(streamUrl: string): boolean {
+  return (
+    streamUrl.startsWith("http://asset.localhost/") || streamUrl.startsWith("asset://localhost/")
+  );
 }
 
 interface UseHlsVideoOptions {
@@ -63,7 +65,9 @@ export function useHlsVideo({
       }
     };
 
-    if (isHlsStream(streamUrl) && Hls.isSupported()) {
+    const isLocalAsset = isLocalAssetUrl(streamUrl);
+
+    if (Hls.isSupported() && !isLocalAsset) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -92,7 +96,7 @@ export function useHlsVideo({
           }
         }
       });
-    } else {
+    } else if (isLocalAsset || video.canPlayType("application/vnd.apple.mpegurl")) {
       // Downloaded episodes are plain files served by the asset protocol;
       // hls.js only understands playlists, so the element loads them directly.
       video.addEventListener("loadedmetadata", applyInitialSettings, { once: true });

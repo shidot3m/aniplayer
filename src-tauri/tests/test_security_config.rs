@@ -48,6 +48,13 @@ fn sources(map: &HashMap<String, CspDirectiveSources>, directive: &str) -> Vec<S
         .unwrap_or_default()
 }
 
+fn normalized_paths(paths: &[std::path::PathBuf]) -> Vec<String> {
+    paths
+        .iter()
+        .map(|path| path.to_string_lossy().replace('\\', "/"))
+        .collect()
+}
+
 fn assert_contains(map: &HashMap<String, CspDirectiveSources>, directive: &str, wanted: &[&str]) {
     let present = match map.get(directive) {
         Some(directive) => Vec::from(directive.clone()),
@@ -197,14 +204,8 @@ fn asset_protocol_is_enabled_and_confined_to_downloads() {
         FsScope::AllowedPaths(paths) => (paths, Vec::new()),
         FsScope::Scope { allow, deny, .. } => (allow, deny),
     };
-    let allowed: Vec<String> = allowed
-        .iter()
-        .map(|path| path.to_string_lossy().replace('\\', "/"))
-        .collect();
-    let forbidden: Vec<String> = forbidden
-        .iter()
-        .map(|path| path.to_string_lossy().replace('\\', "/"))
-        .collect();
+    let allowed = normalized_paths(&allowed);
+    let forbidden = normalized_paths(&forbidden);
 
     assert!(
         forbidden.is_empty(),
