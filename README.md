@@ -75,6 +75,15 @@ npm run tauri dev
 
 Фронтенд отдельно (без окна Tauri): `npm run dev` — http://127.0.0.1:1420.
 
+В Git Bash / MSYS-шеллах Rust не линкуется: `usr/bin/link.exe` из Git перекрывает
+линкер MSVC, а `INCLUDE`/`LIB` не экспортируются. Для этих шеллов есть `npm run
+tauri:win` — он подгружает окружение Visual Studio через `vsdevcmd.bat`
+(`scripts/tauri-win.cmd`) и передаёт аргументы в `tauri`:
+
+```bash
+npm run tauri:win dev
+```
+
 ## Сборка
 
 ```bash
