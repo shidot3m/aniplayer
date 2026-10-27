@@ -1,18 +1,37 @@
 use libloading::{Library, Symbol};
 use std::ffi::{c_char, c_int, c_ulong, c_void, CStr, CString};
 use std::path::Path;
+use std::ptr::NonNull;
 use std::sync::Arc;
 
-pub type MpvHandle = *mut c_void;
+/// Safe owning wrapper over an `mpv_handle` pointer.
+///
+/// The raw pointer never leaves this type: all FFI helpers accept `&MpvContext`
+/// and dereference the handle internally. Dropping the context destroys the
+/// mpv client, so every error path frees the native handle.
+pub struct MpvContext {
+    ffi: Arc<MpvFfi>,
+    handle: NonNull<c_void>,
+}
 
-type FnMpvCreate = unsafe extern "C" fn() -> MpvHandle;
-type FnMpvInitialize = unsafe extern "C" fn(ctx: MpvHandle) -> c_int;
-type FnMpvTerminateDestroy = unsafe extern "C" fn(ctx: MpvHandle);
-type FnMpvSetOptionString = unsafe extern "C" fn(ctx: MpvHandle, name: *const c_char, data: *const c_char) -> c_int;
-type FnMpvSetPropertyString = unsafe extern "C" fn(ctx: MpvHandle, name: *const c_char, data: *const c_char) -> c_int;
-type FnMpvGetPropertyString = unsafe extern "C" fn(ctx: MpvHandle, name: *const c_char) -> *mut c_char;
+// Safe to share across threads per libmpv client API guarantees.
+unsafe impl Send for MpvContext {}
+unsafe impl Sync for MpvContext {}
+
+impl Drop for MpvContext {
+    fn drop(&mut self) {
+        unsafe { (self.ffi.mpv_terminate_destroy)(self.handle.as_ptr()) };
+    }
+}
+
+type FnMpvCreate = unsafe extern "C" fn() -> *mut c_void;
+type FnMpvInitialize = unsafe extern "C" fn(ctx: *mut c_void) -> c_int;
+type FnMpvTerminateDestroy = unsafe extern "C" fn(ctx: *mut c_void);
+type FnMpvSetOptionString = unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char, data: *const c_char) -> c_int;
+type FnMpvSetPropertyString = unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char, data: *const c_char) -> c_int;
+type FnMpvGetPropertyString = unsafe extern "C" fn(ctx: *mut c_void, name: *const c_char) -> *mut c_char;
 type FnMpvFree = unsafe extern "C" fn(data: *mut c_void);
-type FnMpvCommandString = unsafe extern "C" fn(ctx: MpvHandle, args: *const c_char) -> c_int;
+type FnMpvCommandString = unsafe extern "C" fn(ctx: *mut c_void, args: *const c_char) -> c_int;
 type FnMpvClientApiVersion = unsafe extern "C" fn() -> c_ulong;
 
 pub struct MpvFfi {
@@ -77,17 +96,17 @@ impl MpvFfi {
         }
     }
 
-    pub fn create(&self) -> Result<MpvHandle, String> {
-        let handle = unsafe { (self.mpv_create)() };
-        if handle.is_null() {
-            Err("mpv_create returned null pointer".to_string())
-        } else {
-            Ok(handle)
-        }
+    pub fn create_context(self: &Arc<Self>) -> Result<Arc<MpvContext>, String> {
+        let raw = unsafe { (self.mpv_create)() };
+        let handle = NonNull::new(raw).ok_or_else(|| "mpv_create returned null pointer".to_string())?;
+        Ok(Arc::new(MpvContext {
+            ffi: self.clone(),
+            handle,
+        }))
     }
 
-    pub fn initialize(&self, ctx: MpvHandle) -> Result<(), String> {
-        let ret = unsafe { (self.mpv_initialize)(ctx) };
+    pub fn initialize(&self, ctx: &MpvContext) -> Result<(), String> {
+        let ret = unsafe { (self.mpv_initialize)(ctx.handle.as_ptr()) };
         if ret < 0 {
             Err(format!("mpv_initialize failed with error code: {}", ret))
         } else {
@@ -95,16 +114,10 @@ impl MpvFfi {
         }
     }
 
-    pub fn destroy(&self, ctx: MpvHandle) {
-        if !ctx.is_null() {
-            unsafe { (self.mpv_terminate_destroy)(ctx) };
-        }
-    }
-
-    pub fn set_option_string(&self, ctx: MpvHandle, name: &str, data: &str) -> Result<(), String> {
+    pub fn set_option_string(&self, ctx: &MpvContext, name: &str, data: &str) -> Result<(), String> {
         let c_name = CString::new(name).map_err(|e| e.to_string())?;
         let c_data = CString::new(data).map_err(|e| e.to_string())?;
-        let ret = unsafe { (self.mpv_set_option_string)(ctx, c_name.as_ptr(), c_data.as_ptr()) };
+        let ret = unsafe { (self.mpv_set_option_string)(ctx.handle.as_ptr(), c_name.as_ptr(), c_data.as_ptr()) };
         if ret < 0 {
             Err(format!("mpv_set_option_string({}, {}) error: {}", name, data, ret))
         } else {
@@ -112,10 +125,10 @@ impl MpvFfi {
         }
     }
 
-    pub fn set_property_string(&self, ctx: MpvHandle, name: &str, data: &str) -> Result<(), String> {
+    pub fn set_property_string(&self, ctx: &MpvContext, name: &str, data: &str) -> Result<(), String> {
         let c_name = CString::new(name).map_err(|e| e.to_string())?;
         let c_data = CString::new(data).map_err(|e| e.to_string())?;
-        let ret = unsafe { (self.mpv_set_property_string)(ctx, c_name.as_ptr(), c_data.as_ptr()) };
+        let ret = unsafe { (self.mpv_set_property_string)(ctx.handle.as_ptr(), c_name.as_ptr(), c_data.as_ptr()) };
         if ret < 0 {
             Err(format!("mpv_set_property_string({}, {}) error: {}", name, data, ret))
         } else {
@@ -123,9 +136,9 @@ impl MpvFfi {
         }
     }
 
-    pub fn get_property_string(&self, ctx: MpvHandle, name: &str) -> Result<Option<String>, String> {
+    pub fn get_property_string(&self, ctx: &MpvContext, name: &str) -> Result<Option<String>, String> {
         let c_name = CString::new(name).map_err(|e| e.to_string())?;
-        let ptr = unsafe { (self.mpv_get_property_string)(ctx, c_name.as_ptr()) };
+        let ptr = unsafe { (self.mpv_get_property_string)(ctx.handle.as_ptr(), c_name.as_ptr()) };
         if ptr.is_null() {
             Ok(None)
         } else {
@@ -135,9 +148,9 @@ impl MpvFfi {
         }
     }
 
-    pub fn command_string(&self, ctx: MpvHandle, cmd: &str) -> Result<(), String> {
+    pub fn command_string(&self, ctx: &MpvContext, cmd: &str) -> Result<(), String> {
         let c_cmd = CString::new(cmd).map_err(|e| e.to_string())?;
-        let ret = unsafe { (self.mpv_command_string)(ctx, c_cmd.as_ptr()) };
+        let ret = unsafe { (self.mpv_command_string)(ctx.handle.as_ptr(), c_cmd.as_ptr()) };
         if ret < 0 {
             Err(format!("mpv_command_string({}) error: {}", cmd, ret))
         } else {
