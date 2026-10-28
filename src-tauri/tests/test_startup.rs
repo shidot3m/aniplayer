@@ -12,7 +12,10 @@ use std::sync::{
     Arc,
 };
 
-use aniplayer_lib::db::{models::BookmarkItem, Database};
+use aniplayer_lib::db::{
+    models::{BookmarkItem, DownloadedEpisodeMeta, HistoryItem},
+    Database,
+};
 use aniplayer_lib::startup;
 
 fn unique_temp_dir(label: &str) -> PathBuf {
@@ -51,6 +54,30 @@ fn database_survives_application_restart() {
         "the database must be a file on disk, not an in-memory stand-in"
     );
     db.save_bookmark(&bookmark(42)).expect("save bookmark");
+    db.save_history(&HistoryItem {
+        release_id: 42,
+        episode_id: "ep-1".to_string(),
+        episode_ordinal: 1.0,
+        last_position: 520.0,
+        duration: 1420.0,
+        is_completed: false,
+        updated_at: None,
+    })
+    .expect("save history");
+    db.save_downloaded_episode(&DownloadedEpisodeMeta {
+        episode_id: "ep-1".to_string(),
+        release_id: 42,
+        episode_ordinal: 1.0,
+        file_path: "downloads/42/1.mp4".to_string(),
+        file_size: 350_000_000,
+        quality: "1080p".to_string(),
+        opening_start: Some(23.0),
+        opening_stop: Some(113.0),
+        ending_start: None,
+        ending_stop: None,
+        download_status: "COMPLETED".to_string(),
+    })
+    .expect("save downloaded episode");
     drop(db);
 
     let db = startup::open_database(&db_path).expect("database must reopen after restart");
@@ -58,8 +85,19 @@ fn database_survives_application_restart() {
     assert_eq!(
         restored.iter().map(|b| b.release_id).collect::<Vec<_>>(),
         vec![42],
-        "a restart must see the previously persisted data"
+        "a restart must see the previously persisted bookmark"
     );
+
+    let history = db.get_continue_watching().expect("read history");
+    assert_eq!(history.len(), 1, "a restart must see the persisted history");
+    assert_eq!(history[0].last_position, 520.0);
+
+    let downloaded = db
+        .get_downloaded_episode("ep-1")
+        .expect("read downloaded episode")
+        .expect("a restart must see the persisted download metadata");
+    assert_eq!(downloaded.file_path, "downloads/42/1.mp4");
+    assert_eq!(downloaded.opening_start, Some(23.0));
 
     let _ = std::fs::remove_dir_all(&dir);
 }
