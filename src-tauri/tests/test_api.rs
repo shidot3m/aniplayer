@@ -36,27 +36,38 @@ async fn test_api_fetch_latest_and_release_details() {
 
 #[tokio::test]
 async fn test_api_fetch_torrents_and_codecs() {
+    // The API removes old releases, so discover a live one instead of pinning an id.
+    const CANDIDATE_RELEASES: u32 = 10;
     let client = AnilibriaClient::new();
-    // Test with known release with torrents
-    let torrents = client
-        .get_release_torrents(10239)
+    let latest = client
+        .get_latest_releases(CANDIDATE_RELEASES)
         .await
-        .expect("Get torrents failed");
-    assert!(
-        !torrents.is_empty(),
-        "Torrents list is empty for release 10239"
-    );
-    let has_hevc = torrents.iter().any(|t| {
-        t.codec
-            .as_ref()
-            .map(|c| {
-                c.label.to_uppercase().contains("HEVC") || c.value.to_uppercase().contains("HEVC")
-            })
-            .unwrap_or(false)
+        .expect("Get latest failed");
+
+    let mut found = None;
+    let mut last_error = None;
+    for release in &latest {
+        match client.get_release_torrents(release.id).await {
+            Ok(torrents) if !torrents.is_empty() => {
+                found = Some(torrents);
+                break;
+            }
+            Ok(_) => {}
+            Err(error) => last_error = Some(error),
+        }
+    }
+
+    let torrents = found.unwrap_or_else(|| {
+        panic!(
+            "No torrents across {CANDIDATE_RELEASES} recent releases (last error: {last_error:?})"
+        )
     });
     assert!(
-        has_hevc,
-        "Expected at least one HEVC torrent for release 10239"
+        torrents.iter().any(|t| t
+            .codec
+            .as_ref()
+            .is_some_and(|codec| !codec.label.is_empty() && !codec.value.is_empty())),
+        "Expected at least one torrent with decoded codec metadata"
     );
 }
 
