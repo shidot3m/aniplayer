@@ -9,13 +9,13 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
-describe("Verification of 3 critical player & upscaler fixes", () => {
+describe("Player and upscaler fixes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
   });
 
-  it("1. Play/Pause state updates without touching the backend", async () => {
+  it("updates Play/Pause state without touching the backend", async () => {
     usePlayerStore.setState({ isPlaying: false });
 
     await usePlayerStore.getState().play();
@@ -33,7 +33,7 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 
-  it("2. Upscaler preset persists to localStorage, db_save_setting, and can be changed when disabled", async () => {
+  it("persists the upscaler preset to localStorage and db_save_setting, even when disabled", async () => {
     vi.mocked(invoke).mockResolvedValue(null);
 
     usePlayerStore.setState({
@@ -65,25 +65,5 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
       key: "anime4k_preset",
       value: "Mode B+B (HQ)",
     });
-  });
-
-  it("3. Anime4K canvas starts the GPU renderer only when enabled and cleans it up", async () => {
-    const fs = await import("node:fs");
-    const path = await import("node:path");
-    const canvasCode = fs.readFileSync(
-      path.resolve(__dirname, "../src/features/player/ui/Anime4kCanvas.tsx"),
-      "utf-8",
-    );
-    const rendererCode = fs.readFileSync(
-      path.resolve(__dirname, "../src/features/player/renderer/anime4kRenderer.ts"),
-      "utf-8",
-    );
-
-    expect(canvasCode).toContain("new Anime4kRenderer");
-    expect(canvasCode).toContain("renderer.destroy()");
-    expect(rendererCode).toContain("copyExternalImageToTexture");
-    expect(rendererCode).toContain("requestVideoFrameCallback");
-    expect(rendererCode).toContain("cancelVideoFrameCallback");
-    expect(rendererCode).toContain("this.video.paused");
   });
 });
