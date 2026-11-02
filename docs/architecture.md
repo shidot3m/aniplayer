@@ -177,7 +177,7 @@ There is no migration framework: the initializer creates missing tables only. Ch
 ## Current state and tracked gaps
 
 - **Torrent playback requires a complete download.** There is no piece-level streaming path; the scanner runs only after `librqbit` reports completion, and only `.mp4`/`.webm` payloads are playable in the WebView.
-- **The `librqbit-utp` patch is temporary.** It exists for RUSTSEC-2026-0293 and is tracked in [#37](https://github.com/shidot3m/aniplayer/issues/37).
+- **The `librqbit-utp` patch is temporary.** It pins the head of upstream `main` for RUSTSEC-2026-0293; that rev also carries the Windows uTP dispatcher fix. Tracked in [#37](https://github.com/shidot3m/aniplayer/issues/37).
 
 ## Verification gates
 

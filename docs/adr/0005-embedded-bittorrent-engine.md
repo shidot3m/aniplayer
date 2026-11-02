@@ -10,7 +10,7 @@ AniLiberty publishes releases as BitTorrent bundles, often the highest-quality H
 
 ## Decision
 
-- Embed `librqbit` in the Rust backend with a single long-lived `Session`, created during startup. TLS uses rustls; the `librqbit-utp` crate is patched to a git revision that fixes RUSTSEC-2026-0293 until a release carries `ringbuf` 0.5.2 or newer ([#37](https://github.com/shidot3m/aniplayer/issues/37)).
+- Embed `librqbit` in the Rust backend with a single long-lived `Session`, created during startup. TLS uses rustls; the `librqbit-utp` crate is patched to a git revision on upstream `main` that fixes RUSTSEC-2026-0293 and carries the Windows uTP dispatcher fix, until a release carries `ringbuf` 0.5.2 or newer ([#37](https://github.com/shidot3m/aniplayer/issues/37)).
 - `TorrentEngine` owns the session, the database handle, and a map of active tracking tasks. It accepts either a magnet link or an HTTP(S) URL, writes into `downloads/torrents/<release_id>/`, and tracks the torrent handle returned by the session.
 - Magnet links are validated before use: the `magnet:` scheme is required, the length is capped, and control characters are rejected. User-supplied `.torrent` paths are canonicalized and confined to the torrents folder before they are opened.
 - Every 500 ms a task samples download statistics and emits a `download-progress` event with bytes, percentage, speed, peers, and status (DOWNLOADING, COMPLETED, or CANCELED).
