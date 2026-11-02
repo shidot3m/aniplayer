@@ -19,6 +19,7 @@
 | Rust              | `rust-best-practices`                         | `rust-async-patterns`, `domain-cloud-native`                               |
 | React performance | `vercel-react-best-practices`                 | `vercel-composition-patterns`                                              |
 | UI direction      | `frontend-design`, `design-taste-frontend`    | `web-design-guidelines`                                                    |
+| UI clean-up       | `unslop`                                      | `frontend-design`, `design-taste-frontend`, `web-design-guidelines`        |
 | Tauri             | `tauri-v2`                                    | `tauri-security`                                                           |
 | API / gRPC        | `api-and-interface-design`                    | `contract-first`, `protobuf`, `grpc-development`                           |
 | Databases         | `sqlite-database-expert`, `postgres-patterns` | `database-migration`                                                       |
