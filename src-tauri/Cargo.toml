@@ -21,10 +21,16 @@ tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 thiserror = "2.0"
 libloading = "0.9"
-librqbit = "9.0.1"
+librqbit = { version = "9.1", default-features = false, features = ["rust-tls", "http-api-client"] }
 regex = "1.13.1"
 tauri-plugin-opener = "2"
 rfd = { version = "0.16.1", default-features = false }
 
 [dev-dependencies]
 tauri-utils = "2"
+
+# librqbit-utp 0.7.0, the latest release, still depends on ringbuf 0.4.8
+# (RUSTSEC-2026-0293). This pins the upstream fix from ikatson/librqbit-utp#3;
+# drop the patch once a release depends on ringbuf >= 0.5.2 (#37).
+[patch.crates-io]
+librqbit-utp = { git = "https://github.com/ikatson/librqbit-utp", rev = "f119a999657d66fe2c2322613428241ce8a69f23" }
