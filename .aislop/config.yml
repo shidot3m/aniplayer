@@ -1,0 +1,4 @@
+# The repository standard is a perfect score (AGENTS.md), so aislop ci fails
+# on any score below 100 instead of the default 70.
+ci:
+  failBelow: 100

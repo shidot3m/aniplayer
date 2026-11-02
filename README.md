@@ -93,7 +93,7 @@ python scripts/package_portable.py   # portable-сборка в dist_portable (�
 
 ## CI и релизы
 
-`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: сборку фронтенда, Biome, Vitest, aislop и герметичные Rust-тесты (`test_db`, `test_scanner`). Релизные сборки здесь не запускаются.
+`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_magnet_validation`, `test_scanner`, `test_security_config`, `test_startup`, `test_torrent_path_validation`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
 
 `.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную на ветке `master` (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows portable-сборку и публикует единственный артефакт:
 
@@ -104,9 +104,20 @@ python scripts/package_portable.py   # portable-сборка в dist_portable (�
 ## Тесты и качество кода
 
 ```bash
-npx vitest run     # юнит-тесты
-npx @biomejs/biome check .  # линт + форматирование
-npx tsc --noEmit   # типы
+npm run typecheck   # типы: src, tests и конфиги сборки
+npm run lint        # Biome (линт + форматирование)
+npm run test        # Vitest
+npm run check       # все быстрые проверки фронтенда + aislop
+```
+
+Rust-проверки (из каталога `src-tauri`, с окружением MSVC):
+
+```bash
+cargo fmt --check
+cargo clippy --all-targets --locked -- -D warnings
+cargo audit
+cargo test --locked --test test_db --test test_magnet_validation --test test_scanner \
+  --test test_security_config --test test_startup --test test_torrent_path_validation
 ```
 
 ## Структура

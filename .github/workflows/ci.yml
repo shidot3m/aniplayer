@@ -17,7 +17,7 @@ jobs:
   frontend:
     name: Frontend checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -25,27 +25,52 @@ jobs:
           node-version: 26
           cache: npm
       - run: npm ci
-      - run: npm run build
-      - run: npx @biomejs/biome check .
-      - run: npx vitest run
-      - run: npx --yes aislop scan
+      - name: Type-check app, tests, and build configuration
+        run: npm run typecheck
+      - name: Biome
+        run: npm run lint
+      - name: Vitest
+        run: npm run test
+      - name: aislop quality gate
+        run: npx aislop ci
+      - name: Build
+        run: npm run build
 
   rust:
     name: Rust checks
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      - name: Compile all tests
+      - name: Check formatting
         working-directory: src-tauri
-        run: cargo test --locked --no-run
-
+        run: cargo fmt --check
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit@0.22.2
+      - name: Audit dependencies
+        working-directory: src-tauri
+        run: cargo audit
+      - name: Clippy (warnings denied)
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --locked -- -D warnings
       # test_api needs the live AniLiberty API and test_player needs libmpv-2.dll,
-      # so CI compiles them but only executes the hermetic suites.
+      # so only the hermetic suites are linked and executed here. Clippy above
+      # type-checks every test target.
       - name: Run hermetic tests
         working-directory: src-tauri
-        run: cargo test --locked --test test_db --test test_scanner --test test_security_config --test test_startup
+        run: >-
+          cargo test --locked
+          --test test_db
+          --test test_magnet_validation
+          --test test_scanner
+          --test test_security_config
+          --test test_startup
+          --test test_torrent_path_validation
