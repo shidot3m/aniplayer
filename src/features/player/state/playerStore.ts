@@ -11,6 +11,7 @@ import {
   getInitialQuality,
   getInitialVolume,
   type PlayerState,
+  pickEpisodeSource,
   resolveEpisodeQuality,
 } from "./playerStoreDefaults";
 
@@ -31,13 +32,6 @@ async function invokePlayer(command: string, args?: Record<string, unknown>): Pr
   } catch (error) {
     console.error(`Native player command ${command} failed:`, error);
   }
-}
-
-function episodeSource(episode: ReleaseDetails["episodes"][number], quality: VideoQuality): string {
-  if (quality === "1080p" && episode.hls_1080) return episode.hls_1080;
-  if (quality === "720p" && episode.hls_720) return episode.hls_720;
-  if (quality === "480p" && episode.hls_480) return episode.hls_480;
-  return episode.hls_1080 || episode.hls_720 || episode.hls_480 || "";
 }
 
 function openRequest(source: string, start: number, state: PlayerState) {
@@ -108,7 +102,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     const resolvedQuality = resolveEpisodeQuality(activeEpisode, get().preferredQuality);
     const state = get();
-    const source = episodeSource(activeEpisode, resolvedQuality);
+    const source = pickEpisodeSource(activeEpisode, resolvedQuality);
 
     set({
       isPlayerOpen: true,
@@ -280,7 +274,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (!episode || !state.isPlayerOpen) return;
     await invokePlayer(
       "player_open",
-      openRequest(episodeSource(episode, quality), state.currentTime, state),
+      openRequest(pickEpisodeSource(episode, quality), state.currentTime, state),
     );
     if (!state.isPlaying) {
       await invokePlayer("player_set_pause", { paused: true });

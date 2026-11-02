@@ -281,9 +281,8 @@ impl HlsDownloader {
             .await
             .map_err(|e| e.to_string())?;
 
-        // Every episode owns a folder with its playlist and TS segments, which
-        // is the only layout the WebView can play offline: hls.js demuxes the
-        // segments itself instead of relying on a container WebView2 lacks.
+        // Every episode owns a folder with its playlist and the resources the
+        // playlist names, so mpv can replay it offline with no network access.
         let episode_dir = rel_folder.join(ordinal.to_string());
         let dest_path = episode_dir.join(PLAYLIST_FILE_NAME);
         let dest_str = dest_path.to_string_lossy().to_string();

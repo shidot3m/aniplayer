@@ -9,20 +9,22 @@ pub enum Anime4kPreset {
     ModeC,
     ModeCA,
     ModeFast,
-    Off,
 }
 
 impl Anime4kPreset {
-    pub fn from_label(label: &str) -> Self {
+    /// Maps the preset label the Settings UI stores to a chain. An unknown label
+    /// is refused by name: silently picking a chain would apply an enhancement
+    /// the user never chose.
+    pub fn from_label(label: &str) -> Result<Self, String> {
         match label.to_ascii_lowercase().as_str() {
-            "mode a (hq)" | "a" | "mode_a" => Self::ModeA,
-            "mode b (hq)" | "b" | "mode_b" => Self::ModeB,
-            "mode b+b (hq)" | "b+b" | "mode_bb" => Self::ModeBB,
-            "mode c (hq)" | "c" | "mode_c" => Self::ModeC,
-            "mode c+a (hq)" | "c+a" | "mode_ca" => Self::ModeCA,
-            "mode fast (apu)" | "fast" | "apu" => Self::ModeFast,
-            "off" => Self::Off,
-            _ => Self::ModeAA,
+            "mode a (hq)" | "a" | "mode_a" => Ok(Self::ModeA),
+            "mode a+a (hq)" | "a+a" | "mode_aa" => Ok(Self::ModeAA),
+            "mode b (hq)" | "b" | "mode_b" => Ok(Self::ModeB),
+            "mode b+b (hq)" | "b+b" | "mode_bb" => Ok(Self::ModeBB),
+            "mode c (hq)" | "c" | "mode_c" => Ok(Self::ModeC),
+            "mode c+a (hq)" | "c+a" | "mode_ca" => Ok(Self::ModeCA),
+            "mode fast (apu)" | "fast" | "apu" => Ok(Self::ModeFast),
+            other => Err(format!("Unknown Anime4K preset: {other}")),
         }
     }
 
@@ -91,7 +93,6 @@ impl Anime4kPreset {
                 DOWNSCALE_X4,
                 UPSCALE_S,
             ],
-            Self::Off => &[],
         }
     }
 

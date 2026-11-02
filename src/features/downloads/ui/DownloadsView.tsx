@@ -7,7 +7,6 @@ import { formatBytes } from "@/shared/lib/utils";
 import type { DownloadedEpisodeMeta, EpisodeItem, Release } from "@/shared/types";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { offlinePlaybackSource } from "../lib/offlineSource";
 import { useDownloadStore } from "../state/downloadStore";
 
 function DownloadedEpisodeRow({
@@ -172,14 +171,13 @@ function buildOfflineEpisodes(metas: DownloadedEpisodeMeta[]): EpisodeItem[] {
     .slice()
     .sort((a, b) => a.episode_ordinal - b.episode_ordinal)
     .map((meta) => {
-      const source = offlinePlaybackSource(meta.file_path);
       return {
         id: meta.episode_id,
         ordinal: meta.episode_ordinal,
         duration: 1440,
-        hls_1080: source,
-        hls_720: source,
-        hls_480: source,
+        hls_1080: meta.file_path,
+        hls_720: meta.file_path,
+        hls_480: meta.file_path,
         opening: { start: meta.opening_start, stop: meta.opening_stop },
         ending: { start: meta.ending_start, stop: meta.ending_stop },
       };

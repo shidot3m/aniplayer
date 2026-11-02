@@ -199,6 +199,21 @@ export function resolveEpisodeQuality(episode: EpisodeItem, preferred: VideoQual
   return available[0] || "720p";
 }
 
+/**
+ * The stream an Episode exposes at one Quality, falling back to the best the
+ * Episode has when that tier is missing. Both the store (which opens mpv) and the
+ * overlay (which shows what is playing) resolve a source the same way.
+ */
+export function pickEpisodeSource(
+  episode: Pick<EpisodeItem, "hls_1080" | "hls_720" | "hls_480">,
+  quality: VideoQuality,
+): string {
+  if (quality === "1080p" && episode.hls_1080) return episode.hls_1080;
+  if (quality === "720p" && episode.hls_720) return episode.hls_720;
+  if (quality === "480p" && episode.hls_480) return episode.hls_480;
+  return episode.hls_1080 || episode.hls_720 || episode.hls_480 || "";
+}
+
 export async function fetchSettingsFromDb(): Promise<Partial<PlayerState>> {
   if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
     return {};

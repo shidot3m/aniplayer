@@ -113,7 +113,8 @@ Backend events are one-way, Rust → WebView:
 2. `App` renders `LazyPlayerOverlay` inside `Suspense`; the overlay owns no video element.
 3. `playerStore` invokes `player_open` with the selected Quality's HLS URL plus the start position, volume, speed and Anime4K choice. `MpvSupervisor` creates (or reuses) the `native-player` window, spawns the bundled mpv with `--wid` attached to it, connects the JSON IPC pipe, and sends `loadfile`.
 4. `useNativePlayer` subscribes to `player-event`; each `time` event drives `playerStore.updateTime`, which in turn drives auto-skip of opening/ending timecodes, autoplay of the next Episode, and persistence of watch progress. Controls invoke `player_set_pause`, `player_seek`, `player_set_volume`, `player_set_speed`; a `fault` closes the player and shows the reason.
-5. Anime4K is mpv's GLSL chain: `player_set_anime4k` sends `change-list glsl-shaders` with the preset's `;`-separated shader paths from `shaders/anime4k/`.
+5. Subtitles are mpv's too: `--slang=en,ru` picks the preferred embedded track and `--sub-auto=fuzzy` loads sidecar files next to a download; the app exposes no track menu of its own.
+6. Anime4K is mpv's GLSL chain: `player_set_anime4k` sends `change-list glsl-shaders` with the preset's `;`-separated shader paths from `shaders/anime4k/`.
 
 ### Offline playback
 

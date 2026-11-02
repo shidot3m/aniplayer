@@ -62,6 +62,9 @@ impl MpvSession {
             json!(-1),
             json!(format!("start={}", request.start.max(0.0))),
         ])?;
+        // `pause` is global, not per-file: without this the next episode loads
+        // onto a frozen frame while the UI claims it is playing.
+        self.set_property("pause", json!(false))?;
         self.set_property("volume", json!(request.volume.clamp(0.0, 100.0)))?;
         self.set_property("mute", json!(request.muted || request.volume == 0.0))?;
         self.set_property("speed", json!(request.speed.clamp(0.25, 4.0)))?;
@@ -70,7 +73,7 @@ impl MpvSession {
 
     fn set_anime4k(&self, enabled: bool, preset: &str, shaders_dir: &Path) -> Result<(), String> {
         let operation = if enabled {
-            let chain = Anime4kPreset::from_label(preset).shader_chain(shaders_dir)?;
+            let chain = Anime4kPreset::from_label(preset)?.shader_chain(shaders_dir)?;
             vec![
                 json!("change-list"),
                 json!("glsl-shaders"),
@@ -120,6 +123,9 @@ impl MpvSupervisor {
         request: MpvOpenRequest,
     ) -> Result<(), String> {
         let source = self.validated_source(&request.source)?;
+        if !request.start.is_finite() {
+            return Err("Start position must be finite".to_string());
+        }
         let request = MpvOpenRequest { source, ..request };
         let mut guard = self.lock();
         if let Some(session) = guard.as_ref() {
@@ -251,7 +257,12 @@ impl MpvSupervisor {
                 "--window-dragging=no",
                 "--terminal=no",
                 "--msg-level=all=warn",
+                // AniLiberty serves its streams to browsers only; a plain client is
+                // refused. Subtitles stay mpv's job: embedded tracks are selected by
+                // language and sidecar files next to a download are found automatically.
                 "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Aniplayer/1.0",
+                "--slang=en,ru",
+                "--sub-auto=fuzzy",
             ])
             .arg(format!("--wid={wid}"))
             .arg(format!("--input-ipc-server={pipe_name}"))

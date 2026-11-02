@@ -90,8 +90,13 @@ fn every_anime4k_preset_maps_to_real_shader_files() {
         "Mode Fast (APU)",
     ];
 
+    assert_eq!(
+        Anime4kPreset::from_label("Mode Z (HQ)").unwrap_err(),
+        "Unknown Anime4K preset: mode z (hq)"
+    );
+
     for label in labels {
-        let preset = Anime4kPreset::from_label(label);
+        let preset = Anime4kPreset::from_label(label).expect("label must map to a preset");
         let files = preset.shader_file_names();
         assert!(!files.is_empty(), "{label} must enable a shader chain");
         for file in files {

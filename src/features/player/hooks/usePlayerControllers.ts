@@ -4,7 +4,7 @@ import { useCatalogStore } from "@/features/catalog";
 import type { EpisodeItem, Release, VideoQuality } from "@/shared/types";
 import { useNativePlayer } from "../renderer/useNativePlayer";
 import { usePlayerStore } from "../state/playerStore";
-import { getAvailableQualities } from "../state/playerStoreDefaults";
+import { getAvailableQualities, pickEpisodeSource } from "../state/playerStoreDefaults";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";
 
 interface UsePlayerControllersOptions {
@@ -79,19 +79,16 @@ export function usePlayerControllers({
     if (hasNext) playEpisode(release, release.episodes[currentIndex + 1]);
   }, [hasNext, playEpisode, release, currentIndex]);
 
-  const streamUrl = useMemo(() => {
-    if (activeQuality === "1080p" && episode.hls_1080) return episode.hls_1080;
-    if (activeQuality === "720p" && episode.hls_720) return episode.hls_720;
-    if (activeQuality === "480p" && episode.hls_480) return episode.hls_480;
-    return episode.hls_1080 || episode.hls_720 || episode.hls_480 || "";
-  }, [activeQuality, episode]);
+  const streamUrl = useMemo(
+    () => pickEpisodeSource(episode, activeQuality),
+    [activeQuality, episode],
+  );
 
   const lastSavedTimeRef = useRef<number>(0);
   const playbackPositionRef = useRef({ currentTime, duration });
   useEffect(() => {
     playbackPositionRef.current = { currentTime, duration };
   }, [currentTime, duration]);
-
   const saveProgress = useCallback(
     (cur: number, dur: number) => {
       if (dur > 0 && cur >= 0) {
@@ -101,6 +98,14 @@ export function usePlayerControllers({
     },
     [release, episode],
   );
+
+  const latestSave = useRef<() => void>(() => {});
+  useEffect(() => {
+    latestSave.current = () => {
+      const position = playbackPositionRef.current;
+      saveProgress(position.currentTime, position.duration);
+    };
+  }, [saveProgress]);
 
   const handleTimeUpdate = useCallback(
     (cur: number, dur: number) => {
@@ -156,12 +161,14 @@ export function usePlayerControllers({
   });
 
   useEffect(() => {
+    // Only when the overlay goes away. Keying this on `saveProgress` would fire
+    // on every Episode switch and `player_close` would arrive after the new
+    // episode's `player_open`, killing the session that just started.
     return () => {
-      const position = playbackPositionRef.current;
-      saveProgress(position.currentTime, position.duration);
+      latestSave.current();
       void invoke("player_close").catch(() => {});
     };
-  }, [saveProgress]);
+  }, []);
 
   const handleSeek = useCallback(
     (pos: number) => {
