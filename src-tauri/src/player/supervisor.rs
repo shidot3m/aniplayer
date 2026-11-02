@@ -274,11 +274,15 @@ impl MpvSupervisor {
         })
     }
 
-    fn validated_source(&self, source: &str) -> Result<String, String> {
+    pub(crate) fn validated_source(&self, source: &str) -> Result<String, String> {
         if source.is_empty() {
             return Err("This episode has no playable source".to_string());
         }
-        if let Ok(url) = reqwest::Url::parse(source) {
+        // A Windows path with a drive letter parses as a URL whose scheme is the
+        // letter ("E:"), so only strings that actually carry a `://` authority are
+        // treated as stream URLs; everything else is a downloaded file.
+        if source.contains("://") {
+            let url = reqwest::Url::parse(source).map_err(|e| format!("Invalid stream URL: {e}"))?;
             if matches!(url.scheme(), "http" | "https") {
                 return Ok(url.to_string());
             }
@@ -366,4 +370,44 @@ fn spawn_reader(pipe: File, app: AppHandle, closing: Arc<AtomicBool>) {
             );
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A Windows path with a drive letter parses as a URL whose scheme is the
+    // letter itself; it must still reach the downloads-folder branch.
+    #[test]
+    fn drive_letter_paths_are_not_mistaken_for_urls() {
+        let dir = std::env::temp_dir().join(format!("aniplayer-source-{}", std::process::id()));
+        let downloads = dir.join("downloads");
+        std::fs::create_dir_all(&downloads).unwrap();
+        let file = downloads.join("episode.mkv");
+        std::fs::write(&file, b"fixture").unwrap();
+        let supervisor = MpvSupervisor::new(dir.clone());
+
+        let accepted = supervisor
+            .validated_source(&file.to_string_lossy())
+            .expect("a downloaded file must be playable");
+        assert!(accepted.ends_with("episode.mkv"));
+
+        let escaped = dir.join("outside.mkv");
+        std::fs::write(&escaped, b"fixture").unwrap();
+        assert!(supervisor
+            .validated_source(&escaped.to_string_lossy())
+            .unwrap_err()
+            .contains("outside the downloads folder"));
+
+        assert_eq!(
+            supervisor.validated_source("ftp://host/episode.mkv").unwrap_err(),
+            "Only HTTP(S) streams and downloaded episodes can be played"
+        );
+        assert!(supervisor
+            .validated_source("https://cdn.test/episode.m3u8")
+            .unwrap()
+            .starts_with("https://cdn.test/"));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

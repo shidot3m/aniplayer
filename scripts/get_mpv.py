@@ -10,13 +10,14 @@ import hashlib
 import os
 import shutil
 import sys
-import tempfile
 import urllib.request
 import zipfile
 
 MPV_VERSION = "v0.41.0"
 MPV_ASSET = f"mpv-{MPV_VERSION}-x86_64-w64-mingw32.zip"
-MPV_URL = f"https://github.com/mpv-player/mpv/releases/download/{MPV_VERSION}/{MPV_ASSET}"
+MPV_URL = (
+    f"https://github.com/mpv-player/mpv/releases/download/{MPV_VERSION}/{MPV_ASSET}"
+)
 # Digest published by GitHub for the asset (releases API `digest` field).
 MPV_SHA256 = "a49811c0752c108b8260636f9c6f6fcb97406641c98b30f1e7b500dfb20177de"
 
@@ -44,9 +45,11 @@ def fetch_asset():
 
     archive = os.path.join(dest, MPV_ASSET)
     print(f"[..] Downloading {MPV_URL}")
-    with urllib.request.urlopen(MPV_URL, timeout=120) as response:
-        with open(archive, "wb") as handle:
-            shutil.copyfileobj(response, handle)
+    with (
+        urllib.request.urlopen(MPV_URL, timeout=120) as response,
+        open(archive, "wb") as handle,
+    ):
+        shutil.copyfileobj(response, handle)
 
     checksum = sha256_of(archive)
     if checksum != MPV_SHA256:
@@ -56,21 +59,25 @@ def fetch_asset():
         )
     print("[OK] SHA-256 verified")
 
-    # The GitHub asset is an outer zip holding one inner build archive.
-    with tempfile.TemporaryDirectory() as scratch:
-        with zipfile.ZipFile(archive) as outer:
-            inner_names = outer.namelist()
-            if len(inner_names) != 1:
-                raise SystemExit(f"[ERROR] Unexpected archive layout: {inner_names}")
-            outer.extract(inner_names[0], scratch)
-        inner_path = os.path.join(scratch, inner_names[0])
-        with zipfile.ZipFile(inner_path) as inner:
+    # The GitHub asset is an outer zip holding one inner build archive; the inner
+    # archive is read straight from the outer one, never written to disk.
+    with zipfile.ZipFile(archive) as outer:
+        inner_names = outer.namelist()
+        if len(inner_names) != 1:
+            raise SystemExit(f"[ERROR] Unexpected archive layout: {inner_names}")
+        with (
+            outer.open(inner_names[0]) as inner_bytes,
+            zipfile.ZipFile(inner_bytes) as inner,
+        ):
             for name in inner.namelist():
                 base = os.path.basename(name)
                 if not base:
                     continue
                 if base == "mpv.exe" or base.endswith(".dll"):
-                    with inner.open(name) as source, open(os.path.join(dest, base), "wb") as target:
+                    with (
+                        inner.open(name) as source,
+                        open(os.path.join(dest, base), "wb") as target,
+                    ):
                         shutil.copyfileobj(source, target)
     os.remove(archive)
     print(f"[OK] Unpacked mpv {MPV_VERSION} runtime into {dest}")
