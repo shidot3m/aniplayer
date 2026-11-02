@@ -8,7 +8,7 @@ Status: accepted
 
 [ADR 0003](0003-native-libmpv-ffi-layer.md) introduced a runtime-loaded `libmpv` FFI layer as the native media backend. The Player overlay never adopted it: since the `<video>` pipeline landed, playback runs through hls.js and Anime4K runs through `anime4k-webgpu`. Nothing called `player_init`, so every `player_*` command returned a default or did nothing.
 
-The dead layer still cost real maintenance: an `unsafe` FFI module behind `libloading`, 14 IPC commands and their handler registrations, an `AppState` field, a DLL download in the release workflow, 39 tracked GLSL shader files copied into the portable zip, and documentation that had to explain why the registered backend was inactive.
+The dead layer still cost real maintenance: an `unsafe` FFI module behind `libloading`, 15 IPC commands and their handler registrations, an `AppState` field, a DLL download in the release workflow, 39 tracked GLSL shader files copied into the portable zip, and documentation that had to explain why the registered backend was inactive.
 
 ## Decision
 
@@ -28,5 +28,5 @@ The dead layer still cost real maintenance: an `unsafe` FFI module behind `liblo
 
 - The portable zip shrinks to the executable and its data folder; the release workflow no longer downloads mpv builds.
 - The Rust backend contains no `unsafe` FFI for playback and no `libloading` dependency; command surface is limited to catalog, storage, downloads, and window control.
-- Settings survive unchanged: they were already persisted in `app_data.app_settings` (and mirrored in browser storage), not in the player.
+- Settings survive unchanged: they were already persisted in the `app_settings` table (and mirrored in browser storage), not in the player.
 - Restoring native playback would require a fresh ADR and a new FFI or process-isolation design.

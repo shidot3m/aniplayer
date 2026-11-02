@@ -179,7 +179,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         value: preset,
       });
     } catch (_e) {
-      // Browser mode or backend not ready
+      // Browser mode without the Tauri IPC
     }
   },
 
