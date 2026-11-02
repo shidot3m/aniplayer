@@ -1,6 +1,6 @@
 # Aniplayer
 
-Десктопный аниме-плеер для Windows: Tauri 2 + React 19, HLS-воспроизведение в WebView2 и апскейл Anime4K через WebGPU, каталог AniLiberty, торрент-стриминг и скачивание серий.
+Десктопный аниме-плеер для Windows: Tauri 2 + React 19, HLS-воспроизведение в WebView2 и апскейл Anime4K через WebGPU, каталог AniLiberty, торрент-загрузки и скачивание серий.
 
 ## Возможности
 
@@ -8,30 +8,43 @@
 - Anime4K-апскейл в реальном времени через `anime4k-webgpu` (WebGPU) с пресетами и сохранением выбора
 - Каталог, расписание, жанры, франшизы — API AniLiberty
 - Торрент-загрузки через встроенный движок `librqbit` со сканированием серий после завершения
-- Скачивание серий, очередь загрузок, виджет прогресса
+- Скачивание серий, отслеживание активных загрузок с отменой, плавающий виджет прогресса
 - Закладки, «Продолжить просмотр», история — SQLite (`data/aniplayer.db` рядом с exe)
 
 ## Стек
 
 | Слой         | Технологии                                                                |
 | ------------ | ------------------------------------------------------------------------- |
-| UI           | React 19, TypeScript, Vite 8, Tailwind 4, Zustand, Radix UI, lucide-react |
-| Оболочка     | Tauri 2 (Rust 2021)                                                       |
-| Бэкенд       | Tauri IPC: `librqbit`, `rusqlite`, `reqwest`                              |
-| Тесты / линт | Vitest, Testing Library, Biome                                            |
+| UI           | React 19, TypeScript 7, Vite 8, Tailwind 4, Zustand, Radix UI, lucide-react |
+| Оболочка     | Tauri 2.12 (Rust, edition 2021)                                             |
+| Бэкенд       | Tauri IPC: `librqbit` 9, `rusqlite` 0.41, `reqwest` 0.13                    |
+| Тесты / линт | Vitest 5, Testing Library, Biome 2.6, aislop                                |
 
 ## Требования
 
 - Windows 10/11 x64
-- [Node.js](https://nodejs.org/) 20+ и npm
+- [Node.js](https://nodejs.org/) 26 LTS и npm
 - [Rust](https://rustup.rs/) (stable, `x86_64-pc-windows-msvc`)
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) с C++ (для `rusqlite`/Tauri)
 - WebView2 Runtime (в Windows 11 уже есть)
+- Python 3 — только для portable-упаковки
+
+## Установка (portable)
+
+Единственный публикуемый артефакт — `Aniplayer-portable.zip` из релиза [`latest`](../../releases/tag/latest):
+
+1. Распакуйте архив в папку, доступную на запись (не `Program Files`).
+2. Запустите `aniplayer.exe`. База создаётся в `data/aniplayer.db`, загрузки — в `downloads/`.
+3. Для обновления замените файлы программы, сохранив `data/` и `downloads/`.
+
+Установщиков нет; база, загрузки и настройки остаются внутри папки. Служебный кэш
+WebView2 Tauri по умолчанию держит в `%LOCALAPPDATA%`. Подробности — в
+[ADR 0006](docs/adr/0006-portable-only-distribution.md).
 
 ## Запуск
 
 ```bash
-npm install
+npm ci
 npm run tauri dev
 ```
 
@@ -49,9 +62,11 @@ npm run tauri:win dev
 ## Сборка
 
 ```bash
-npm run tauri build          # бандл (msi/nsis) в src-tauri/target/release/bundle
-python scripts/package_portable.py   # portable-сборка в dist_portable (aniplayer.exe + пустая data/)
+npx tauri build --no-bundle          # aniplayer.exe в src-tauri/target/release
+python scripts/package_portable.py   # portable-папка в dist_portable (aniplayer.exe + пустая data/)
 ```
+
+Релизный workflow собирает эту же папку, упаковывает её в `Aniplayer-portable.zip` и проверяет наличие `aniplayer.exe`. Бандлы MSI/NSIS не публикуются.
 
 ## CI и релизы
 
@@ -69,7 +84,8 @@ python scripts/package_portable.py   # portable-сборка в dist_portable (a
 npm run typecheck   # типы: src, tests и конфиги сборки
 npm run lint        # Biome (линт + форматирование)
 npm run test        # Vitest
-npm run check       # все быстрые проверки фронтенда + aislop
+npm run build       # tsc + vite build
+npm run check       # typecheck + Biome + Vitest + aislop
 ```
 
 Rust-проверки (из каталога `src-tauri`, с окружением MSVC):
@@ -82,15 +98,22 @@ cargo test --locked --test test_db --test test_magnet_validation --test test_sca
   --test test_security_config --test test_startup --test test_torrent_path_validation
 ```
 
+`test_api` обращается к живому API AniLiberty и поэтому в CI не входит.
+
 ## Структура
 
 ```
 src/app/             Оболочка приложения: композиция фичер (App, Header)
 src/features/        Фичеры: catalog, release, continue-watching, player, downloads, bookmarks, settings
 src/shared/          Общие ui-компоненты, утилиты и доменные типы (ui/lib/types)
-src-tauri/           Rust-бэкенд: торренты, БД, API-клиент, IPC-команды
-scripts/             portable-упаковка
-docs/                выгрузка схемы AniLiberty API
-tests/               тесты фронтенда
+src-tauri/           Rust-бэкенд: API-клиент, БД, загрузки и торренты, IPC-команды
+tests/               фронтенд-тесты (Vitest); границы фичер проверяет test_feature_boundaries.test.ts
+scripts/             portable-упаковка и запуск Tauri из MSYS-шеллов
+docs/                архитектура, ADR, схема AniLiberty API, заметки по Anime4K, инструкции для агентов
+GLOSSARY.md          доменный словарь
+AGENTS.md            правила работы агентов
 data/, downloads/    локальные БД и загрузки (не в git)
 ```
+
+Границы фичер и потоки данных описаны в [docs/architecture.md](docs/architecture.md),
+термины — в [GLOSSARY.md](GLOSSARY.md), правила работы агентов — в [AGENTS.md](AGENTS.md).
