@@ -43,7 +43,8 @@ impl MpvSession {
         let mut writer = self.writer.lock().unwrap_or_else(|e| e.into_inner());
         serde_json::to_writer(&mut *writer, &request).map_err(|e| e.to_string())?;
         writer.write_all(b"\n").map_err(|e| e.to_string())?;
-        writer.flush().map_err(|e| e.to_string())
+        writer.flush().map_err(|e| e.to_string())?;
+        Ok(())
     }
 
     fn set_property(&self, name: &str, value: Value) -> Result<(), String> {
@@ -258,11 +259,9 @@ impl MpvSupervisor {
                 "--terminal=no",
                 "--msg-level=all=warn",
                 // AniLiberty serves its streams to browsers only; a plain client is
-                // refused. Subtitles stay mpv's job: embedded tracks are selected by
-                // language and sidecar files next to a download are found automatically.
+                // refused. Subtitle tracks are mpv's job, chosen by language.
                 "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Aniplayer/1.0",
                 "--slang=en,ru",
-                "--sub-auto=fuzzy",
             ])
             .arg(format!("--wid={wid}"))
             .arg(format!("--input-ipc-server={pipe_name}"))
