@@ -141,7 +141,38 @@ pub(crate) fn downloader_list_unsupported_files(
     state: State<'_, AppState>,
 ) -> Result<Vec<UnsupportedTorrentFile>, String> {
     let torrents_root = crate::downloader::torrent::torrents_root(&state.app_dir);
-    Ok(scan_unsupported_torrent_files(&torrents_root))
+    Ok(scan_unsupported_torrent_files(
+        &torrents_root,
+        &state.codec_caps,
+    ))
+}
+
+/// Prepares a Matroska payload for playback and answers with the URL to put in the
+/// player's `src`. Nothing is written out: the protocol reads the source file by
+/// byte range and rebuilds only the container around it.
+#[tauri::command]
+pub(crate) fn downloader_prepare_stream(
+    state: State<'_, AppState>,
+    file_path: String,
+) -> Result<String, String> {
+    let torrents_root = crate::downloader::torrent::torrents_root(&state.app_dir);
+    let token = state
+        .remux
+        .prepare(&torrents_root, &file_path)
+        .map_err(|error| error.to_string())?;
+    Ok(remux_url(token))
+}
+
+/// Where the WebView reaches the remux protocol. Tauri serves a custom protocol over
+/// `http://{scheme}.localhost` on Windows and Android and `{scheme}://localhost`
+/// elsewhere, so the address is built here rather than guessed in the frontend.
+fn remux_url(token: u64) -> String {
+    let base = if cfg!(any(windows, target_os = "android")) {
+        "http://remux.localhost"
+    } else {
+        "remux://localhost"
+    };
+    format!("{base}/{token}")
 }
 
 #[tauri::command]

@@ -80,8 +80,15 @@ fn assert_excludes(map: &HashMap<String, CspDirectiveSources>, directive: &str, 
 
 /// Origins playback needs in any environment: the API hands out HLS playlists and
 /// posters for whatever host serves them, hls.js attaches a MediaSource blob to
-/// `<video>`, and a downloaded episode is fetched over the asset protocol.
-const PLAYBACK_SOURCES: &[&str] = &["https:", "blob:", "asset:", "http://asset.localhost"];
+/// `<video>`, a downloaded episode is fetched over the asset protocol, and a remuxed
+/// Matroska episode arrives over the remux protocol.
+const PLAYBACK_SOURCES: &[&str] = &[
+    "https:",
+    "blob:",
+    "asset:",
+    "http://asset.localhost",
+    "http://remux.localhost",
+];
 const IPC_SOURCES: &[&str] = &["ipc:", "http://ipc.localhost"];
 
 #[test]
@@ -130,6 +137,10 @@ fn production_policy_allows_hls_playback_and_image_loading() {
     // hls.js demuxes in a blob-backed worker and fetches segments itself.
     assert_contains(&map, "worker-src", &["blob:"]);
     assert_contains(&map, "connect-src", &["asset:", "http://asset.localhost"]);
+    // The remux protocol is for the media element and nothing else. Page script must
+    // not be able to fetch it, which would hand any injected code a byte-range
+    // reader over the torrent library.
+    assert_excludes(&map, "connect-src", &["http://remux.localhost"]);
 }
 
 #[test]

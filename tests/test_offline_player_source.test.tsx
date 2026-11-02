@@ -92,6 +92,15 @@ describe("offline video source", () => {
     expect(renderedVideo().getAttribute("src")).toBeNull();
   });
 
+  it("plays a remuxed Matroska episode natively, as the plain MP4 the remux made it", () => {
+    const remuxUrl = "http://remux.localhost/3";
+
+    render(<VideoHarness src={remuxUrl} />);
+
+    expect(renderedVideo().getAttribute("src")).toBe(remuxUrl);
+    expect(hls.loadSource).not.toHaveBeenCalled();
+  });
+
   it("leaves remote streams that are not asset URLs on the hls.js path", () => {
     const streamUrl = "https://cache.libria.fun/videos/10329/1080/stream";
 

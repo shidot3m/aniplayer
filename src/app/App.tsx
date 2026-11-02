@@ -9,7 +9,7 @@ import {
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
 import { DownloadFloatingWidget, DownloadsView, useDownloadStore } from "@/features/downloads";
-import { LazyPlayerOverlay, usePlayerStore } from "@/features/player";
+import { LazyPlayerOverlay, useCodecCapabilityStore, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
 import { SettingsDialog } from "@/features/settings";
 import type { Release } from "@/shared/types";
@@ -31,6 +31,7 @@ export default function App() {
 
   const { isPlayerOpen, closePlayer, currentRelease, currentEpisode, initSettings } =
     usePlayerStore();
+  const { probe: probeCodecs } = useCodecCapabilityStore();
 
   const { listenToProgress, fetchDownloadedEpisodes } = useDownloadStore();
 
@@ -42,6 +43,7 @@ export default function App() {
   useEffect(() => {
     loadInitialData();
     initSettings();
+    probeCodecs();
     let unlistenFn: (() => void) | undefined;
     async function initDownloads() {
       unlistenFn = await listenToProgress();
@@ -51,7 +53,7 @@ export default function App() {
     return () => {
       if (unlistenFn) unlistenFn();
     };
-  }, [loadInitialData, initSettings, listenToProgress, fetchDownloadedEpisodes]);
+  }, [loadInitialData, initSettings, probeCodecs, listenToProgress, fetchDownloadedEpisodes]);
 
   const handleSelectRelease = (release: Release) => {
     if (activeScreen !== "details") {

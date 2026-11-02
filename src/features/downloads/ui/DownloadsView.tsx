@@ -204,14 +204,16 @@ function UnsupportedFilesCard({
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-white">{title}</h3>
             <p className="mt-1 text-xs text-amber-200/80">
-              Встроенный плеер не открывает такие файлы ({files.length} шт.,{" "}
-              {formatBytes(totalSize)}). WebView2 не демуксит контейнеры вроде MKV и AVI —
-              перекодируйте их в MP4 (H.264/AAC) или откройте папку и смотрите во внешнем плеере.
+              Встроенный плеер не откроет эти файлы ({files.length} шт., {formatBytes(totalSize)}).
+              Причина у каждого своя — она и подсказывает, что делать.
             </p>
-            <ul className="mt-2 space-y-0.5 text-xs text-slate-300">
+            <ul className="mt-2 space-y-1.5 text-xs text-slate-300">
               {visible.map((file) => (
-                <li key={file.file_path} className="truncate">
-                  {file.file_name} · {formatBytes(file.file_size)}
+                <li key={file.file_path}>
+                  <span className="block truncate">
+                    {file.file_name} · {formatBytes(file.file_size)}
+                  </span>
+                  <span className="block text-amber-200/70">{file.reason}</span>
                 </li>
               ))}
               {hidden > 0 && <li className="text-slate-400">и ещё {hidden}</li>}
@@ -231,6 +233,50 @@ function UnsupportedFilesCard({
       </div>
     </div>
   );
+}
+
+/**
+ * The downloaded episodes of one release as the player wants them, each pointing at
+ * the stream its own file is played from: an Offline playlist, a native file through
+ * the asset protocol, or a Matroska payload prepared on the remux protocol.
+ *
+ * One file that cannot be prepared leaves the others alone. A release whose tenth
+ * episode is packed in a way the remuxer refuses must not cost the user the other
+ * nine, so the failures come back beside the list instead of rejecting it.
+ */
+async function buildOfflineEpisodes(
+  metas: DownloadedEpisodeMeta[],
+): Promise<{ episodes: EpisodeItem[]; failed: DownloadedEpisodeMeta[] }> {
+  const ordered = metas.slice().sort((a, b) => a.episode_ordinal - b.episode_ordinal);
+  const settled = await Promise.allSettled(
+    ordered.map(async (m): Promise<EpisodeItem> => {
+      const stream = await offlineStreamUrl(m.file_path);
+      return {
+        id: m.episode_id,
+        ordinal: m.episode_ordinal,
+        duration: 1440,
+        hls_1080: stream,
+        hls_720: stream,
+        hls_480: stream,
+        opening: {
+          start: m.opening_start,
+          stop: m.opening_stop,
+        },
+        ending: {
+          start: m.ending_start,
+          stop: m.ending_stop,
+        },
+      };
+    }),
+  );
+
+  const episodes: EpisodeItem[] = [];
+  const failed: DownloadedEpisodeMeta[] = [];
+  settled.forEach((result, index) => {
+    if (result.status === "fulfilled") episodes.push(result.value);
+    else failed.push(ordered[index]);
+  });
+  return { episodes, failed };
 }
 
 export function DownloadsView() {
@@ -288,35 +334,22 @@ export function DownloadsView() {
     return null;
   };
 
-  const handlePlayOffline = (meta: DownloadedEpisodeMeta, foundRel: Release | null) => {
+  const handlePlayOffline = async (meta: DownloadedEpisodeMeta, foundRel: Release | null) => {
     const releaseEpisodesMeta = groupedByRelease.get(meta.release_id) || [meta];
+    const { episodes: offlineEpisodes, failed } = await buildOfflineEpisodes(releaseEpisodesMeta);
 
-    // Build EpisodeItems for all downloaded episodes of this release for offline playlist support
-    const offlineEpisodes: EpisodeItem[] = releaseEpisodesMeta
-      .slice()
-      .sort((a, b) => a.episode_ordinal - b.episode_ordinal)
-      .map((m) => {
-        const stream = offlineStreamUrl(m.file_path);
-        return {
-          id: m.episode_id,
-          ordinal: m.episode_ordinal,
-          duration: 1440,
-          hls_1080: stream,
-          hls_720: stream,
-          hls_480: stream,
-          opening: {
-            start: m.opening_start,
-            stop: m.opening_stop,
-          },
-          ending: {
-            start: m.ending_start,
-            stop: m.ending_stop,
-          },
-        };
-      });
-
-    const currentEpisode =
-      offlineEpisodes.find((e) => e.id === meta.episode_id) || offlineEpisodes[0];
+    const currentEpisode = offlineEpisodes.find((e) => e.id === meta.episode_id);
+    if (!currentEpisode) {
+      // A payload the backend refuses to prepare has to say so: opening the player
+      // on it would show a black frame instead of an answer.
+      window.alert(`Не удалось открыть эту серию: ${failed[0]?.file_path ?? meta.file_path}`);
+      return;
+    }
+    if (failed.length > 0) {
+      window.alert(
+        `Не удалось подготовить к воспроизведению: ${failed.map((f) => f.file_path).join(", ")}`,
+      );
+    }
 
     const fallbackRelease: Release = {
       ...(foundRel || {

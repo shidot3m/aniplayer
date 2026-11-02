@@ -3,8 +3,10 @@ use std::sync::Arc;
 use thiserror::Error;
 
 use crate::api::AnilibriaClient;
+use crate::codec::CodecCapabilities;
 use crate::db::Database;
 use crate::downloader::{EngineInitError, HlsDownloader, TorrentDownloader, TorrentEngine};
+use crate::remux::RemuxService;
 use crate::state::AppState;
 
 /// A fatal error detected while bringing the application up. The `display`
@@ -59,9 +61,14 @@ pub fn open_database(path: &std::path::Path) -> Result<Database, StartupError> {
 pub fn create_torrent_engine(
     app_dir: &std::path::Path,
     db: Arc<Database>,
+    codec_caps: Arc<CodecCapabilities>,
 ) -> Result<TorrentEngine, StartupError> {
-    tauri::async_runtime::block_on(TorrentEngine::try_new(app_dir.to_path_buf(), db))
-        .map_err(StartupError::from)
+    tauri::async_runtime::block_on(TorrentEngine::try_new(
+        app_dir.to_path_buf(),
+        db,
+        codec_caps,
+    ))
+    .map_err(StartupError::from)
 }
 
 /// The directory the application keeps its data in: next to the executable, so
@@ -80,7 +87,12 @@ pub fn bootstrap() -> Result<AppState, StartupError> {
     let db_path = app_dir.join("data").join("aniplayer.db");
     let db = Arc::new(open_database(&db_path)?);
     let downloader = Arc::new(HlsDownloader::new(db.clone()));
-    let torrent_engine = Arc::new(create_torrent_engine(&app_dir, db.clone())?);
+    let codec_caps = Arc::new(CodecCapabilities::default());
+    let torrent_engine = Arc::new(create_torrent_engine(
+        &app_dir,
+        db.clone(),
+        codec_caps.clone(),
+    )?);
 
     Ok(AppState {
         db,
@@ -88,6 +100,8 @@ pub fn bootstrap() -> Result<AppState, StartupError> {
         downloader,
         torrent_downloader: Arc::new(TorrentDownloader::new()),
         torrent_engine,
+        codec_caps,
+        remux: Arc::new(RemuxService::new()),
         app_dir,
     })
 }

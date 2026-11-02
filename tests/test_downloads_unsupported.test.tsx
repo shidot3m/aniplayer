@@ -24,18 +24,26 @@ const downloadedEpisode: DownloadedEpisodeMeta = {
   download_status: "COMPLETED",
 };
 
+/**
+ * A container the app cannot remux, and a codec this machine cannot decode: two
+ * different dead ends, each with its own way out.
+ */
 const unsupportedFiles: UnsupportedTorrentFile[] = [
   {
     release_id: 10239,
     file_name: "Season 1/02.mkv",
     file_path: "C:\\Aniplayer\\downloads\\torrents\\10239\\Season 1\\02.mkv",
     file_size: 2048,
+    reason:
+      "Этот компьютер не декодирует HEVC во встроенном плеере — откройте файл во внешнем " +
+      "плеере или скачайте раздачу с H.264",
   },
   {
     release_id: 10239,
     file_name: "Season 1/03.avi",
     file_path: "C:\\Aniplayer\\downloads\\torrents\\10239\\Season 1\\03.avi",
     file_size: 4096,
+    reason: "Aniplayer не разбирает этот контейнер — перекодируйте его в MP4",
   },
 ];
 
@@ -52,15 +60,16 @@ beforeEach(() => {
 });
 
 describe("downloads view unsupported torrent files", () => {
-  it("reports torrent files the WebView cannot play with an actionable message", () => {
+  it("gives each unplayable file its own reason and way out", () => {
     seedStores([downloadedEpisode], unsupportedFiles);
 
     render(<DownloadsView />);
 
-    expect(screen.getByText(/не открывает такие файлы/)).toBeDefined();
     expect(screen.getByText(/02\.mkv/)).toBeDefined();
     expect(screen.getByText(/03\.avi/)).toBeDefined();
-    expect(screen.getByText(/перекодируйте их в MP4/i)).toBeDefined();
+    expect(screen.getByText(/не декодирует HEVC/)).toBeDefined();
+    expect(screen.getByText(/не разбирает этот контейнер/)).toBeDefined();
+    expect(screen.getAllByText(/внешнем плеере|MP4/).length).toBeGreaterThan(1);
     expect(screen.getByText("Открыть папку")).toBeDefined();
   });
 
@@ -69,7 +78,7 @@ describe("downloads view unsupported torrent files", () => {
 
     render(<DownloadsView />);
 
-    expect(screen.getByText(/не открывает такие файлы/)).toBeDefined();
+    expect(screen.getByText(/не декодирует HEVC/)).toBeDefined();
     expect(screen.queryByText("Нет скачанных серий")).toBeNull();
   });
 });

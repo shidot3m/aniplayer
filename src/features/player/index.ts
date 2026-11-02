@@ -1,5 +1,7 @@
 import { lazy } from "react";
 
+export { codecFamilyLabel, isDecodable } from "./lib/codecCapability";
+export { useCodecCapabilityStore } from "./state/codecCapabilityStore";
 export { usePlayerStore } from "./state/playerStore";
 export { ANIME4K_PRESETS } from "./state/playerStoreDefaults";
 

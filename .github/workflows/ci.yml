@@ -70,6 +70,8 @@ jobs:
           --test test_db
           --test test_hls_playlist
           --test test_magnet_validation
+          --test test_remux
+          --test test_remux_service
           --test test_scanner
           --test test_security_config
           --test test_startup

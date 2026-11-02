@@ -1,10 +1,21 @@
 import Hls from "hls.js";
 import { useCallback, useEffect, useRef } from "react";
 
-function isLocalAssetUrl(streamUrl: string): boolean {
-  return (
-    streamUrl.startsWith("http://asset.localhost/") || streamUrl.startsWith("asset://localhost/")
-  );
+/**
+ * Origins the app's own local protocols answer on: the asset protocol for a
+ * downloaded file, and the remux protocol for a Matroska episode rebuilt into an MP4
+ * on the fly. Both are plain progressive files, so the element loads them itself —
+ * hls.js would only understand a playlist.
+ */
+const LOCAL_PROTOCOL_ORIGINS = [
+  "http://asset.localhost/",
+  "asset://localhost/",
+  "http://remux.localhost/",
+  "remux://localhost/",
+];
+
+function isLocalProtocolUrl(streamUrl: string): boolean {
+  return LOCAL_PROTOCOL_ORIGINS.some((origin) => streamUrl.startsWith(origin));
 }
 
 function isPlaylistUrl(streamUrl: string): boolean {
@@ -69,10 +80,10 @@ export function useHlsVideo({
       }
     };
 
-    const isLocalAsset = isLocalAssetUrl(streamUrl);
-    const isLocalPlaylist = isLocalAsset && isPlaylistUrl(streamUrl);
+    const isLocalFile = isLocalProtocolUrl(streamUrl);
+    const isLocalPlaylist = isLocalFile && isPlaylistUrl(streamUrl);
 
-    if (Hls.isSupported() && (!isLocalAsset || isLocalPlaylist)) {
+    if (Hls.isSupported() && (!isLocalFile || isLocalPlaylist)) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -101,11 +112,11 @@ export function useHlsVideo({
           }
         }
       });
-    } else if (isLocalAsset || video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Downloaded torrent episodes are plain files served by the asset
-      // protocol; hls.js only understands playlists, so the element loads
-      // them directly. Downloaded HLS episodes are playlists and keep the
-      // hls.js path above, because WebView2 has no native TS demuxer.
+    } else if (isLocalFile || video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Downloaded torrent episodes and remuxed Matroska episodes are plain files
+      // served by a local protocol; hls.js only understands playlists, so the
+      // element loads them directly. Downloaded HLS episodes are playlists and keep
+      // the hls.js path above, because WebView2 has no native TS demuxer.
       video.addEventListener("loadedmetadata", applyInitialSettings, { once: true });
       video.src = streamUrl;
     }

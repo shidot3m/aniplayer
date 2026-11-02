@@ -7,7 +7,8 @@
 - Воспроизведение HLS через `<video>` и hls.js в WebView2; скачанные серии — офлайн-плейлист HLS с сегментами через asset protocol
 - Anime4K-апскейл в реальном времени через `anime4k-webgpu` (WebGPU) с пресетами и сохранением выбора
 - Каталог, расписание, жанры, франшизы — API AniLiberty
-- Торрент-загрузки через встроенный движок `librqbit` со сканированием серий после завершения; встроенный плеер открывает MP4/WebM, остальные контейнеры показываются с пояснением
+- Торрент-загрузки через встроенный движок `librqbit` со сканированием серий после завершения; MP4/WebM играет напрямую, MKV бескодово пересобирается в MP4 на лету (remux-протокол с range-запросами, вторая копия на диск не пишется)
+- Разовый зонд кодеков при старте: что этот компьютер реально декодирует, решается по `mediaCapabilities`, а не по расширению файла; недекодируемое не попадает в библиотеку загрузок и объясняется на экране загрузок
 - Скачивание серий, отслеживание активных загрузок с отменой, плавающий виджет прогресса
 - Закладки, «Продолжить просмотр», история — SQLite (`data/aniplayer.db` рядом с exe)
 
@@ -70,7 +71,7 @@ python scripts/package_portable.py   # portable-папка в dist_portable (ani
 
 ## CI и релизы
 
-`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_hls_playlist`, `test_magnet_validation`, `test_scanner`, `test_security_config`, `test_startup`, `test_torrent_path_validation`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
+`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_hls_playlist`, `test_magnet_validation`, `test_remux`, `test_remux_service`, `test_scanner`, `test_security_config`, `test_startup`, `test_torrent_path_validation`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
 
 `.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную на ветке `master` (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows portable-сборку и публикует единственный артефакт:
 
@@ -95,6 +96,7 @@ cargo fmt --check
 cargo clippy --all-targets --locked -- -D warnings
 cargo audit
 cargo test --locked --test test_db --test test_hls_playlist --test test_magnet_validation \
+  --test test_remux --test test_remux_service \
   --test test_scanner --test test_security_config --test test_startup \
   --test test_torrent_path_validation
 ```
@@ -107,7 +109,7 @@ cargo test --locked --test test_db --test test_hls_playlist --test test_magnet_v
 src/app/             Оболочка приложения: композиция фичер (App, Header)
 src/features/        Фичеры: catalog, release, continue-watching, player, downloads, bookmarks, settings
 src/shared/          Общие ui-компоненты, утилиты и доменные типы (ui/lib/types)
-src-tauri/           Rust-бэкенд: API-клиент, БД, загрузки и торренты, IPC-команды
+src-tauri/           Rust-бэкенд: API-клиент, БД, загрузки и торренты, remux MKV→MP4, IPC-команды
 tests/               фронтенд-тесты (Vitest); границы фичер проверяет test_feature_boundaries.test.ts
 scripts/             portable-упаковка и запуск Tauri из MSYS-шеллов
 docs/                архитектура, ADR, схема AniLiberty API, заметки по Anime4K, инструкции для агентов

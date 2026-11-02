@@ -1,3 +1,4 @@
+use crate::codec::CodecCapabilities;
 use crate::db::Database;
 use crate::downloader::scanner::scan_and_index_torrent_files;
 use librqbit::{AddTorrent, AddTorrentOptions, Session, SessionOptions};
@@ -23,6 +24,8 @@ pub struct TorrentDownloadProgress {
 pub struct TorrentEngine {
     session: Arc<Session>,
     db: Arc<Database>,
+    /// What the WebView can decode, consulted when a finished download is indexed.
+    codec_caps: Arc<CodecCapabilities>,
     base_dir: PathBuf,
     active_tasks: Arc<Mutex<HashMap<i64, JoinHandle<()>>>>,
 }
@@ -38,7 +41,11 @@ pub enum EngineInitError {
 }
 
 impl TorrentEngine {
-    pub async fn try_new(base_dir: PathBuf, db: Arc<Database>) -> Result<Self, EngineInitError> {
+    pub async fn try_new(
+        base_dir: PathBuf,
+        db: Arc<Database>,
+        codec_caps: Arc<CodecCapabilities>,
+    ) -> Result<Self, EngineInitError> {
         let torrents_dir = super::torrent::torrents_root(&base_dir);
         tokio::fs::create_dir_all(&torrents_dir)
             .await
@@ -56,6 +63,7 @@ impl TorrentEngine {
         Ok(Self {
             session,
             db,
+            codec_caps,
             base_dir: torrents_dir,
             active_tasks: Arc::new(Mutex::new(HashMap::new())),
         })
@@ -102,6 +110,7 @@ impl TorrentEngine {
         let download_id = format!("torrent-{}", torrent_id);
         let app_handle_clone = app_handle.clone();
         let db = self.db.clone();
+        let codec_caps = self.codec_caps.clone();
         let release_folder_clone = release_folder.clone();
         let active_tasks = self.active_tasks.clone();
 
@@ -161,7 +170,12 @@ impl TorrentEngine {
 
                 if is_finished || progress >= 100.0 {
                     // Automatically index downloaded video files into SQLite
-                    let _ = scan_and_index_torrent_files(&release_folder_clone, release_id, &db);
+                    let _ = scan_and_index_torrent_files(
+                        &release_folder_clone,
+                        release_id,
+                        &db,
+                        &codec_caps,
+                    );
                     let _ = app_handle_clone.emit("downloads-updated", ());
                     break;
                 }

@@ -1,7 +1,9 @@
 pub mod api;
+pub mod codec;
 mod commands;
 pub mod db;
 pub mod downloader;
+pub mod remux;
 pub mod startup;
 mod state;
 
@@ -18,9 +20,17 @@ pub fn run() -> Result<(), StartupError> {
 }
 
 fn run_with_state(state: AppState) -> Result<(), StartupError> {
+    use tauri::Manager;
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(state)
+        // A remuxed episode is served as a virtual MP4: the protocol answers byte
+        // ranges by reading the source file, so no copy of the episode is ever
+        // written to disk, and the player sees a plain `src` like any download.
+        .register_uri_scheme_protocol("remux", |ctx, request| {
+            ctx.app_handle().state::<AppState>().remux.respond(&request)
+        })
         .invoke_handler(tauri::generate_handler![
             commands::app::ping,
             commands::db::db_save_bookmark,
@@ -57,6 +67,8 @@ fn run_with_state(state: AppState) -> Result<(), StartupError> {
             commands::downloads::downloader_cancel_torrent,
             commands::app::app_set_fullscreen,
             commands::app::app_is_fullscreen,
+            commands::app::app_report_codec_capability,
+            commands::downloads::downloader_prepare_stream,
         ])
         .run(tauri::generate_context!())
         .map_err(|e| StartupError::Run {
