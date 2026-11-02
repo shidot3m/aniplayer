@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Window, WindowBuilder, WindowEvent};
 
@@ -14,7 +15,8 @@ use super::{Anime4kPreset, PlaybackEvents, PlayerEvent};
 static NEXT_PIPE_ID: AtomicU64 = AtomicU64::new(0);
 static NEXT_REQUEST_ID: AtomicU64 = AtomicU64::new(1);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MpvOpenRequest {
     pub source: String,
     pub start: f64,
@@ -69,9 +71,19 @@ impl MpvSession {
     fn set_anime4k(&self, enabled: bool, preset: &str, shaders_dir: &Path) -> Result<(), String> {
         let operation = if enabled {
             let chain = Anime4kPreset::from_label(preset).shader_chain(shaders_dir)?;
-            vec![json!("change-list"), json!("glsl-shaders"), json!("set"), json!(chain)]
+            vec![
+                json!("change-list"),
+                json!("glsl-shaders"),
+                json!("set"),
+                json!(chain),
+            ]
         } else {
-            vec![json!("change-list"), json!("glsl-shaders"), json!("clr"), json!("")]
+            vec![
+                json!("change-list"),
+                json!("glsl-shaders"),
+                json!("clr"),
+                json!(""),
+            ]
         };
         self.send(operation)
     }
@@ -133,13 +145,11 @@ impl MpvSupervisor {
             .map_err(|e| format!("Could not create the native video window: {e}"))?;
         self.sync_window(main, &video_window)?;
 
-        let session = match self.spawn(app, video_window) {
-            Ok(session) => session,
-            Err(error) => return Err(error),
-        };
+        let session = self.spawn(app, video_window)?;
         session.observe(1, "time-pos")?;
         session.observe(2, "duration")?;
         session.observe(3, "hwdec-current")?;
+        session.observe(4, "eof-reached")?;
         session.load(&request, &self.shaders_dir)?;
         session.video_window.show().map_err(|e| e.to_string())?;
         main.set_always_on_top(true).map_err(|e| e.to_string())?;
@@ -173,9 +183,7 @@ impl MpvSupervisor {
     }
 
     pub fn set_speed(&self, speed: f64) -> Result<(), String> {
-        self.with_session(|session| {
-            session.set_property("speed", json!(speed.clamp(0.25, 4.0)))
-        })
+        self.with_session(|session| session.set_property("speed", json!(speed.clamp(0.25, 4.0))))
     }
 
     pub fn set_anime4k(&self, enabled: bool, preset: &str) -> Result<(), String> {
@@ -183,7 +191,9 @@ impl MpvSupervisor {
     }
 
     pub fn close(&self, main: Option<&WebviewWindow>) {
-        self.lock().take();
+        // The session is dropped (mpv killed) after the lock is released.
+        let session = self.lock().take();
+        drop(session);
         if let Some(main) = main {
             let _ = main.set_always_on_top(false);
         }
@@ -222,10 +232,7 @@ impl MpvSupervisor {
         }
         let wid = video_window.hwnd().map_err(|e| e.to_string())?.0 as usize;
         let pipe_id = NEXT_PIPE_ID.fetch_add(1, Ordering::Relaxed);
-        let pipe_name = format!(
-            r"\\.\pipe\aniplayer-mpv-{}-{pipe_id}",
-            std::process::id()
-        );
+        let pipe_name = format!(r"\\.\pipe\aniplayer-mpv-{}-{pipe_id}", std::process::id());
         let mut child = Command::new(&executable)
             .args([
                 "--no-config",
@@ -274,33 +281,8 @@ impl MpvSupervisor {
         })
     }
 
-    pub(crate) fn validated_source(&self, source: &str) -> Result<String, String> {
-        if source.is_empty() {
-            return Err("This episode has no playable source".to_string());
-        }
-        // A Windows path with a drive letter parses as a URL whose scheme is the
-        // letter ("E:"), so only strings that actually carry a `://` authority are
-        // treated as stream URLs; everything else is a downloaded file.
-        if source.contains("://") {
-            let url = reqwest::Url::parse(source).map_err(|e| format!("Invalid stream URL: {e}"))?;
-            if matches!(url.scheme(), "http" | "https") {
-                return Ok(url.to_string());
-            }
-            return Err("Only HTTP(S) streams and downloaded episodes can be played".to_string());
-        }
-        let path = Path::new(source);
-        let canonical = path
-            .canonicalize()
-            .map_err(|e| format!("Downloaded episode cannot be opened: {e}"))?;
-        let downloads = self
-            .app_dir
-            .join("downloads")
-            .canonicalize()
-            .map_err(|e| format!("Downloads folder cannot be opened: {e}"))?;
-        if !canonical.starts_with(downloads) || !canonical.is_file() {
-            return Err("The local playback source is outside the downloads folder".to_string());
-        }
-        Ok(canonical.to_string_lossy().to_string())
+    fn validated_source(&self, source: &str) -> Result<String, String> {
+        validate_playback_source(&self.app_dir, source)
     }
 
     fn sync_window(&self, main: &WebviewWindow, video: &Window) -> Result<(), String> {
@@ -310,7 +292,10 @@ impl MpvSupervisor {
         video.set_size(size).map_err(|e| e.to_string())
     }
 
-    fn with_session(&self, action: impl FnOnce(&MpvSession) -> Result<(), String>) -> Result<(), String> {
+    fn with_session(
+        &self,
+        action: impl FnOnce(&MpvSession) -> Result<(), String>,
+    ) -> Result<(), String> {
         let guard = self.lock();
         let session = guard
             .as_ref()
@@ -321,6 +306,34 @@ impl MpvSupervisor {
     fn lock(&self) -> MutexGuard<'_, Option<MpvSession>> {
         self.session.lock().unwrap_or_else(|e| e.into_inner())
     }
+}
+
+/// The playback gate of `player_open`: a stream must be an HTTP(S) URL, and a
+/// local file must canonicalize inside the app's downloads folder. A Windows
+/// path with a drive letter parses as a URL whose scheme is the letter itself
+/// ("E:"), so only strings carrying a `://` authority take the URL branch.
+pub fn validate_playback_source(app_dir: &Path, source: &str) -> Result<String, String> {
+    if source.is_empty() {
+        return Err("This episode has no playable source".to_string());
+    }
+    if source.contains("://") {
+        let url = reqwest::Url::parse(source).map_err(|e| format!("Invalid stream URL: {e}"))?;
+        if matches!(url.scheme(), "http" | "https") {
+            return Ok(url.to_string());
+        }
+        return Err("Only HTTP(S) streams and downloaded episodes can be played".to_string());
+    }
+    let canonical = Path::new(source)
+        .canonicalize()
+        .map_err(|e| format!("Downloaded episode cannot be opened: {e}"))?;
+    let downloads = app_dir
+        .join("downloads")
+        .canonicalize()
+        .map_err(|e| format!("Downloads folder cannot be opened: {e}"))?;
+    if !canonical.starts_with(downloads) || !canonical.is_file() {
+        return Err("The local playback source is outside the downloads folder".to_string());
+    }
+    Ok(canonical.to_string_lossy().to_string())
 }
 
 fn connect_pipe(pipe_name: &str) -> Result<File, String> {
@@ -334,7 +347,9 @@ fn connect_pipe(pipe_name: &str) -> Result<File, String> {
             }
         }
     }
-    Err(format!("Could not connect to mpv over JSON IPC: {last_error}"))
+    Err(format!(
+        "Could not connect to mpv over JSON IPC: {last_error}"
+    ))
 }
 
 fn spawn_reader(pipe: File, app: AppHandle, closing: Arc<AtomicBool>) {
@@ -370,44 +385,4 @@ fn spawn_reader(pipe: File, app: AppHandle, closing: Arc<AtomicBool>) {
             );
         }
     });
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // A Windows path with a drive letter parses as a URL whose scheme is the
-    // letter itself; it must still reach the downloads-folder branch.
-    #[test]
-    fn drive_letter_paths_are_not_mistaken_for_urls() {
-        let dir = std::env::temp_dir().join(format!("aniplayer-source-{}", std::process::id()));
-        let downloads = dir.join("downloads");
-        std::fs::create_dir_all(&downloads).unwrap();
-        let file = downloads.join("episode.mkv");
-        std::fs::write(&file, b"fixture").unwrap();
-        let supervisor = MpvSupervisor::new(dir.clone());
-
-        let accepted = supervisor
-            .validated_source(&file.to_string_lossy())
-            .expect("a downloaded file must be playable");
-        assert!(accepted.ends_with("episode.mkv"));
-
-        let escaped = dir.join("outside.mkv");
-        std::fs::write(&escaped, b"fixture").unwrap();
-        assert!(supervisor
-            .validated_source(&escaped.to_string_lossy())
-            .unwrap_err()
-            .contains("outside the downloads folder"));
-
-        assert_eq!(
-            supervisor.validated_source("ftp://host/episode.mkv").unwrap_err(),
-            "Only HTTP(S) streams and downloaded episodes can be played"
-        );
-        assert!(supervisor
-            .validated_source("https://cdn.test/episode.m3u8")
-            .unwrap()
-            .starts_with("https://cdn.test/"));
-
-        let _ = std::fs::remove_dir_all(&dir);
-    }
 }

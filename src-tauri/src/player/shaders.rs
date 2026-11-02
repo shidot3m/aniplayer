@@ -74,13 +74,7 @@ impl Anime4kPreset {
                 RESTORE_SOFT_M,
                 UPSCALE_M,
             ],
-            Self::ModeC => &[
-                CLAMP,
-                DENOISE_VL,
-                DOWNSCALE_X2,
-                DOWNSCALE_X4,
-                UPSCALE_M,
-            ],
+            Self::ModeC => &[CLAMP, DENOISE_VL, DOWNSCALE_X2, DOWNSCALE_X4, UPSCALE_M],
             Self::ModeCA => &[
                 CLAMP,
                 DENOISE_VL,

@@ -7,27 +7,12 @@ use crate::state::AppState;
 pub(crate) async fn player_open(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
-    source: String,
-    start: f64,
-    volume: f64,
-    muted: bool,
-    speed: f64,
-    anime4k_enabled: bool,
-    preset: String,
+    request: MpvOpenRequest,
 ) -> Result<(), String> {
     let main = app
         .get_webview_window("main")
         .ok_or_else(|| "Main window not found".to_string())?;
     let player = state.player.clone();
-    let request = MpvOpenRequest {
-        source,
-        start,
-        volume,
-        muted,
-        speed,
-        anime4k_enabled,
-        preset,
-    };
     tauri::async_runtime::spawn_blocking(move || player.open(&app, &main, request))
         .await
         .map_err(|e| e.to_string())?

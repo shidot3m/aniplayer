@@ -43,7 +43,10 @@ fn test_extract_episode_ordinal() {
 fn torrent_scan_indexes_every_recognized_video_without_codec_gates() {
     let folder = temp_folder("index");
     write_file(&folder.join("01.hevc.mkv"), b"mpv decodes the payload");
-    write_file(&folder.join("Season 1/02.av1.webm"), b"not inspected by the scanner");
+    write_file(
+        &folder.join("Season 1/02.av1.webm"),
+        b"not inspected by the scanner",
+    );
     write_file(&folder.join("extras/03.m2ts"), b"mpeg transport stream");
     write_file(&folder.join("notes.txt"), b"notes");
 

@@ -58,6 +58,12 @@ impl PlaybackEvents {
                 });
                 Some(PlayerEvent::HardwareDecoder { decoder })
             }
+            // The player runs with `keep-open=yes`, so mpv holds the last frame and
+            // never sends `end-file`; the eof flag is what closes an episode.
+            "eof-reached" => match data.as_bool() {
+                Some(true) => Some(PlayerEvent::Ended),
+                _ => None,
+            },
             _ => None,
         }
     }

@@ -40,6 +40,20 @@ function episodeSource(episode: ReleaseDetails["episodes"][number], quality: Vid
   return episode.hls_1080 || episode.hls_720 || episode.hls_480 || "";
 }
 
+function openRequest(source: string, start: number, state: PlayerState) {
+  return {
+    request: {
+      source,
+      start,
+      volume: state.volume,
+      muted: state.isMuted,
+      speed: state.speed,
+      anime4kEnabled: state.anime4kEnabled,
+      preset: state.anime4kPreset,
+    },
+  };
+}
+
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   isPlayerOpen: false,
   isPlaying: false,
@@ -109,15 +123,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     if (hasNativePlayer()) {
       try {
-        await invoke("player_open", {
-          source,
-          start: startPos,
-          volume: state.volume,
-          muted: state.isMuted,
-          speed: state.speed,
-          anime4kEnabled: state.anime4kEnabled,
-          preset: state.anime4kPreset,
-        });
+        await invoke("player_open", openRequest(source, startPos, state));
       } catch (error) {
         set({
           isPlaying: false,
@@ -272,15 +278,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const state = get();
     const episode = state.currentEpisode;
     if (!episode || !state.isPlayerOpen) return;
-    await invokePlayer("player_open", {
-      source: episodeSource(episode, quality),
-      start: state.currentTime,
-      volume: state.volume,
-      muted: state.isMuted,
-      speed: state.speed,
-      anime4kEnabled: state.anime4kEnabled,
-      preset: state.anime4kPreset,
-    });
+    await invokePlayer(
+      "player_open",
+      openRequest(episodeSource(episode, quality), state.currentTime, state),
+    );
     if (!state.isPlaying) {
       await invokePlayer("player_set_pause", { paused: true });
     }

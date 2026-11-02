@@ -53,13 +53,15 @@ describe("native player controls", () => {
     await usePlayerStore.getState().openPlayer(release, episode, 125);
 
     expect(invoke).toHaveBeenCalledWith("player_open", {
-      source: "https://test/ep1.m3u8",
-      start: 125,
-      volume: 80,
-      muted: false,
-      speed: 1,
-      anime4kEnabled: true,
-      preset: "Mode A+A (HQ)",
+      request: {
+        source: "https://test/ep1.m3u8",
+        start: 125,
+        volume: 80,
+        muted: false,
+        speed: 1,
+        anime4kEnabled: true,
+        preset: "Mode A+A (HQ)",
+      },
     });
     expect(usePlayerStore.getState().currentTime).toBe(125);
   });
@@ -110,13 +112,15 @@ describe("native player controls", () => {
     await store.setQuality("720p");
 
     expect(invoke).toHaveBeenCalledWith("player_open", {
-      source: "https://test/ep1-720.m3u8",
-      start: 90,
-      volume: 80,
-      muted: false,
-      speed: 1,
-      anime4kEnabled: true,
-      preset: "Mode A+A (HQ)",
+      request: {
+        source: "https://test/ep1-720.m3u8",
+        start: 90,
+        volume: 80,
+        muted: false,
+        speed: 1,
+        anime4kEnabled: true,
+        preset: "Mode A+A (HQ)",
+      },
     });
     expect(usePlayerStore.getState().activeQuality).toBe("720p");
   });

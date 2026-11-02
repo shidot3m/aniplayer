@@ -59,9 +59,9 @@ fn stores_fragment_initialization_and_encryption_key_locally() {
     assert!(playlist
         .manifest
         .contains("#EXT-X-MAP:URI=\"init-00000.mp4\",BYTERANGE=\"700@0\""));
-    assert!(playlist.manifest.contains(
-        "#EXT-X-KEY:METHOD=AES-128,URI=\"key-00000.key\",IV=0x01"
-    ));
+    assert!(playlist
+        .manifest
+        .contains("#EXT-X-KEY:METHOD=AES-128,URI=\"key-00000.key\",IV=0x01"));
 }
 
 #[test]
