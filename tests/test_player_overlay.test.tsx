@@ -8,6 +8,10 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn().mockResolvedValue(null),
 }));
 
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(() => Promise.resolve(() => {})),
+}));
+
 describe("PlayerOverlay Layout", () => {
   it("places episode number above seekbar and controls in proper positions", async () => {
     const mockRelease: Release = {
