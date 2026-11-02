@@ -179,7 +179,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         value: preset,
       });
     } catch (_e) {
-      // Backend not ready yet or table empty
+      // Browser mode or backend not ready
     }
   },
 

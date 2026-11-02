@@ -18,7 +18,7 @@ The app is Windows-only and must keep all of its state — database, downloads, 
 
 ## Considered options
 
-- **MSI/NSIS installer** — rejected: scatters state, needs elevation, and still needs a bundled native DLL.
+- **MSI/NSIS installer** — rejected: scatters state, needs elevation, and installs into protected locations where the portable data folder cannot be written.
 - **Standalone executable plus a separate libmpv download** — rejected: the executable starts but playback fails until a second manual step, which was the original support problem.
 
 ## Consequences
