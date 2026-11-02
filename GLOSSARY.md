@@ -77,8 +77,16 @@ A user-requested local copy of an Episode or Release, produced by an HLS downloa
 _Avoid_: save, cache, transfer
 
 **Downloaded episode**:
-A Download indexed in the local database with its file path, size, Quality, and Skip timecodes, so it can be played offline.
+A Download indexed in the local database with its file path, size, Quality, and Skip timecodes, so it can be played offline. An HLS Download stores a local Offline playlist; a Torrent Download stores a playable video file.
 _Avoid_: local file, cached episode
+
+**Offline playlist**:
+The `index.m3u8` inside a downloaded Episode folder, whose segment URIs point at the local MPEG-TS segments. The WebView plays it through hls.js.
+_Avoid_: cached playlist, manifest file
+
+**Unsupported torrent file**:
+A video inside a Torrent download whose container the WebView cannot demux, such as Matroska or AVI. It is not indexed as a Downloaded episode; the Downloads screen reports it with an actionable message.
+_Avoid_: broken file, missing episode
 
 **Download status**:
 One of PENDING, DOWNLOADING, COMPLETED, or FAILED.

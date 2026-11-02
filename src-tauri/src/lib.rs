@@ -49,6 +49,7 @@ fn run_with_state(state: AppState) -> Result<(), StartupError> {
             commands::downloads::downloader_cancel_episode,
             commands::downloads::downloader_cancel_all,
             commands::downloads::downloader_delete_episode,
+            commands::downloads::downloader_list_unsupported_files,
             commands::downloads::downloader_open_folder,
             commands::downloads::downloader_download_torrent,
             commands::downloads::downloader_open_magnet,

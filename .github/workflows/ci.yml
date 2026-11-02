@@ -68,6 +68,7 @@ jobs:
         run: >-
           cargo test --locked
           --test test_db
+          --test test_hls_playlist
           --test test_magnet_validation
           --test test_scanner
           --test test_security_config

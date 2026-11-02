@@ -33,14 +33,14 @@ flowchart LR
     Commands --> TorrentEngine --> Disk
     TorrentEngine --> Scanner --> Database
     Features -->|"video: hls.js or asset protocol"| AniLiberty
-    Features -->|"video: asset protocol"| Disk
+    Features -->|"video: hls.js or asset protocol"| Disk
     Commands -.->|"download-progress, downloads-updated"| Stores
 ```
 
 Two facts that shape the rest of this document:
 
 - Catalog calls go through the Rust client first and fall back to direct HTTP; online playback always travels directly from the WebView to the AniLiberty CDN. Local files travel through Tauri's asset protocol.
-- Playback happens entirely in the WebView: a `<video>` element driven by hls.js for online HLS, the same element fed by the asset protocol for downloads, and Anime4K enhancement on a WebGPU canvas. The Rust backend never decodes video.
+- Playback happens entirely in the WebView: a `<video>` element driven by hls.js for online HLS and for Offline playlists, the same element fed directly by the asset protocol for downloaded torrent files, and Anime4K enhancement on a WebGPU canvas. The Rust backend never decodes video.
 
 ## Layers and ownership
 
@@ -63,12 +63,12 @@ Boundary rule, enforced by `tests/test_feature_boundaries.test.ts`:
 
 The WebView reaches Rust through `invoke` from `@tauri-apps/api/core`. Commands are grouped by domain in `src-tauri/src/commands/` and registered in one `generate_handler!` list in `src-tauri/src/lib.rs`.
 
-| Command family  | Commands                                                                                                                        | Rust service                                          |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `api_*`         | status, latest releases, schedule, genres, genre releases, release details, torrents, franchises, search                        | `AnilibriaClient` (`src-tauri/src/api`)               |
-| `db_*`          | bookmarks, history, continue watching, settings, download metadata, downloaded-episode index                                    | `Database` (`src-tauri/src/db`)                       |
-| `downloader_*`  | HLS episode/release download, cancel, delete, open folder, torrent file download, magnet opening, embedded torrent start/cancel | `HlsDownloader`, `TorrentDownloader`, `TorrentEngine` |
-| `app_*`, `ping` | ping, fullscreen                                                                                                                | Tauri window                                          |
+| Command family  | Commands                                                                                                                                                          | Rust service                                          |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `api_*`         | status, latest releases, schedule, genres, genre releases, release details, torrents, franchises, search                                                          | `AnilibriaClient` (`src-tauri/src/api`)               |
+| `db_*`          | bookmarks, history, continue watching, settings, download metadata, downloaded-episode index                                                                      | `Database` (`src-tauri/src/db`)                       |
+| `downloader_*`  | HLS episode/release download, cancel, delete, open folder, unsupported torrent file listing, torrent file download, magnet opening, embedded torrent start/cancel | `HlsDownloader`, `TorrentDownloader`, `TorrentEngine` |
+| `app_*`, `ping` | ping, fullscreen                                                                                                                                                  | Tauri window                                          |
 
 Backend events are one-way, Rust → WebView:
 
@@ -89,7 +89,7 @@ Backend events are one-way, Rust → WebView:
 | `downloader/hls.rs`            | Fetches m3u8 playlists and segments, writes files, tracks cancel flags, persists status and Skip timecodes, emits progress. |
 | `downloader/torrent.rs`        | Torrent-file download from the API, magnet and path validation, opening through the OS handler.                             |
 | `downloader/torrent_engine.rs` | Long-lived `librqbit` session, torrent tracking tasks, progress sampling, completion hook.                                  |
-| `downloader/scanner.rs`        | Extracts Ordinals from video filenames and indexes completed torrent files into `downloaded_episodes`.                      |
+| `downloader/scanner.rs`        | Extracts Ordinals, indexes only WebView-playable torrent containers, and reports the files it had to skip.                  |
 | `startup.rs` / `state.rs`      | Bootstrap, path resolution, fatal-error reporting, and the managed application state.                                       |
 
 ## Data flows
@@ -105,29 +105,31 @@ Backend events are one-way, Rust → WebView:
 
 1. `playerStore.openPlayer` receives a Release and an Episode. If the Episode has no HLS URLs, it loads full Release details through `api_get_release`.
 2. `App` renders `LazyPlayerOverlay` inside `Suspense`; this is the only entry that pulls in hls.js and Anime4K WebGPU.
-3. `usePlayerControllers` selects the HLS URL for the active Quality and `useHlsVideo` attaches it to a `<video>` element through hls.js. A local asset URL skips hls.js and is loaded directly.
+3. `usePlayerControllers` selects the HLS URL for the active Quality and `useHlsVideo` attaches it to a `<video>` element through hls.js. A local asset URL ending in `.m3u8` also goes through hls.js; other local asset URLs are loaded directly.
 4. Time updates drive auto-skip of opening/ending timecodes, autoplay of the next Episode, and persistence of watch progress.
 5. When Anime4K is enabled, `Anime4kCanvas` dynamic-imports `anime4kRenderer` and renders the enhanced frame on a canvas over the `<video>` element. The renderer is the only code that imports `anime4k-webgpu`.
 
 ### Offline playback
 
-1. `DownloadsView` reads the downloaded-episode index through `db_get_all_downloaded_episodes`.
-2. It converts the stored path with `offlineStreamUrl`, which wraps Tauri's `convertFileSrc` and returns an asset-protocol URL.
-3. `useHlsVideo` detects the asset URL, skips hls.js, and assigns it directly to `<video>`; the file is served by the asset protocol within the configured scope.
+1. `DownloadsView` reads the downloaded-episode index through `db_get_all_downloaded_episodes` and the unsupported torrent files through `downloader_list_unsupported_files`.
+2. It converts the stored path with `offlineStreamUrl`, which wraps Tauri's `convertFileSrc` and returns an asset-protocol URL. For a playlist the percent-encoded backslashes become forward slashes, so hls.js resolves the segment names inside the episode folder instead of the protocol root.
+3. An HLS download stores `<release_id>/<ordinal>/index.m3u8`; `useHlsVideo` sees the playlist extension and hands the asset URL to hls.js, which fetches the local TS segments and demuxes them into Media Source Extensions. Torrent episodes store a `.mp4` or `.webm` path and load natively.
+4. Torrent files in containers WebView2 cannot demux are not indexed; `DownloadsView` lists them per release with sizes, an explanation, and a button that opens the torrent folder.
 
 ### HLS download
 
 1. A release or episode action sends one `DownloadEpisodeItem` per episode to `downloader_start_episode` or `downloader_start_release`.
-2. The command spawns a Tokio task; `HlsDownloader::download_episode` records a DOWNLOADING row with the Skip timecodes, then fetches the playlist and segments.
-3. Segments are written to `downloads/<release_id>/<ordinal>.mp4`, and the row is updated to COMPLETED with size and quality. Failures become FAILED; cancellation deletes the file and the row.
-4. Progress is emitted as `download-progress` and consumed by `downloadStore`; completion triggers a reload of the downloaded-episode index.
+2. The command spawns a Tokio task; `HlsDownloader::download_episode` records a DOWNLOADING row with the Skip timecodes, then fetches the playlist.
+3. `prepare_local_playlist` resolves the segment URIs against the playlist URL and rewrites the URI lines to `segment-NNNNN.ts`, preserving `#EXTINF` and the other tags and closing the playlist with `#EXT-X-ENDLIST`. Playlists that cannot be replayed offline are rejected: fragmented (`#EXT-X-MAP`), encrypted (`#EXT-X-KEY`), master (`#EXT-X-STREAM-INF`), and byte-range (`#EXT-X-BYTERANGE`).
+4. Segments are written to `downloads/<release_id>/<ordinal>/`, then the playlist is written as `index.m3u8`. The row is updated to COMPLETED with the size of segments plus playlist. Failures remove the folder and become FAILED; cancellation deletes the folder and the row.
+5. Progress is emitted as `download-progress` and consumed by `downloadStore`; completion triggers a reload of the downloaded-episode index.
 
 ### Torrent download
 
 1. `downloadStore.startTorrentDownload` calls `downloader_start_torrent` with a magnet or URL.
 2. `TorrentEngine` adds the torrent to the shared `librqbit` session with an output folder of `downloads/torrents/<release_id>/`.
 3. A tracking task samples statistics every 500 ms and emits `download-progress`.
-4. On completion the scanner walks the folder, extracts Ordinals, and upserts `downloaded_episodes` rows. `downloads-updated` then makes the UI reload the index, and the episodes become playable offline.
+4. On completion the scanner walks the folder, extracts Ordinals, and upserts `downloaded_episodes` rows for containers WebView2 can demux (`.mp4`, `.webm`). Files in other containers stay on disk but are not indexed; `scan_unsupported_torrent_files` reports them on demand. `downloads-updated` then makes the UI reload the index, and the episodes become playable offline.
 
 ### Settings
 
@@ -143,7 +145,10 @@ Aniplayer/
 ├─ data/
 │  └─ aniplayer.db
 └─ downloads/
-   ├─ <release_id>/<ordinal>.mp4          # HLS downloads
+   ├─ <release_id>/
+   │  └─ <ordinal>/
+   │     ├─ index.m3u8                    # local HLS playlist
+   │     └─ segment-NNNNN.ts              # HLS segments
    └─ torrents/
       ├─ *.torrent                        # downloaded torrent files
       └─ <release_id>/                    # torrent payload
@@ -171,8 +176,7 @@ There is no migration framework: the initializer creates missing tables only. Ch
 
 ## Current state and tracked gaps
 
-- **HLS files are concatenated MPEG-TS bytes with an `.mp4` extension.** The downloader does not remux; playback of these files in WebView2 is tracked in [#35](https://github.com/shidot3m/aniplayer/issues/35).
-- **Torrent playback requires a complete download.** There is no piece-level streaming path; the scanner runs only after `librqbit` reports completion.
+- **Torrent playback requires a complete download.** There is no piece-level streaming path; the scanner runs only after `librqbit` reports completion, and only `.mp4`/`.webm` payloads are playable in the WebView.
 - **The `librqbit-utp` patch is temporary.** It exists for RUSTSEC-2026-0293 and is tracked in [#37](https://github.com/shidot3m/aniplayer/issues/37).
 
 ## Verification gates

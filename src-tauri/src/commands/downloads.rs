@@ -1,8 +1,10 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use tauri::State;
 
-use crate::downloader::{EpisodeDownloadSpec, TorrentDownloader};
+use crate::downloader::{
+    scan_unsupported_torrent_files, EpisodeDownloadSpec, TorrentDownloader, UnsupportedTorrentFile,
+};
 use crate::state::AppState;
 
 #[derive(Debug, serde::Deserialize)]
@@ -101,10 +103,7 @@ pub(crate) async fn downloader_delete_episode(
 ) -> Result<(), String> {
     if delete_file.unwrap_or(true) {
         if let Ok(Some(meta)) = state.db.get_downloaded_episode(&episode_id) {
-            let path = PathBuf::from(&meta.file_path);
-            if path.exists() {
-                let _ = tokio::fs::remove_file(&path).await;
-            }
+            remove_download_storage(&state.app_dir, &meta.file_path).await;
         }
     }
     state
@@ -113,20 +112,59 @@ pub(crate) async fn downloader_delete_episode(
         .map_err(|e| e.to_string())
 }
 
+/// Removes the storage an episode owns: the whole folder for an HLS download
+/// (playlist plus segments) or the single file for a torrent episode.
+async fn remove_download_storage(app_dir: &Path, file_path: &str) {
+    let path = PathBuf::from(file_path);
+    let downloads_root = app_dir.join("downloads");
+    if !path.starts_with(&downloads_root) {
+        return;
+    }
+
+    let is_playlist = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("m3u8"));
+    if is_playlist {
+        if let Some(folder) = path.parent() {
+            if folder != downloads_root {
+                let _ = tokio::fs::remove_dir_all(folder).await;
+            }
+        }
+    } else if path.exists() {
+        let _ = tokio::fs::remove_file(&path).await;
+    }
+}
+
+#[tauri::command]
+pub(crate) fn downloader_list_unsupported_files(
+    state: State<'_, AppState>,
+) -> Result<Vec<UnsupportedTorrentFile>, String> {
+    let torrents_root = crate::downloader::torrent::torrents_root(&state.app_dir);
+    Ok(scan_unsupported_torrent_files(&torrents_root))
+}
+
 #[tauri::command]
 pub(crate) fn downloader_open_folder(
     state: State<'_, AppState>,
     release_id: Option<i64>,
+    torrent: Option<bool>,
 ) -> Result<(), String> {
-    let folder = if let Some(id) = release_id {
-        state.app_dir.join("downloads").join(id.to_string())
-    } else {
-        state.app_dir.join("downloads")
-    };
+    let folder = folder_for_release(&state.app_dir, release_id, torrent.unwrap_or(false));
     std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
 
     tauri_plugin_opener::open_path(&folder, None::<&str>).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+fn folder_for_release(app_dir: &Path, release_id: Option<i64>, torrent: bool) -> PathBuf {
+    match release_id {
+        Some(id) if torrent => {
+            crate::downloader::torrent::torrents_root(app_dir).join(id.to_string())
+        }
+        Some(id) => app_dir.join("downloads").join(id.to_string()),
+        None => app_dir.join("downloads"),
+    }
 }
 
 #[tauri::command]

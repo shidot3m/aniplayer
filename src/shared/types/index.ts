@@ -120,6 +120,13 @@ export interface DownloadedEpisodeMeta {
   download_status: "PENDING" | "DOWNLOADING" | "COMPLETED" | "FAILED";
 }
 
+export interface UnsupportedTorrentFile {
+  release_id: number;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+}
+
 export interface DownloadProgressEvent {
   episodeId: string;
   releaseId: number;

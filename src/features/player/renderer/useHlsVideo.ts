@@ -7,6 +7,10 @@ function isLocalAssetUrl(streamUrl: string): boolean {
   );
 }
 
+function isPlaylistUrl(streamUrl: string): boolean {
+  return streamUrl.split(/[?#]/, 1)[0].toLowerCase().endsWith(".m3u8");
+}
+
 interface UseHlsVideoOptions {
   streamUrl: string;
   isPlaying: boolean;
@@ -66,8 +70,9 @@ export function useHlsVideo({
     };
 
     const isLocalAsset = isLocalAssetUrl(streamUrl);
+    const isLocalPlaylist = isLocalAsset && isPlaylistUrl(streamUrl);
 
-    if (Hls.isSupported() && !isLocalAsset) {
+    if (Hls.isSupported() && (!isLocalAsset || isLocalPlaylist)) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -97,8 +102,10 @@ export function useHlsVideo({
         }
       });
     } else if (isLocalAsset || video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Downloaded episodes are plain files served by the asset protocol;
-      // hls.js only understands playlists, so the element loads them directly.
+      // Downloaded torrent episodes are plain files served by the asset
+      // protocol; hls.js only understands playlists, so the element loads
+      // them directly. Downloaded HLS episodes are playlists and keep the
+      // hls.js path above, because WebView2 has no native TS demuxer.
       video.addEventListener("loadedmetadata", applyInitialSettings, { once: true });
       video.src = streamUrl;
     }

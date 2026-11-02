@@ -1,15 +1,17 @@
 use crate::db::models::DownloadedEpisodeMeta;
 use crate::db::Database;
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
-use reqwest::Client;
+use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::Emitter;
-use tokio::fs::{self, File};
-use tokio::io::AsyncWriteExt;
+use tokio::fs;
+
+/// The playlist file written into every downloaded episode folder.
+pub const PLAYLIST_FILE_NAME: &str = "index.m3u8";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,6 +39,97 @@ pub struct EpisodeDownloadSpec<'a> {
     pub op_stop: Option<f64>,
     pub ed_start: Option<f64>,
     pub ed_stop: Option<f64>,
+}
+
+/// A downloaded HLS stream: the segments to fetch and the playlist that
+/// points at them once they are on disk.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalPlaylist {
+    pub segment_urls: Vec<String>,
+    pub manifest: String,
+}
+
+pub fn segment_file_name(index: usize) -> String {
+    format!("segment-{index:05}.ts")
+}
+
+/// Turns a remote media playlist into a self-contained one whose segment
+/// URIs are local file names. Tags such as `#EXTINF` and the target duration
+/// are preserved, so the WebView can demux the result without the network.
+pub fn prepare_local_playlist(
+    playlist_text: &str,
+    playlist_url: &str,
+) -> Result<LocalPlaylist, String> {
+    let base = Url::parse(playlist_url).map_err(|e| format!("Invalid HLS playlist URL: {e}"))?;
+
+    let mut manifest_lines: Vec<String> = Vec::new();
+    let mut segment_urls: Vec<String> = Vec::new();
+    let mut has_endlist = false;
+
+    for line in playlist_text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if trimmed.starts_with('#') {
+            if trimmed.starts_with("#EXT-X-MAP") {
+                return Err(
+                    "HLS playlist uses fragmented MP4 (#EXT-X-MAP); only MPEG-TS streams can be stored offline"
+                        .to_string(),
+                );
+            }
+            if trimmed.starts_with("#EXT-X-KEY") {
+                return Err(
+                    "HLS playlist is encrypted (#EXT-X-KEY) and cannot be stored for offline playback"
+                        .to_string(),
+                );
+            }
+            if trimmed.starts_with("#EXT-X-STREAM-INF") {
+                return Err(
+                    "HLS master playlists are not supported; download a Quality stream instead"
+                        .to_string(),
+                );
+            }
+            if trimmed.starts_with("#EXT-X-BYTERANGE") {
+                return Err(
+                    "HLS byte-range playlists cannot be stored offline; download each segment as a file instead"
+                        .to_string(),
+                );
+            }
+            if trimmed.starts_with("#EXT-X-ENDLIST") {
+                has_endlist = true;
+            }
+            manifest_lines.push(trimmed.to_string());
+            continue;
+        }
+
+        let resolved = base
+            .join(trimmed)
+            .map_err(|e| format!("Invalid segment URI `{trimmed}`: {e}"))?;
+        manifest_lines.push(segment_file_name(segment_urls.len()));
+        segment_urls.push(resolved.to_string());
+    }
+
+    if segment_urls.is_empty() {
+        return Err("No media segments found in m3u8 playlist".to_string());
+    }
+    if !manifest_lines
+        .first()
+        .is_some_and(|line| line.starts_with("#EXTM3U"))
+    {
+        manifest_lines.insert(0, "#EXTM3U".to_string());
+    }
+    if !has_endlist {
+        manifest_lines.push("#EXT-X-ENDLIST".to_string());
+    }
+
+    let mut manifest = manifest_lines.join("\n");
+    manifest.push('\n');
+
+    Ok(LocalPlaylist {
+        segment_urls,
+        manifest,
+    })
 }
 
 pub struct HlsDownloader {
@@ -147,9 +240,29 @@ impl HlsDownloader {
             .await
             .map_err(|e| e.to_string())?;
 
-        let file_name = format!("{}.mp4", ordinal);
-        let dest_path = rel_folder.join(&file_name);
+        // Every episode owns a folder with its playlist and TS segments, which
+        // is the only layout the WebView can play offline: hls.js demuxes the
+        // segments itself instead of relying on a container WebView2 lacks.
+        let episode_dir = rel_folder.join(ordinal.to_string());
+        let dest_path = episode_dir.join(PLAYLIST_FILE_NAME);
         let dest_str = dest_path.to_string_lossy().to_string();
+
+        macro_rules! fail {
+            ($message:expr) => {{
+                return Err(self
+                    .record_failure_and_stop(spec, &episode_dir, &dest_str, $message, &app)
+                    .await);
+            }};
+        }
+
+        let legacy_file = rel_folder.join(format!("{}.mp4", ordinal));
+        if fs::try_exists(&legacy_file).await.unwrap_or(false) {
+            let _ = fs::remove_file(&legacy_file).await;
+        }
+        let _ = fs::remove_dir_all(&episode_dir).await;
+        if let Err(e) = fs::create_dir_all(&episode_dir).await {
+            fail!(format!("Failed to create episode folder: {e}"));
+        }
 
         // Record downloading status in DB
         let meta = DownloadedEpisodeMeta {
@@ -186,106 +299,72 @@ impl HlsDownloader {
         }
 
         if cancel_flag.load(Ordering::Relaxed) {
-            self.cleanup_cancelled(spec, &dest_path, &app).await;
+            self.cleanup_cancelled(spec, &episode_dir, &app).await;
             return Err("Download cancelled by user".to_string());
         }
 
-        // 1. Fetch m3u8 playlist
-        let playlist_resp = match self.client.get(m3u8_url).send().await {
-            Ok(r) => r,
+        // 1. Fetch and rewrite the media playlist
+        let playlist_text = match self.client.get(m3u8_url).send().await {
+            Ok(response) => match response.text().await {
+                Ok(text) => text,
+                Err(e) => {
+                    let err_msg = format!("Failed to read m3u8 body: {e}");
+                    fail!(err_msg);
+                }
+            },
             Err(e) => {
-                let err_msg = format!("Failed to fetch m3u8 playlist: {}", e);
-                return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
-            }
-        };
-
-        let playlist_text = match playlist_resp.text().await {
-            Ok(t) => t,
-            Err(e) => {
-                let err_msg = format!("Failed to read m3u8 body: {}", e);
-                return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
+                let err_msg = format!("Failed to fetch m3u8 playlist: {e}");
+                fail!(err_msg);
             }
         };
 
         if cancel_flag.load(Ordering::Relaxed) {
-            self.cleanup_cancelled(spec, &dest_path, &app).await;
+            self.cleanup_cancelled(spec, &episode_dir, &app).await;
             return Err("Download cancelled by user".to_string());
         }
 
-        // 2. Parse segment URLs
-        let base_url = if let Some(idx) = m3u8_url.rfind('/') {
-            &m3u8_url[..=idx]
-        } else {
-            m3u8_url
+        let playlist = match prepare_local_playlist(&playlist_text, m3u8_url) {
+            Ok(playlist) => playlist,
+            Err(err_msg) => fail!(err_msg),
         };
 
-        let mut segment_urls = Vec::new();
-        for line in playlist_text.lines() {
-            let trimmed = line.trim();
-            if trimmed.is_empty() || trimmed.starts_with('#') {
-                continue;
-            }
-            if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
-                segment_urls.push(trimmed.to_string());
-            } else {
-                segment_urls.push(format!("{}{}", base_url, trimmed));
-            }
-        }
-
-        if segment_urls.is_empty() {
-            let err_msg = "No media segments found in m3u8 playlist".to_string();
-            return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
-        }
-
-        let total_segments = segment_urls.len();
-
-        // 3. Download and stitch segments
-        let mut outfile = match File::create(&dest_path).await {
-            Ok(f) => f,
-            Err(e) => {
-                let err_msg = format!("Failed to create destination file: {}", e);
-                return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
-            }
-        };
-
+        // 2. Download the segments into the episode folder
+        let total_segments = playlist.segment_urls.len();
         let mut total_bytes = 0i64;
 
-        for (i, seg_url) in segment_urls.into_iter().enumerate() {
+        for (index, segment_url) in playlist.segment_urls.iter().enumerate() {
             if cancel_flag.load(Ordering::Relaxed) {
-                drop(outfile);
-                self.cleanup_cancelled(spec, &dest_path, &app).await;
+                self.cleanup_cancelled(spec, &episode_dir, &app).await;
                 return Err("Download cancelled by user".to_string());
             }
 
-            let seg_resp = match self.client.get(&seg_url).send().await {
-                Ok(r) => r,
+            let bytes = match self.client.get(segment_url).send().await {
+                Ok(response) => match response.bytes().await {
+                    Ok(bytes) => bytes,
+                    Err(e) => {
+                        let err_msg = format!("Segment {index} bytes read error: {e}");
+                        fail!(err_msg);
+                    }
+                },
                 Err(e) => {
-                    let err_msg = format!("Segment {} network request error: {}", i, e);
-                    return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
-                }
-            };
-
-            let bytes = match seg_resp.bytes().await {
-                Ok(b) => b,
-                Err(e) => {
-                    let err_msg = format!("Segment {} bytes read error: {}", i, e);
-                    return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
+                    let err_msg = format!("Segment {index} network request error: {e}");
+                    fail!(err_msg);
                 }
             };
 
             if cancel_flag.load(Ordering::Relaxed) {
-                drop(outfile);
-                self.cleanup_cancelled(spec, &dest_path, &app).await;
+                self.cleanup_cancelled(spec, &episode_dir, &app).await;
                 return Err("Download cancelled by user".to_string());
             }
 
             total_bytes += bytes.len() as i64;
-            if let Err(e) = outfile.write_all(&bytes).await {
-                let err_msg = format!("File write error: {}", e);
-                return Err(self.record_failure_and_stop(spec, &dest_str, err_msg, &app));
+            let segment_path = episode_dir.join(segment_file_name(index));
+            if let Err(e) = fs::write(&segment_path, &bytes).await {
+                let err_msg = format!("File write error: {e}");
+                fail!(err_msg);
             }
 
-            let downloaded = i + 1;
+            let downloaded = index + 1;
             let percent = ((downloaded as f64 / total_segments as f64) * 1000.0).round() / 10.0;
 
             if let Some(ref a) = app {
@@ -299,20 +378,21 @@ impl HlsDownloader {
                         downloaded_segments: downloaded,
                         total_bytes,
                         percent,
-                        status: if downloaded == total_segments {
-                            "COMPLETED".to_string()
-                        } else {
-                            "DOWNLOADING".to_string()
-                        },
+                        status: "DOWNLOADING".to_string(),
                         error: None,
                     },
                 );
             }
         }
 
-        let _ = outfile.flush().await;
+        // 3. Write the local playlist last: its presence marks a complete episode
+        let manifest = playlist.manifest.into_bytes();
+        total_bytes += manifest.len() as i64;
+        if let Err(e) = fs::write(&dest_path, &manifest).await {
+            let err_msg = format!("Failed to write local playlist: {e}");
+            fail!(err_msg);
+        }
 
-        // 4. Update status to COMPLETED
         let completed_meta = DownloadedEpisodeMeta {
             episode_id: episode_id.to_string(),
             release_id,
@@ -327,6 +407,24 @@ impl HlsDownloader {
             download_status: "COMPLETED".to_string(),
         };
         let _ = self.db.save_downloaded_episode(&completed_meta);
+
+        if let Some(ref a) = app {
+            let _ = a.emit(
+                "download-progress",
+                DownloadProgressEvent {
+                    episode_id: episode_id.to_string(),
+                    release_id,
+                    episode_ordinal: ordinal,
+                    total_segments,
+                    downloaded_segments: total_segments,
+                    total_bytes,
+                    percent: 100.0,
+                    status: "COMPLETED".to_string(),
+                    error: None,
+                },
+            );
+        }
+
         self.remove_task(episode_id);
 
         Ok(dest_path)
@@ -335,10 +433,10 @@ impl HlsDownloader {
     async fn cleanup_cancelled(
         &self,
         spec: &EpisodeDownloadSpec<'_>,
-        dest_path: &Path,
+        episode_dir: &Path,
         app: &Option<tauri::AppHandle>,
     ) {
-        let _ = fs::remove_file(dest_path).await;
+        let _ = fs::remove_dir_all(episode_dir).await;
         let _ = self.db.delete_downloaded_episode(spec.episode_id);
         self.remove_task(spec.episode_id);
 
@@ -365,13 +463,17 @@ impl HlsDownloader {
         tasks.remove(episode_id);
     }
 
-    fn record_failure_and_stop(
+    async fn record_failure_and_stop(
         &self,
         spec: &EpisodeDownloadSpec<'_>,
+        episode_dir: &Path,
         file_path: &str,
         error_msg: String,
         app: &Option<tauri::AppHandle>,
     ) -> String {
+        // A failed episode must not leave a partial folder that looks playable.
+        let _ = fs::remove_dir_all(episode_dir).await;
+
         let failed_meta = DownloadedEpisodeMeta {
             episode_id: spec.episode_id.to_string(),
             release_id: spec.release_id,

@@ -83,6 +83,15 @@ describe("offline video source", () => {
     expect(renderedVideo().getAttribute("src")).toBeNull();
   });
 
+  it("routes a downloaded playlist through hls.js because WebView2 cannot demux TS natively", () => {
+    const assetUrl = "http://asset.localhost/E%3A%5Cdownloads%5C10239%5C1%5Cindex.m3u8";
+
+    render(<VideoHarness src={assetUrl} />);
+
+    expect(hls.loadSource).toHaveBeenCalledWith(assetUrl);
+    expect(renderedVideo().getAttribute("src")).toBeNull();
+  });
+
   it("leaves remote streams that are not asset URLs on the hls.js path", () => {
     const streamUrl = "https://cache.libria.fun/videos/10329/1080/stream";
 

@@ -28,4 +28,12 @@ describe("offline stream URL", () => {
   it("keeps the file path when running outside Tauri", () => {
     expect(offlineStreamUrl("C:\\downloads\\10239\\1.mp4")).toBe("C:\\downloads\\10239\\1.mp4");
   });
+
+  it("uses forward slashes for a downloaded playlist so relative segments resolve", () => {
+    installTauri((path) => `http://asset.localhost/${encodeURIComponent(path)}`);
+
+    expect(offlineStreamUrl("C:\\downloads\\10239\\1\\index.m3u8")).toBe(
+      "http://asset.localhost/C%3A/downloads/10239/1/index.m3u8",
+    );
+  });
 });

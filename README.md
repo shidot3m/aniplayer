@@ -4,17 +4,17 @@
 
 ## Возможности
 
-- Воспроизведение HLS через `<video>` и hls.js в WebView2, скачанных серий — через asset protocol
+- Воспроизведение HLS через `<video>` и hls.js в WebView2; скачанные серии — офлайн-плейлист HLS с сегментами через asset protocol
 - Anime4K-апскейл в реальном времени через `anime4k-webgpu` (WebGPU) с пресетами и сохранением выбора
 - Каталог, расписание, жанры, франшизы — API AniLiberty
-- Торрент-загрузки через встроенный движок `librqbit` со сканированием серий после завершения
+- Торрент-загрузки через встроенный движок `librqbit` со сканированием серий после завершения; встроенный плеер открывает MP4/WebM, остальные контейнеры показываются с пояснением
 - Скачивание серий, отслеживание активных загрузок с отменой, плавающий виджет прогресса
 - Закладки, «Продолжить просмотр», история — SQLite (`data/aniplayer.db` рядом с exe)
 
 ## Стек
 
-| Слой         | Технологии                                                                |
-| ------------ | ------------------------------------------------------------------------- |
+| Слой         | Технологии                                                                  |
+| ------------ | --------------------------------------------------------------------------- |
 | UI           | React 19, TypeScript 7, Vite 8, Tailwind 4, Zustand, Radix UI, lucide-react |
 | Оболочка     | Tauri 2.12 (Rust, edition 2021)                                             |
 | Бэкенд       | Tauri IPC: `librqbit` 9, `rusqlite` 0.41, `reqwest` 0.13                    |
@@ -94,8 +94,9 @@ Rust-проверки (из каталога `src-tauri`, с окружение�
 cargo fmt --check
 cargo clippy --all-targets --locked -- -D warnings
 cargo audit
-cargo test --locked --test test_db --test test_magnet_validation --test test_scanner \
-  --test test_security_config --test test_startup --test test_torrent_path_validation
+cargo test --locked --test test_db --test test_hls_playlist --test test_magnet_validation \
+  --test test_scanner --test test_security_config --test test_startup \
+  --test test_torrent_path_validation
 ```
 
 `test_api` обращается к живому API AniLiberty и поэтому в CI не входит.
