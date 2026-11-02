@@ -4,6 +4,8 @@
 - **Search the tracker before filing.** Before creating an issue, list open issues and check whether the work is already tracked (`gh issue list --state open --json number,title`); if a ticket covers it, reference that one instead of opening a duplicate.
 - **Prefer the latest stable versions.** Use current releases of dependencies, runtimes, and CI actions instead of stale pinned majors. Outdated versions are technical debt: upgrade them as part of the work that touches them, not in a later cleanup. Confirm the current release against official sources before bumping.
 - **Verify current documentation first.** Before implementing or changing a dependency, check the current version, API, and deprecations against official docs or primary sources. Do not rely on memory for framework or library specifics.
+- **Keep documentation current.** Documentation must always describe the current code. Every behavioral, structural, or dependency change updates the documents it invalidates — `README.md`, `GLOSSARY.md`, `docs/architecture.md`, and the affected ADRs — in the same commit. Stale or contradictory documentation is a defect to fix, not a follow-up.
+- **Respect feature boundaries.** Features may import their own internals, the shared layer, and other features only through their barrels; the application shell only composes features. The rule and its automated check are documented in `docs/architecture.md`.
 - **Use skills for all work.** Select the relevant installed skill before acting. If none fits, state that explicitly and proceed with the closest applicable practice.
 - **Run the app yourself.** Do not hand runtime passes back to the user. Launch the actual app (or the closest runnable build), drive the affected flow, and record the evidence — commands, screenshots, observed values — in the ticket. Defer only checks that need hardware, credentials, or physical input an agent cannot supply.
 - **Land finished work yourself.** Once a change is complete and verified, commit and push it in the same turn, without waiting for a go-ahead. When every acceptance criterion of the ticket is met with evidence — automated gates green and behavior confirmed, including any manual runtime pass the ticket asks for — land the branch on `master` (`git push origin HEAD:master`) and delete it on the spot. A rejected push means `master` moved: rebase onto it and retry; never force. While a criterion is still open, keep the branch pushed and name the open criterion.
@@ -40,4 +42,4 @@ Default five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `
 
 ### Domain docs
 
-Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root, with the current module map and data flows in `docs/architecture.md`. See `docs/agents/domain.md`.
