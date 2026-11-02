@@ -82,7 +82,7 @@ describe("Fullscreen restore on player exit", () => {
     await usePlayerStore.getState().closePlayer();
 
     expect(mockInvoke).toHaveBeenCalledWith("app_set_fullscreen", { fullscreen: false });
-    expect(mockInvoke).toHaveBeenCalledWith("player_stop");
+    expect(mockInvoke).not.toHaveBeenCalledWith("player_stop");
 
     const state = usePlayerStore.getState();
     expect(state.isPlayerOpen).toBe(false);

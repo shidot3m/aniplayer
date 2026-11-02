@@ -9,7 +9,7 @@ import {
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
 import { DownloadFloatingWidget, DownloadsView, useDownloadStore } from "@/features/downloads";
-import { LazyPlayerOverlay, usePlayerBackendSync, usePlayerStore } from "@/features/player";
+import { LazyPlayerOverlay, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
 import { SettingsDialog } from "@/features/settings";
 import type { Release } from "@/shared/types";
@@ -52,8 +52,6 @@ export default function App() {
       if (unlistenFn) unlistenFn();
     };
   }, [loadInitialData, initSettings, listenToProgress, fetchDownloadedEpisodes]);
-
-  usePlayerBackendSync();
 
   const handleSelectRelease = (release: Release) => {
     if (activeScreen !== "details") {

@@ -2,7 +2,6 @@ pub mod api;
 mod commands;
 pub mod db;
 pub mod downloader;
-pub mod player;
 pub mod startup;
 mod state;
 
@@ -55,21 +54,6 @@ fn run_with_state(state: AppState) -> Result<(), StartupError> {
             commands::downloads::downloader_open_magnet,
             commands::downloads::downloader_start_torrent,
             commands::downloads::downloader_cancel_torrent,
-            commands::player::player_init,
-            commands::player::player_load_video,
-            commands::player::player_play,
-            commands::player::player_pause,
-            commands::player::player_stop,
-            commands::player::player_seek,
-            commands::player::player_seek_relative,
-            commands::player::player_set_volume,
-            commands::player::player_get_volume,
-            commands::player::player_set_speed,
-            commands::player::player_set_shader_preset,
-            commands::player::player_get_current_preset,
-            commands::player::player_get_time_pos,
-            commands::player::player_get_duration,
-            commands::player::player_is_paused,
             commands::app::app_set_fullscreen,
             commands::app::app_is_fullscreen,
         ])

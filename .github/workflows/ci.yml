@@ -61,9 +61,8 @@ jobs:
       - name: Clippy (warnings denied)
         working-directory: src-tauri
         run: cargo clippy --all-targets --locked -- -D warnings
-      # test_api needs the live AniLiberty API and test_player needs libmpv-2.dll,
-      # so only the hermetic suites are linked and executed here. Clippy above
-      # type-checks every test target.
+      # test_api needs the live AniLiberty API, so only the hermetic suites are
+      # linked and executed here. Clippy above type-checks every test target.
       - name: Run hermetic tests
         working-directory: src-tauri
         run: >-

@@ -33,20 +33,6 @@ jobs:
 
       - run: npm ci
 
-      - name: Download libmpv
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          asset=$(gh release view --repo shinchiro/mpv-winbuild-cmake --json assets \
-            --jq '.assets[].name' | grep -m 1 -E '^mpv-dev-x86_64-[0-9]{8}-git-')
-          test -n "$asset"
-          gh release download --repo shinchiro/mpv-winbuild-cmake --pattern "$asset" --dir mpv-dev
-          7z x "mpv-dev/$asset" -o"mpv-dev/extracted" -y
-          mkdir -p bin/mpv-dev
-          cp mpv-dev/extracted/libmpv-2.dll bin/mpv-dev/
-
       - name: Build portable bundle
         shell: pwsh
         run: |
@@ -62,10 +48,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $entries = ((& 7z l -ba Aniplayer-portable.zip) -join "`n").Replace('\', '/')
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          foreach ($required in @('aniplayer.exe', 'libmpv-2.dll', 'shaders/anime4k/')) {
-            if (-not $entries.Contains($required)) {
-              throw "Aniplayer-portable.zip is missing $required"
-            }
+          if (-not $entries.Contains('aniplayer.exe')) {
+            throw "Aniplayer-portable.zip is missing aniplayer.exe"
           }
 
       - name: Publish release
@@ -91,7 +75,7 @@ jobs:
           - Built: $(date -u +'%Y-%m-%d %H:%M UTC')
           - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
 
-          Download \`Aniplayer-portable.zip\` — it contains \`aniplayer.exe\`, \`libmpv-2.dll\`, and the Anime4K shaders.
+          Download \`Aniplayer-portable.zip\` — it contains \`aniplayer.exe\` and its \`data/\` folder.
           This is the only release artifact; no standalone executable is published.
           EOF
 

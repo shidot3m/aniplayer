@@ -78,14 +78,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       isPlaying: true,
       activeQuality: resolvedQuality,
     });
-
-    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-      try {
-        await invoke("player_stop");
-      } catch (_e) {
-        // ignore
-      }
-    }
   },
 
   playEpisode: async (release, episode, startPos = 0) => {
@@ -114,31 +106,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       currentRelease: null,
       currentEpisode: null,
     });
-    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-      try {
-        await invoke("player_stop");
-      } catch (_e) {
-        // ignore
-      }
-    }
   },
 
   play: async () => {
     set({ isPlaying: true });
-    try {
-      await invoke("player_play");
-    } catch (_e) {
-      // Backend player optional (webview player active)
-    }
   },
 
   pause: async () => {
     set({ isPlaying: false });
-    try {
-      await invoke("player_pause");
-    } catch (_e) {
-      // Backend player optional (webview player active)
-    }
   },
 
   togglePlay: async () => {
@@ -151,11 +126,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   seek: async (seconds: number) => {
     set({ currentTime: seconds });
-    try {
-      await invoke("player_seek", { seconds });
-    } catch (_e) {
-      // Backend player optional
-    }
   },
 
   seekTo: async (seconds: number) => {
@@ -165,11 +135,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   seekRelative: async (offset: number) => {
     const newPos = Math.max(0, get().currentTime + offset);
     set({ currentTime: newPos });
-    try {
-      await invoke("player_seek_relative", { offset });
-    } catch (_e) {
-      // Backend player optional
-    }
   },
 
   setVolume: async (volume: number) => {
@@ -179,7 +144,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       localStorage.setItem("aniplayer_volume", String(clamped));
     }
     try {
-      await invoke("player_set_volume", { volume: clamped });
       await invoke("db_save_setting", {
         key: "volume",
         value: String(clamped),
@@ -196,22 +160,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       await get().setVolume(restoreVol);
       set({ isMuted: false });
     } else {
-      try {
-        await invoke("player_set_volume", { volume: 0 });
-        set({ isMuted: true });
-      } catch (e) {
-        console.error(e);
-      }
+      set({ isMuted: true });
     }
   },
 
   setSpeed: async (speed: number) => {
     set({ speed });
-    try {
-      await invoke("player_set_speed", { speed });
-    } catch (e) {
-      console.error(e);
-    }
   },
 
   setPreset: async (preset: string) => {
@@ -224,11 +178,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         key: "anime4k_preset",
         value: preset,
       });
-      if (get().anime4kEnabled) {
-        await invoke("player_set_shader_preset", { preset });
-      }
     } catch (_e) {
-      // Backend player optional
+      // Backend not ready yet or table empty
     }
   },
 
@@ -247,8 +198,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         key: "anime4k_enabled",
         value: String(enabled),
       });
-      const preset = enabled ? get().anime4kPreset : "OFF";
-      await invoke("player_set_shader_preset", { preset });
     } catch (e) {
       console.error(e);
     }
@@ -359,33 +308,5 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (state.autoplayNext && duration > 0 && time >= duration - 1.5) {
       get().playNextEpisode();
     }
-  },
-
-  syncFromBackend: async () => {
-    try {
-      const cur = await invoke<number>("player_get_time_pos");
-      const dur = await invoke<number>("player_get_duration");
-
-      // Only update time and state if backend has an active running stream
-      if (dur > 0 && cur >= 0) {
-        const vol = await invoke<number>("player_get_volume");
-        const preset = await invoke<string>("player_get_current_preset");
-        const paused = await invoke<boolean>("player_is_paused");
-        set({
-          volume: vol,
-          ...(preset ? { anime4kPreset: preset } : {}),
-          isPlaying: !paused,
-          currentTime: cur,
-          duration: dur,
-        });
-      }
-    } catch (_e) {
-      // Backend not ready yet or no active stream
-    }
-  },
-
-  syncWithBackend: async () => {
-    if (!get().isPlayerOpen) return;
-    await get().syncFromBackend();
   },
 }));

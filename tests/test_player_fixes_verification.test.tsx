@@ -15,26 +15,22 @@ describe("Verification of 3 critical player & upscaler fixes", () => {
     localStorage.clear();
   });
 
-  it("1. Play/Pause state updates reliably even when MPV backend is not initialized", async () => {
-    // Simulate MPV not initialized error from backend
-    vi.mocked(invoke).mockRejectedValue(new Error("Player not initialized"));
-
+  it("1. Play/Pause state updates without touching the backend", async () => {
     usePlayerStore.setState({ isPlaying: false });
 
-    // Call play()
     await usePlayerStore.getState().play();
     expect(usePlayerStore.getState().isPlaying).toBe(true);
 
-    // Call pause()
     await usePlayerStore.getState().pause();
     expect(usePlayerStore.getState().isPlaying).toBe(false);
 
-    // Call togglePlay()
     await usePlayerStore.getState().togglePlay();
     expect(usePlayerStore.getState().isPlaying).toBe(true);
 
     await usePlayerStore.getState().togglePlay();
     expect(usePlayerStore.getState().isPlaying).toBe(false);
+
+    expect(invoke).not.toHaveBeenCalled();
   });
 
   it("2. Upscaler preset persists to localStorage, db_save_setting, and can be changed when disabled", async () => {

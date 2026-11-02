@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Aniplayer is a Tauri 2 desktop app: a React WebView for the interface, a Rust backend for catalog access, local storage, downloads, and native media, and a portable folder that carries every runtime asset. This document maps the current code; when it and the code disagree, the code wins and this document is a defect. See [GLOSSARY.md](../GLOSSARY.md) for the domain vocabulary and [docs/adr/](adr/) for the decisions behind the shape.
+Aniplayer is a Tauri 2 desktop app: a React WebView for the interface and playback, a Rust backend for catalog access, local storage, and downloads, and a portable folder that carries every runtime asset. This document maps the current code; when it and the code disagree, the code wins and this document is a defect. See [GLOSSARY.md](../GLOSSARY.md) for the domain vocabulary and [docs/adr/](adr/) for the decisions behind the shape.
 
 ## System shape
 
@@ -21,7 +21,6 @@ flowchart LR
         HlsDownloader["HLS downloader"]
         TorrentEngine["Torrent engine<br/>(librqbit)"]
         Scanner["Torrent episode scanner"]
-        Mpv["libmpv FFI layer"]
     end
 
     AniLiberty["AniLiberty API and CDN"]
@@ -33,7 +32,6 @@ flowchart LR
     Commands --> HlsDownloader --> Disk
     Commands --> TorrentEngine --> Disk
     TorrentEngine --> Scanner --> Database
-    Commands --> Mpv
     Features -->|"video: hls.js or asset protocol"| AniLiberty
     Features -->|"video: asset protocol"| Disk
     Commands -.->|"download-progress, downloads-updated"| Stores
@@ -42,7 +40,7 @@ flowchart LR
 Two facts that shape the rest of this document:
 
 - Catalog calls go through the Rust client first and fall back to direct HTTP; online playback always travels directly from the WebView to the AniLiberty CDN. Local files travel through Tauri's asset protocol.
-- The native libmpv layer exists and is registered, but the Player overlay currently plays through the WebView `<video>` element. See [Current state and tracked gaps](#current-state-and-tracked-gaps).
+- Playback happens entirely in the WebView: a `<video>` element driven by hls.js for online HLS, the same element fed by the asset protocol for downloads, and Anime4K enhancement on a WebGPU canvas. The Rust backend never decodes video.
 
 ## Layers and ownership
 
@@ -70,7 +68,6 @@ The WebView reaches Rust through `invoke` from `@tauri-apps/api/core`. Commands 
 | `api_*`         | status, latest releases, schedule, genres, genre releases, release details, torrents, franchises, search                        | `AnilibriaClient` (`src-tauri/src/api`)               |
 | `db_*`          | bookmarks, history, continue watching, settings, download metadata, downloaded-episode index                                    | `Database` (`src-tauri/src/db`)                       |
 | `downloader_*`  | HLS episode/release download, cancel, delete, open folder, torrent file download, magnet opening, embedded torrent start/cancel | `HlsDownloader`, `TorrentDownloader`, `TorrentEngine` |
-| `player_*`      | init, load, play, pause, stop, seek, volume, speed, shader preset, time/duration/pause queries                                  | `MpvCore` over the FFI layer                          |
 | `app_*`, `ping` | ping, fullscreen                                                                                                                | Tauri window                                          |
 
 Backend events are one-way, Rust → WebView:
@@ -82,7 +79,7 @@ Backend events are one-way, Rust → WebView:
 
 `startup::bootstrap` is the composition root. It resolves the application directory, opens the database, creates the HLS downloader and the torrent engine, and builds `AppState`; each fallible step fails with an actionable `StartupError` that is shown in a native dialog. Nothing half-started is left behind.
 
-`AppState` holds `Arc`s to the database, API client, HLS downloader, torrent file downloader, torrent engine, the optional native player, and the application directory.
+`AppState` holds `Arc`s to the database, API client, HLS downloader, torrent file downloader, torrent engine, and the application directory.
 
 | Module                         | Responsibility                                                                                                              |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
@@ -93,9 +90,6 @@ Backend events are one-way, Rust → WebView:
 | `downloader/torrent.rs`        | Torrent-file download from the API, magnet and path validation, opening through the OS handler.                             |
 | `downloader/torrent_engine.rs` | Long-lived `librqbit` session, torrent tracking tasks, progress sampling, completion hook.                                  |
 | `downloader/scanner.rs`        | Extracts Ordinals from video filenames and indexes completed torrent files into `downloaded_episodes`.                      |
-| `player/ffi.rs`                | Unsafe libmpv loading and calls behind an owning, `Drop`-safe context.                                                      |
-| `player/mpv.rs`                | Safe facade over libmpv: options, playback, seek, volume, speed, shader chain.                                              |
-| `player/shaders.rs`            | Anime4K preset → GLSL filename chain.                                                                                       |
 | `startup.rs` / `state.rs`      | Bootstrap, path resolution, fatal-error reporting, and the managed application state.                                       |
 
 ## Data flows
@@ -114,7 +108,6 @@ Backend events are one-way, Rust → WebView:
 3. `usePlayerControllers` selects the HLS URL for the active Quality and `useHlsVideo` attaches it to a `<video>` element through hls.js. A local asset URL skips hls.js and is loaded directly.
 4. Time updates drive auto-skip of opening/ending timecodes, autoplay of the next Episode, and persistence of watch progress.
 5. When Anime4K is enabled, `Anime4kCanvas` dynamic-imports `anime4kRenderer` and renders the enhanced frame on a canvas over the `<video>` element. The renderer is the only code that imports `anime4k-webgpu`.
-6. Player commands (`player_play`, `player_seek`, and so on) are still invoked and their failures are swallowed, because the Rust player is optional and currently uninitialized.
 
 ### Offline playback
 
@@ -138,7 +131,7 @@ Backend events are one-way, Rust → WebView:
 
 ### Settings
 
-`playerStore.initSettings` reads persisted Settings through `db_get_setting`. Volume, preferred Quality, Anime4K preset, Anime4K enabled, and hotkeys are written through `db_save_setting`; changing the shader preset also calls `player_set_shader_preset`. Auto-skip and autoplay toggles currently live only in the session state.
+`playerStore.initSettings` reads persisted Settings through `db_get_setting`. Volume, preferred Quality, Anime4K preset, Anime4K enabled, and hotkeys are written through `db_save_setting`. Auto-skip and autoplay toggles currently live only in the session state.
 
 ## Runtime asset layout
 
@@ -147,9 +140,6 @@ Portable bundle (the only distributed artifact):
 ```text
 Aniplayer/
 ├─ aniplayer.exe
-├─ libmpv-2.dll
-├─ shaders/
-│  └─ anime4k/*.glsl
 ├─ data/
 │  └─ aniplayer.db
 └─ downloads/
@@ -159,7 +149,7 @@ Aniplayer/
       └─ <release_id>/                    # torrent payload
 ```
 
-All paths are relative to the executable's directory (`startup::app_dir`). In development, the native DLL is looked up in `bin/mpv-dev/`, the working directory, and `dist_portable/`; shaders are looked up in `shaders/anime4k/` and `dist_portable/shaders/anime4k/`.
+All paths are relative to the executable's directory (`startup::app_dir`).
 
 ## Persistence
 
@@ -178,11 +168,9 @@ There is no migration framework: the initializer creates missing tables only. Ch
 - The asset protocol is enabled and scoped to `$RESOURCE/downloads/**`; downloaded files never reach the WebView by other means.
 - The opener capability allows only `magnet:` URLs. The old shell plugin is gone.
 - Magnet links are validated before reaching the torrent engine, and `.torrent` paths must canonicalize inside the torrents folder.
-- Unsafe code is confined to the libmpv FFI module; command code only sees safe handles.
 
 ## Current state and tracked gaps
 
-- **Native libmpv is not on the active playback path.** The overlay uses the WebView `<video>` pipeline; `player_init` is never invoked by the UI, so the `player_*` commands return defaults or no-op. [ADR 0003](adr/0003-native-libmpv-ffi-layer.md) records the layer and this status.
 - **HLS files are concatenated MPEG-TS bytes with an `.mp4` extension.** The downloader does not remux; playback of these files in WebView2 is tracked in [#35](https://github.com/shidot3m/aniplayer/issues/35).
 - **Torrent playback requires a complete download.** There is no piece-level streaming path; the scanner runs only after `librqbit` reports completion.
 - **The `librqbit-utp` patch is temporary.** It exists for RUSTSEC-2026-0293 and is tracked in [#37](https://github.com/shidot3m/aniplayer/issues/37).

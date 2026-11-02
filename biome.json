@@ -13,8 +13,6 @@
       "!**/dist",
       "!**/target",
       "!**/src-tauri/target",
-      "!**/bin",
-      "!**/shaders",
       "!**/.agents",
       "!**/.qoder",
       "!**/src-tauri/gen",

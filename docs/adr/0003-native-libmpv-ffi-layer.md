@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted
+Status: superseded by [ADR 0007](0007-remove-native-libmpv-layer.md)
 
 ## Context
 

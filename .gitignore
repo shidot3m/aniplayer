@@ -20,9 +20,6 @@ test_e2e_data/
 *.db-wal
 *.db-shm
 
-# Vendored binaries (libmpv, 7-Zip) — see README "Подготовка bin/"
-bin/
-
 # Python caches
 __pycache__/
 *.py[cod]

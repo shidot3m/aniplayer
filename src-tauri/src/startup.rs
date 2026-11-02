@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use thiserror::Error;
 
@@ -88,7 +88,6 @@ pub fn bootstrap() -> Result<AppState, StartupError> {
         downloader,
         torrent_downloader: Arc::new(TorrentDownloader::new()),
         torrent_engine,
-        player: Arc::new(Mutex::new(None)),
         app_dir,
     })
 }

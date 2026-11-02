@@ -120,8 +120,6 @@ export interface PlayerState {
   setDrawerOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   updateTime: (time: number, duration: number) => void;
-  syncFromBackend: () => Promise<void>;
-  syncWithBackend: () => Promise<void>;
 }
 
 export const getInitialVolume = (): number => {
