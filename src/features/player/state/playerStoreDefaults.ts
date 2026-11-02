@@ -89,6 +89,8 @@ export interface PlayerState {
   currentEpisode: EpisodeItem | null;
   isDrawerOpen: boolean;
   isSettingsOpen: boolean;
+  playbackError: string | null;
+  hardwareDecoder: string | null;
 
   // Actions
   openPlayer: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;

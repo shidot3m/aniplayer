@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Aniplayer is a Tauri 2 desktop app: a React WebView for the interface and playback, a Rust backend for catalog access, local storage, and downloads, and a portable folder that carries every runtime asset. This document maps the current code; when it and the code disagree, the code wins and this document is a defect. See [GLOSSARY.md](../GLOSSARY.md) for the domain vocabulary and [docs/adr/](adr/) for the decisions behind the shape.
+Aniplayer is a Tauri 2 desktop app: a React WebView for the interface, a Rust backend for catalog access, local storage, downloads, and the mpv player it supervises, and a portable folder that carries every runtime asset. This document maps the current code; when it and the code disagree, the code wins and this document is a defect. See [GLOSSARY.md](../GLOSSARY.md) for the domain vocabulary and [docs/adr/](adr/) for the decisions behind the shape.
 
 ## System shape
 
@@ -21,11 +21,12 @@ flowchart LR
         HlsDownloader["HLS downloader"]
         TorrentEngine["Torrent engine<br/>(librqbit)"]
         Scanner["Torrent episode scanner"]
-        Remux["Remux service<br/>(EBML reader, MP4 writer)"]
+        Supervisor["mpv supervisor<br/>(JSON IPC over a pipe)"]
     end
 
+    Mpv["mpv.exe<br/>(bundled child process)"]
     AniLiberty["AniLiberty API and CDN"]
-    Disk[("Portable folder<br/>data/ + downloads/")]
+    Disk[("Portable folder<br/>data/ + downloads/ + mpv/ + shaders/")]
 
     Features -->|invoke| Commands
     Commands --> ApiClient --> AniLiberty
@@ -33,17 +34,16 @@ flowchart LR
     Commands --> HlsDownloader --> Disk
     Commands --> TorrentEngine --> Disk
     TorrentEngine --> Scanner --> Database
-    Commands --> Remux --> Disk
-    Features -->|"video: hls.js or asset protocol"| AniLiberty
-    Features -->|"video: hls.js or asset protocol"| Disk
-    Features -->|"video: remux protocol"| Remux
-    Commands -.->|"download-progress, downloads-updated"| Stores
+    Supervisor -->|"spawn, --wid, pipe"| Mpv
+    Mpv -->|"HLS / local files"| AniLiberty
+    Mpv --> Disk
+    Commands -.->|"download-progress, downloads-updated, player-event"| Stores
 ```
 
 Two facts that shape the rest of this document:
 
-- Catalog calls go through the Rust client first and fall back to direct HTTP; online playback always travels directly from the WebView to the AniLiberty CDN. Local files travel through Tauri's asset protocol, and a remuxed torrent episode through the `remux` protocol.
-- Playback happens entirely in the WebView: a `<video>` element driven by hls.js for online HLS and for Offline playlists, the same element fed directly by the asset protocol for downloaded files, and Anime4K enhancement on a WebGPU canvas. The Rust backend never decodes video — it only rewrites a container so the WebView can decode it, a stream copy under [ADR 0009](adr/0009-matroska-remux-and-codec-probe.md).
+- Catalog calls go through the Rust client first and fall back to direct HTTP. Video bytes never travel through the WebView: mpv fetches HLS from the CDN or reads downloaded files itself.
+- **mpv is the only playback backend** ([ADR 0010](adr/0010-mpv-subprocess-as-the-only-playback-backend.md)). The `<video>` element is not a player; the WebView draws only the control overlay. The Rust backend never decodes or rewrites media — the bundled `mpv/mpv.exe` child process does, and the app talks to it over JSON IPC on a named pipe.
 
 ## Layers and ownership
 
@@ -53,7 +53,7 @@ Two facts that shape the rest of this document:
 - Application shell: `src/app/App.tsx` and `src/app/Header.tsx`. The shell only composes features: screen selection, store lifecycle effects, and shell chrome. Feature-specific markup lives inside the owning feature.
 - Feature slices under `src/features/`: `catalog`, `release`, `continue-watching`, `player`, `downloads`, `bookmarks`, `settings`. Each slice owns the UI, hooks, and state it needs, and exposes a public surface through its `index.ts`; not every slice has all three.
 - Shared layer: `src/shared/types` (API and domain types), `src/shared/ui` (Radix-based primitives), `src/shared/lib` (API base URLs and release helpers).
-- State is client-side and optimistic: `catalogStore` holds catalog screens, cached Releases, bookmarks, and history; `playerStore` holds playback state and Settings; `downloadStore` holds downloads and subscribes to backend events; `codecCapabilityStore` holds the startup Codec capability probe and reports it to Rust once.
+- State is client-side and optimistic: `catalogStore` holds catalog screens, cached Releases, bookmarks, and history; `playerStore` holds playback state and Settings and drives mpv through the `player_*` commands; `downloadStore` holds downloads and subscribes to backend events.
 - The UI also runs in a plain browser (`npm run dev` without Tauri) for catalog work. In that mode catalog calls fall back to direct `fetch`, bookmarks and settings fall back to browser storage, and downloads are unavailable.
 
 Boundary rule, enforced by `tests/test_feature_boundaries.test.ts`:
@@ -66,36 +66,37 @@ Boundary rule, enforced by `tests/test_feature_boundaries.test.ts`:
 
 The WebView reaches Rust through `invoke` from `@tauri-apps/api/core`. Commands are grouped by domain in `src-tauri/src/commands/` and registered in one `generate_handler!` list in `src-tauri/src/lib.rs`.
 
-| Command family  | Commands                                                                                                                                                                                    | Rust service                                                          |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `api_*`         | status, latest releases, schedule, genres, genre releases, release details, torrents, franchises, search                                                                                    | `AnilibriaClient` (`src-tauri/src/api`)                               |
-| `db_*`          | bookmarks, history, continue watching, settings, download metadata, downloaded-episode index                                                                                                | `Database` (`src-tauri/src/db`)                                       |
-| `downloader_*`  | HLS episode/release download, cancel, delete, open folder, unsupported torrent file listing, torrent file download, magnet opening, embedded torrent start/cancel, remux stream preparation | `HlsDownloader`, `TorrentDownloader`, `TorrentEngine`, `RemuxService` |
-| `app_*`, `ping` | ping, fullscreen, codec capability report                                                                                                                                                   | Tauri window, `CodecCapabilities`                                     |
+| Command family  | Commands                                                                                                                        | Rust service                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `api_*`         | status, latest releases, schedule, genres, genre releases, release details, torrents, franchises, search                        | `AnilibriaClient` (`src-tauri/src/api`)               |
+| `db_*`          | bookmarks, history, continue watching, settings, download metadata, downloaded-episode index                                    | `Database` (`src-tauri/src/db`)                       |
+| `downloader_*`  | HLS episode/release download, cancel, delete, open folder, torrent file download, magnet opening, embedded torrent start/cancel | `HlsDownloader`, `TorrentDownloader`, `TorrentEngine` |
+| `player_*`      | open, close, set_pause, seek, set_volume, set_speed, set_anime4k                                                                | `MpvSupervisor` (`src-tauri/src/player`)              |
+| `app_*`, `ping` | ping, fullscreen                                                                                                                | Tauri window                                          |
 
 Backend events are one-way, Rust → WebView:
 
 - `download-progress` — per-episode HLS progress and per-torrent progress; `downloadStore` normalizes both shapes.
-- `downloads-updated` — emitted after torrent scanning, and after a codec report rescans the downloaded library; the store reloads the downloaded-episode index.
+- `downloads-updated` — emitted after torrent scanning; the store reloads the downloaded-episode index.
+- `player-event` — mpv playback updates translated from JSON IPC: `time` (position + duration), `ended`, `fault`, `hardwareDecoder`; `useNativePlayer` feeds them into `playerStore`.
 
 ### Rust services
 
 `startup::bootstrap` is the composition root. It resolves the application directory, opens the database, creates the HLS downloader and the torrent engine, and builds `AppState`; each fallible step fails with an actionable `StartupError` that is shown in a native dialog. Nothing half-started is left behind.
 
-`AppState` holds `Arc`s to the database, API client, HLS downloader, torrent file downloader, torrent engine, the codec verdicts the WebView reported, the prepared remux streams, and the application directory. The `remux` URI scheme protocol is registered on the same builder and answers from the prepared streams.
+`AppState` holds `Arc`s to the database, API client, HLS downloader, torrent file downloader, torrent engine, the mpv supervisor, and the application directory. The builder registers a window-event hook that keeps the video window glued to the main window and stops mpv when the main window closes.
 
-| Module                         | Responsibility                                                                                                                                        |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api/`                         | `reqwest` client for AniLiberty endpoints, response models, URL encoding.                                                                             |
-| `codec.rs`                     | Codec families the app asks about, the WebView's verdicts, the container-to-family mapping, and the shared capability state.                          |
-| `commands/`                    | Thin IPC adapters: validation, locking, delegation, event emission. No business logic beyond argument shaping.                                        |
-| `db/`                          | `Database` (one `Mutex<Connection>`), schema creation, repository methods, row models.                                                                |
-| `downloader/hls.rs`            | Fetches m3u8 playlists and segments, writes files, tracks cancel flags, persists status and Skip timecodes, emits progress.                           |
-| `downloader/torrent.rs`        | Torrent-file download from the API, magnet and path validation, opening through the OS handler.                                                       |
-| `downloader/torrent_engine.rs` | Long-lived `librqbit` session, torrent tracking tasks, progress sampling, completion hook.                                                            |
-| `downloader/scanner.rs`        | Extracts Ordinals, classifies each file as native, remuxable, or blocked, indexes the first two, and reports the rest with the reason it was skipped. |
-| `remux/`                       | EBML reader for Matroska, ISO BMFF writer for MP4, the byte-range `Plan` a remuxed episode plays from, and its token cache and protocol responder.    |
-| `startup.rs` / `state.rs`      | Bootstrap, path resolution, fatal-error reporting, and the managed application state.                                                                 |
+| Module                         | Responsibility                                                                                                                                                                                                                                                                   |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/`                         | `reqwest` client for AniLiberty endpoints, response models, URL encoding.                                                                                                                                                                                                        |
+| `commands/`                    | Thin IPC adapters: validation, locking, delegation, event emission. No business logic beyond argument shaping.                                                                                                                                                                   |
+| `db/`                          | `Database` (one `Mutex<Connection>`), schema creation, repository methods, row models.                                                                                                                                                                                           |
+| `downloader/hls.rs`            | Fetches m3u8 playlists, segments, init and key resources, writes files, tracks cancel flags, persists status and Skip timecodes, emits progress.                                                                                                                                 |
+| `downloader/torrent.rs`        | Torrent-file download from the API, magnet and path validation, opening through the OS handler.                                                                                                                                                                                  |
+| `downloader/torrent_engine.rs` | Long-lived `librqbit` session, torrent tracking tasks, progress sampling, completion hook.                                                                                                                                                                                       |
+| `downloader/scanner.rs`        | Extracts Ordinals and indexes every video file mpv can be pointed at; no codec or container gate.                                                                                                                                                                                |
+| `player/`                      | The mpv lifecycle: `supervisor.rs` spawns and owns the child, attaches it to the `native-player` window, speaks JSON IPC over a named pipe, and validates sources; `events.rs` turns mpv property events into `player-event`s; `shaders.rs` maps Anime4K presets to GLSL chains. |
+| `startup.rs` / `state.rs`      | Bootstrap, path resolution, fatal-error reporting, and the managed application state.                                                                                                                                                                                            |
 
 ## Data flows
 
@@ -109,23 +110,29 @@ Backend events are one-way, Rust → WebView:
 ### Online playback (current Player overlay)
 
 1. `playerStore.openPlayer` receives a Release and an Episode. If the Episode has no HLS URLs, it loads full Release details through `api_get_release`.
-2. `App` renders `LazyPlayerOverlay` inside `Suspense`; this is the only entry that pulls in hls.js and Anime4K WebGPU.
-3. `usePlayerControllers` selects the HLS URL for the active Quality and `useHlsVideo` attaches it to a `<video>` element through hls.js. A local asset URL ending in `.m3u8` also goes through hls.js; other local asset URLs are loaded directly.
-4. Time updates drive auto-skip of opening/ending timecodes, autoplay of the next Episode, and persistence of watch progress.
-5. When Anime4K is enabled, `Anime4kCanvas` dynamic-imports `anime4kRenderer` and renders the enhanced frame on a canvas over the `<video>` element. The renderer is the only code that imports `anime4k-webgpu`.
+2. `App` renders `LazyPlayerOverlay` inside `Suspense`; the overlay owns no video element.
+3. `playerStore` invokes `player_open` with the selected Quality's HLS URL plus the start position, volume, speed and Anime4K choice. `MpvSupervisor` creates (or reuses) the `native-player` window, spawns the bundled mpv with `--wid` attached to it, connects the JSON IPC pipe, and sends `loadfile`.
+4. `useNativePlayer` subscribes to `player-event`; each `time` event drives `playerStore.updateTime`, which in turn drives auto-skip of opening/ending timecodes, autoplay of the next Episode, and persistence of watch progress. Controls invoke `player_set_pause`, `player_seek`, `player_set_volume`, `player_set_speed`; a `fault` closes the player and shows the reason.
+5. Anime4K is mpv's GLSL chain: `player_set_anime4k` sends `change-list glsl-shaders` with the preset's `;`-separated shader paths from `shaders/anime4k/`.
 
 ### Offline playback
 
-1. `DownloadsView` reads the downloaded-episode index through `db_get_all_downloaded_episodes` and the skipped torrent files through `downloader_list_unsupported_files`, each with its own reason.
-2. It turns the stored path into a stream with `offlineStreamUrl`: an Offline playlist or a native file goes through Tauri's `convertFileSrc` and becomes an asset-protocol URL, and for a playlist the percent-encoded backslashes become forward slashes, so hls.js resolves the segment names inside the episode folder instead of the protocol root. A Matroska episode instead calls `downloader_prepare_stream`, which builds the plan and answers with a token URL on the `remux` protocol.
-3. An HLS download stores `<release_id>/<ordinal>/index.m3u8`; `useHlsVideo` sees the playlist extension and hands the asset URL to hls.js, which fetches the local TS segments and demuxes them into Media Source Extensions. Anything else — a `.mp4`, a `.webm`, or a `remux` URL — is a plain `src` on the same `<video>` element, and seeking, Quality, Skip timecodes and Watch progress work the same way for all of them.
-4. A file the app cannot deliver is never in that list: it stays on disk and appears under its release as an Unsupported torrent file, with the reason — the container this app cannot remux, or the codec this machine cannot decode — and the way out for each.
+1. `DownloadsView` reads the downloaded-episode index through `db_get_all_downloaded_episodes`.
+2. The stored `file_path` — an Offline playlist `index.m3u8` or a downloaded media file — goes to `player_open` unchanged. `validated_source` canonicalizes it and refuses anything outside the app's `downloads/` folder; mpv then demuxes the local playlist, resolving segment, `#EXT-X-MAP` init and `#EXT-X-KEY` URIs against the folder on disk.
+3. Seeking, Quality, Skip timecodes and Watch progress are the same IPC calls as online playback; container and codec no longer matter to the app.
+
+### Native playback session
+
+1. One mpv child serves the whole player. `player_open` on an existing session sends a new `loadfile` (quality switches and episode switches reuse the process); the pipe, the reader thread and the window stay.
+2. The reader thread translates mpv JSON lines into `player-event`s. If mpv dies or the pipe breaks, it emits `fault` and the frontend closes the player — the app itself never goes down with the child.
+3. `MpvSession::drop` kills mpv, waits for it, and closes the video window; the main window loses its always-on-top flag. Closing the main window triggers the same stop through the window-event hook.
+4. Every command argument is built as a structured JSON value or an argv entry; no path is interpolated into a shell string, and the pipe name is per-process and per-session.
 
 ### HLS download
 
 1. A release or episode action sends one `DownloadEpisodeItem` per episode to `downloader_start_episode` or `downloader_start_release`.
 2. The command spawns a Tokio task; `HlsDownloader::download_episode` records a DOWNLOADING row with the Skip timecodes, then fetches the playlist.
-3. `prepare_local_playlist` resolves the segment URIs against the playlist URL and rewrites the URI lines to `segment-NNNNN.ts`, preserving `#EXTINF` and the other tags and closing the playlist with `#EXT-X-ENDLIST`. Playlists that cannot be replayed offline are rejected: fragmented (`#EXT-X-MAP`), encrypted (`#EXT-X-KEY`), master (`#EXT-X-STREAM-INF`), and byte-range (`#EXT-X-BYTERANGE`).
+3. `prepare_local_playlist` resolves the segment URIs against the playlist URL and rewrites the URI lines to `segment-NNNNN.ts`, preserving `#EXTINF` and the other tags and closing the playlist with `#EXT-X-ENDLIST`. `#EXT-X-MAP` init segments and `#EXT-X-KEY` keys are downloaded beside the playlist and rewritten to local names, because mpv replays the folder from disk; only master (`#EXT-X-STREAM-INF`) and byte-range (`#EXT-X-BYTERANGE`) playlists are rejected.
 4. Segments are written to `downloads/<release_id>/<ordinal>/`, then the playlist is written as `index.m3u8`. The row is updated to COMPLETED with the size of segments plus playlist. Failures remove the folder and become FAILED; cancellation deletes the folder and the row.
 5. Progress is emitted as `download-progress` and consumed by `downloadStore`; completion triggers a reload of the downloaded-episode index.
 
@@ -134,20 +141,7 @@ Backend events are one-way, Rust → WebView:
 1. `downloadStore.startTorrentDownload` calls `downloader_start_torrent` with a magnet or URL.
 2. `TorrentEngine` adds the torrent to the shared `librqbit` session with an output folder of `downloads/torrents/<release_id>/`.
 3. A tracking task samples statistics every 500 ms and emits `download-progress`.
-4. On completion the scanner walks the folder, extracts Ordinals, and classifies every video against the Codec capability probe: files that play natively or through the remux become `downloaded_episodes` rows, and the rest stay on disk until `scan_unsupported_torrent_files` reports them with a reason. `downloads-updated` then makes the UI reload the index, and the episodes become playable offline.
-
-### Startup codec probe
-
-1. `App.tsx` calls `codecCapabilityStore.probe()` when it mounts. The probe asks one question per codec family — `video.canPlayType` first, `navigator.mediaCapabilities.decodingInfo` for a file when the container answer is only `maybe`, and `MediaSource.isTypeSupported` as a negative check — and records `decodable`, `undecodable`, or `unknown`.
-2. The report goes to `app_report_codec_capability`, which stores it in `AppState.codec_caps`, rescans the downloaded library against it, and emits `downloads-updated`. A decoder installed or removed since the last run therefore changes what is offered, and an episode nobody can decode is not left in the library to open on a black frame.
-3. `TorrentsTab` reads the same report through the player barrel to decide which torrent to recommend: an advertised codec this machine cannot decode is named as such on its card, and the HEVC affordances go quiet until the probe has answered.
-
-### Remuxed playback
-
-1. Opening a Matroska episode calls `downloader_prepare_stream`, which confines the path to `downloads/torrents/`, reads the container header, and builds a `Plan`: the MP4 sample tables plus a map from each virtual byte range to an offset in the source file.
-2. Frames are copied, never re-encoded. Matroska stores AVC and HEVC with the same length-prefixed framing MP4 uses, so one block becomes one sample byte for byte; `avcC`/`hvcC`/`esds` records move over as they are, and AAC keeps its priming frame skipped by an edit list.
-3. The plan is cached under a token (a four-entry LRU, kept warm by its own traffic) and the token URL goes into `<video src>`. The `remux` protocol answers `Range` requests from the plan, reading the source file for each window and capping one response at 8 MiB, so no copy of the episode is ever written.
-4. Anything this reader cannot express losslessly in MP4 — `ContentEncodings`, laced blocks, a codec with no sample entry it implements — is refused by name at prepare time and reported as an Unsupported torrent file rather than guessed at.
+4. On completion the scanner walks the folder, extracts Ordinals, and indexes every video file as a `downloaded_episodes` row — mpv plays any container ffmpeg reads, so there is nothing to classify. `downloads-updated` then makes the UI reload the index, and the episodes become playable offline.
 
 ### Settings
 
@@ -160,19 +154,26 @@ Portable bundle (the only distributed artifact):
 ```text
 Aniplayer/
 ├─ aniplayer.exe
+├─ mpv/
+│  ├─ mpv.exe                             # pinned playback runtime
+│  └─ *.dll                               # its FFmpeg/render libraries
+├─ shaders/
+│  └─ anime4k/*.glsl                      # Anime4K shader chain
 ├─ data/
 │  └─ aniplayer.db
 └─ downloads/
    ├─ <release_id>/
    │  └─ <ordinal>/
    │     ├─ index.m3u8                    # local HLS playlist
-   │     └─ segment-NNNNN.ts              # HLS segments
+   │     ├─ segment-NNNNN.ts              # HLS segments
+   │     ├─ init-NNNNN.mp4                # #EXT-X-MAP init segments
+   │     └─ key-NNNNN.key                 # #EXT-X-KEY keys
    └─ torrents/
       ├─ *.torrent                        # downloaded torrent files
       └─ <release_id>/                    # torrent payload
 ```
 
-All paths are relative to the executable's directory (`startup::app_dir`).
+All paths are relative to the executable's directory (`startup::app_dir`). `mpv/` and `shaders/` are staged by `scripts/get_mpv.py` and `scripts/package_portable.py`; the release workflow verifies the mpv archive's SHA-256 pin and the archive check asserts both directories are present.
 
 ## Persistence
 
@@ -187,21 +188,21 @@ There is no migration framework: the initializer creates missing tables only. Ch
 
 ## Security boundaries
 
-- The production CSP is restrictive and is contract-tested in `src-tauri/tests/test_security_config.rs`. The development CSP relaxes only the Vite dev server (`script-src` inline, local HMR socket).
-- The asset protocol is enabled and scoped to `$RESOURCE/downloads/**`; downloaded files never reach the WebView by other means.
-- The `remux` protocol serves only streams the app prepared itself, addressed by a token, and never a path. Its URLs are allowed in `media-src` and kept out of `connect-src`, so page script cannot read the torrent library through it.
+- The production CSP is restrictive and is contract-tested in `src-tauri/tests/test_security_config.rs`. The development CSP relaxes only the Vite dev server (`script-src` inline, local HMR socket). `media-src` is `'none'` and the asset protocol is disabled: the WebView loads no media at all, so there is no media surface on the web side to guard.
+- `player_open` validates its source in Rust: `http(s)` URLs are re-parsed and re-serialized, local paths must canonicalize inside the app's `downloads/` folder and be a file. The frontend never names a pipe, a window, or an executable path.
+- The mpv child runs with `--no-config`, no input bindings, no script paths, and an argv built in code; the JSON IPC pipe is private to the process.
 - The opener capability allows only `magnet:` URLs. The old shell plugin is gone.
-- Magnet links are validated before reaching the torrent engine, and `.torrent` paths must canonicalize inside the torrents folder. The same canonicalize-and-confine check gates what `downloader_prepare_stream` will build a plan for.
+- Magnet links are validated before reaching the torrent engine, and `.torrent` paths must canonicalize inside the torrents folder. The same canonicalize-and-confine check gates local playback sources.
 
 ## Current state and tracked gaps
 
-- **Torrent playback requires a complete download.** There is no piece-level streaming path: the scanner runs only after `librqbit` reports completion, and a Matroska episode is prepared (its plan built) when it is opened, not while it downloads.
-- **A payload is only as playable as this machine's decoders.** A codec the WebView says it cannot decode is reported rather than indexed. A Matroska torrent reaches the screen only if its codecs have a sample entry this app implements, so an AV1, VP9, Vorbis or Opus `.mkv` stays outside the downloaded library until the picker can offer a different download; the same payload in a `.webm` the WebView demuxes itself plays if it decodes.
+- **Torrent playback requires a complete download.** There is no piece-level streaming path: the scanner runs only after `librqbit` reports completion.
+- **Quality switching reloads through mpv.** `setQuality` sends a new `loadfile` at the current position; the switch is not gapless.
 - **The `librqbit-utp` patch is temporary.** It pins the head of upstream `main` for RUSTSEC-2026-0293; that rev also carries the Windows uTP dispatcher fix. Tracked in [#37](https://github.com/shidot3m/aniplayer/issues/37).
 
 ## Verification gates
 
 - Frontend: `npm run typecheck`, `npm run lint` (Biome), `npm run test` (Vitest), `npx aislop ci`, `npm run build`.
-- Rust: `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo audit`, and the hermetic test suites listed in `.github/workflows/ci.yml` — including the remux and its protocol responder, which run against small real files committed under `src-tauri/tests/fixtures/`.
-- The remux is cross-checked against an independent demuxer when it changes: `cargo run --example remux -- <in.mkv> <out.mp4>` writes the same virtual file the protocol serves, and `ffprobe`/`ffmpeg` must report the same frames, timestamps and durations as the source and as `ffmpeg -c copy` of it.
-- Feature boundaries, bundle budgets, CSP parity, and the asset-protocol scope are enforced by tests, not by convention alone.
+- Rust: `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo audit`, and the hermetic test suites listed in `.github/workflows/ci.yml` — including `test_player`, which exercises the mpv event translation and the Anime4K preset chains.
+- Packaging: the release workflow pins the mpv build by SHA-256 in `scripts/get_mpv.py`, and the archive check asserts `mpv/mpv.exe` and the Anime4K shaders are inside `Aniplayer-portable.zip`.
+- Feature boundaries, bundle budgets, CSP parity, and the playback-source confinement are enforced by tests, not by convention alone.

@@ -39,3 +39,6 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+
+# Pinned runtime downloads (scripts/get_mpv.py)
+.cache/

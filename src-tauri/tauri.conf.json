@@ -20,16 +20,15 @@
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
+        "transparent": true,
+        "backgroundColor": "#00000000",
+        "noRedirectionBitmap": true,
         "label": "main"
       }
     ],
     "security": {
-      "assetProtocol": {
-        "enable": true,
-        "scope": ["$RESOURCE/downloads/**"]
-      },
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' blob: https: asset: http://asset.localhost http://remux.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https: asset: http://asset.localhost; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
-      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' blob: https: asset: http://asset.localhost http://remux.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https: asset: http://asset.localhost http://127.0.0.1:1420 ws://127.0.0.1:1420; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'none'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https:; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'none'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https: http://127.0.0.1:1420 ws://127.0.0.1:1420; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
     }
   },
   "bundle": {

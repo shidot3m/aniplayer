@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
-import { Anime4kCanvas } from "@/features/player/ui/Anime4kCanvas";
 import { SettingsMenu } from "@/features/player/ui/SettingsMenu";
 import { Switch } from "../src/shared/ui/switch";
 
@@ -40,7 +39,7 @@ describe("shadcn Switch Component", () => {
   });
 });
 
-describe("Anime4kCanvas and SettingsMenu Switch Integration", () => {
+describe("SettingsMenu Switch Integration", () => {
   it("renders Switch components in SettingsMenu when opened", () => {
     render(<SettingsMenu currentQuality="1080p" onSelectQuality={() => {}} />);
     const trigger = screen.getByTitle("Настройки плеера");
@@ -52,16 +51,5 @@ describe("Anime4kCanvas and SettingsMenu Switch Integration", () => {
     // Upscaler toggle switch exists
     const upscalerSwitch = screen.getByLabelText("Переключить апскейлер 4K");
     expect(upscalerSwitch).toBeDefined();
-  });
-
-  it("renders Anime4kCanvas only when enabled", () => {
-    const videoMock = { current: document.createElement("video") };
-    const { container, rerender } = render(
-      <Anime4kCanvas videoRef={videoMock} enabled={false} preset="mode-a" />,
-    );
-    expect(container.querySelector("canvas")).toBeNull();
-
-    rerender(<Anime4kCanvas videoRef={videoMock} enabled={true} preset="mode-a" />);
-    expect(container.querySelector("canvas")).not.toBeNull();
   });
 });

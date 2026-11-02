@@ -120,16 +120,6 @@ export interface DownloadedEpisodeMeta {
   download_status: "PENDING" | "DOWNLOADING" | "COMPLETED" | "FAILED";
 }
 
-export interface UnsupportedTorrentFile {
-  release_id: number;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  /** Why the app cannot play this, and the concrete way out, worded in Russian by
-   * the backend so the reason and the fix always arrive together. */
-  reason: string;
-}
-
 export interface DownloadProgressEvent {
   episodeId: string;
   releaseId: number;
@@ -149,23 +139,6 @@ export interface TorrentCodec {
   value: string;
   label: string;
   description?: string;
-}
-
-/** Codec families the app asks the WebView about, named after their ISO BMFF tags. */
-export type CodecFamily = "h264" | "hevc" | "av1" | "vp9" | "aac" | "opus" | "vorbis";
-
-export type CodecVerdict = "decodable" | "undecodable" | "unknown";
-
-export interface CodecCapabilityReport {
-  codecs: Record<CodecFamily, CodecVerdict>;
-  probedAt: string;
-}
-
-export interface CodecCandidate {
-  family: CodecFamily;
-  kind: "video" | "audio";
-  container: string;
-  codec: string;
 }
 
 export interface TorrentItem {

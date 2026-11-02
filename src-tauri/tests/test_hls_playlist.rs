@@ -38,6 +38,33 @@ fn rewrites_segment_uris_to_local_names_and_keeps_playlist_tags() {
 }
 
 #[test]
+fn stores_fragment_initialization_and_encryption_key_locally() {
+    let source = "#EXTM3U\n\
+                  #EXT-X-MAP:URI=\"../init.mp4\",BYTERANGE=\"700@0\"\n\
+                  #EXT-X-KEY:METHOD=AES-128,URI=\"https://keys.example/key.bin\",IV=0x01\n\
+                  #EXTINF:4.0,\n\
+                  seg.m4s\n\
+                  #EXT-X-ENDLIST\n";
+
+    let playlist = prepare_local_playlist(source, PLAYLIST_URL).expect("resources must parse");
+
+    assert_eq!(playlist.resources.len(), 2);
+    assert_eq!(playlist.resources[0].file_name, "init-00000.mp4");
+    assert_eq!(
+        playlist.resources[0].url,
+        "https://cache.libria.fun/videos/10329/init.mp4"
+    );
+    assert_eq!(playlist.resources[1].file_name, "key-00000.key");
+    assert_eq!(playlist.resources[1].url, "https://keys.example/key.bin");
+    assert!(playlist
+        .manifest
+        .contains("#EXT-X-MAP:URI=\"init-00000.mp4\",BYTERANGE=\"700@0\""));
+    assert!(playlist.manifest.contains(
+        "#EXT-X-KEY:METHOD=AES-128,URI=\"key-00000.key\",IV=0x01"
+    ));
+}
+
+#[test]
 fn closes_a_vod_playlist_that_has_no_endlist() {
     let source = "#EXTM3U\n#EXTINF:4.0,\nseg.ts\n";
 
@@ -49,14 +76,18 @@ fn closes_a_vod_playlist_that_has_no_endlist() {
 }
 
 #[test]
-fn rejects_playlists_that_cannot_be_stored_offline() {
-    let fragmented = "#EXTM3U\n#EXT-X-MAP:URI=\"init.mp4\"\n#EXTINF:4.0,\nseg.m4s\n";
-    let encrypted = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"key\"\n#EXTINF:4.0,\nseg.ts\n";
+fn keeps_key_reset_without_downloading_a_resource() {
+    let source = "#EXTM3U\n#EXT-X-KEY:METHOD=NONE\n#EXTINF:4.0,\nseg.ts\n";
+    let playlist = prepare_local_playlist(source, PLAYLIST_URL).expect("key reset must parse");
+    assert!(playlist.resources.is_empty());
+    assert!(playlist.manifest.contains("#EXT-X-KEY:METHOD=NONE"));
+}
+
+#[test]
+fn rejects_master_and_byte_range_playlists() {
     let master = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=5000000\n1080/index.m3u8\n";
     let byte_range = "#EXTM3U\n#EXTINF:4.0,\n#EXT-X-BYTERANGE:1000@0\nall.ts\n";
 
-    assert!(prepare_local_playlist(fragmented, PLAYLIST_URL).is_err());
-    assert!(prepare_local_playlist(encrypted, PLAYLIST_URL).is_err());
     assert!(prepare_local_playlist(master, PLAYLIST_URL).is_err());
     assert!(prepare_local_playlist(byte_range, PLAYLIST_URL).is_err());
 }

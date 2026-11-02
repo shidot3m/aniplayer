@@ -38,6 +38,8 @@ jobs:
         run: |
           npx tauri build --no-bundle
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/get_mpv.py src-tauri/target/release/mpv
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python scripts/package_portable.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Push-Location dist_portable
@@ -50,6 +52,12 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           if (-not $entries.Contains('aniplayer.exe')) {
             throw "Aniplayer-portable.zip is missing aniplayer.exe"
+          }
+          if (-not $entries.Contains('mpv/mpv.exe')) {
+            throw "Aniplayer-portable.zip is missing the mpv playback runtime"
+          }
+          if (-not $entries.Contains('shaders/anime4k/Anime4K_Clamp_Highlights.glsl')) {
+            throw "Aniplayer-portable.zip is missing the Anime4K shaders"
           }
 
       - name: Publish release
@@ -75,7 +83,7 @@ jobs:
           - Built: $(date -u +'%Y-%m-%d %H:%M UTC')
           - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
 
-          Download \`Aniplayer-portable.zip\` — it contains \`aniplayer.exe\` and its \`data/\` folder.
+          Download \`Aniplayer-portable.zip\` — it contains \`aniplayer.exe\`, the \`mpv/\` playback runtime, the \`shaders/\` Anime4K chain, and an empty \`data/\` folder.
           This is the only release artifact; no standalone executable is published.
           EOF
 

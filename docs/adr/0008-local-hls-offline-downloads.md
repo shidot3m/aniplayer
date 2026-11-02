@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
 
 ## Context
 
@@ -32,3 +32,9 @@ The obvious alternatives conflict with earlier decisions: the native libmpv back
 - Offline playback requires hls.js and Media Source Extensions (already required for online HLS), but no native codec or demuxer in the backend.
 - Torrent releases whose payloads this app cannot deliver to the screen — an unreadable container such as AVI, or a codec this machine has no decoder for — stay on disk and show no playable episodes; the Downloads screen explains which of the two it is and offers the folder. A Matroska release whose codecs are supported and decodable is indexed and played through the remux instead ([ADR 0009](0009-matroska-remux-and-codec-probe.md)).
 - Changing the offline layout again would invalidate paths stored in `downloaded_episodes`; the current rows point at playlists. Rows written by the old layout still point at TS-in-`.mp4` files and keep failing to play until the episode is downloaded again (which replaces the row) or deleted.
+
+## Amendment (2026-11-02, [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md))
+
+- Offline playback no longer requires hls.js or Media Source Extensions. The stored playlist is handed to mpv (`player_open`), which demuxes the local TS segments itself; the asset protocol is disabled entirely.
+- `#EXT-X-MAP` and `#EXT-X-KEY` playlists are now storable: the downloader fetches the init segments and keys into the episode folder (`init-NNNNN.mp4`, `key-NNNNN.key`) and rewrites their URIs to the local names, because mpv replays exactly what a browser could not. `#EXT-X-STREAM-INF` (master) and `#EXT-X-BYTERANGE` remain rejected.
+- Torrent payloads are no longer classified by decodability: mpv plays any container ffmpeg reads, so the scanner indexes every video file and the Unsupported torrent file reporting is gone.

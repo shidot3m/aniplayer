@@ -14,10 +14,9 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDownloadStore } from "@/features/downloads";
-import { codecFamilyLabel, isDecodable, useCodecCapabilityStore } from "@/features/player";
 import { API_BASE_URL } from "@/shared/lib/constants";
 import { formatBytes } from "@/shared/lib/utils";
-import type { CodecFamily, DownloadProgressEvent, TorrentItem } from "@/shared/types";
+import type { DownloadProgressEvent, TorrentItem } from "@/shared/types";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 
@@ -25,26 +24,12 @@ export interface TorrentsTabProps {
   releaseId: number;
 }
 
-/**
- * The codec family a torrent advertises, as far as its label says. A torrent that
- * names nothing recognisable stays unjudged: the real payload is only known after a
- * download, when the scanner reads the container itself.
- */
-function advertisedCodec(t: TorrentItem): CodecFamily | null {
-  const haystack = [t.codec?.value, t.codec?.label, t.label]
+function isHevcTorrent(t: TorrentItem): boolean {
+  const label = [t.codec?.value, t.codec?.label, t.label]
     .filter((text): text is string => typeof text === "string")
     .join(" ")
     .toLowerCase();
-  if (haystack.includes("hevc") || haystack.includes("x265")) return "hevc";
-  if (haystack.includes("av1")) return "av1";
-  if (haystack.includes("vp9")) return "vp9";
-  if (haystack.includes("h264") || haystack.includes("x264") || haystack.includes("avc"))
-    return "h264";
-  return null;
-}
-
-function isHevcTorrent(t: TorrentItem): boolean {
-  return advertisedCodec(t) === "hevc";
+  return label.includes("hevc") || label.includes("x265");
 }
 
 async function fetchReleaseTorrents(releaseId: number): Promise<TorrentItem[]> {
@@ -64,9 +49,6 @@ async function fetchReleaseTorrents(releaseId: number): Promise<TorrentItem[]> {
 
 interface TorrentCardProps {
   torrent: TorrentItem;
-  /** The advertised codec this WebView cannot decode, or null when it can (or when
-   * the torrent names no codec to judge). */
-  undecodableCodec: string | null;
   activeDownload?: DownloadProgressEvent;
   isDownloadingFile: boolean;
   isCopied: boolean;
@@ -79,7 +61,6 @@ interface TorrentCardProps {
 
 function TorrentCard({
   torrent,
-  undecodableCodec,
   activeDownload,
   isDownloadingFile,
   isCopied,
@@ -90,7 +71,7 @@ function TorrentCard({
   onCopyMagnet,
 }: TorrentCardProps) {
   const isHevc = isHevcTorrent(torrent);
-  const recommended = isHevc && undecodableCodec === null;
+  const recommended = isHevc;
   const isAppDownloading = activeDownload?.status === "DOWNLOADING";
   const isAppCompleted = activeDownload?.status === "COMPLETED";
 
@@ -138,12 +119,6 @@ function TorrentCard({
           <h4 className="text-xs md:text-sm font-semibold text-white break-words">
             {torrent.label || torrent.filename || `Раздача #${torrent.id}`}
           </h4>
-          {undecodableCodec && (
-            <p className="mt-1 text-xs text-amber-300/90">
-              Этот компьютер не декодирует {undecodableCodec}: в приложении серия откроется чёрным
-              экраном. Смотрите во внешнем плеере или берите раздачу с H.264 — её плеер соберёт сам.
-            </p>
-          )}
           {torrent.description && (
             <p className="mt-1 text-xs text-slate-400">Серии: {torrent.description}</p>
           )}
@@ -281,23 +256,11 @@ function useReleaseTorrents(releaseId: number) {
 export function TorrentsTab({ releaseId }: TorrentsTabProps) {
   const { torrents, isLoading } = useReleaseTorrents(releaseId);
   const { activeDownloads, startTorrentDownload, cancelDownload } = useDownloadStore();
-  const report = useCodecCapabilityStore((state) => state.report);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [downloadingFileId, setDownloadingFileId] = useState<number | null>(null);
   const [onlyHevc, setOnlyHevc] = useState(false);
 
   const hasHevc = useMemo(() => torrents.some(isHevcTorrent), [torrents]);
-  // Until the probe answers, nothing is claimed about this machine's decoders.
-  const hevcBlocked = report !== null && !isDecodable(report, "hevc");
-
-  /** The codec this machine cannot decode, named for the card, or null when the
-   * torrent is worth opening in the built-in player. */
-  const undecodableCodec = (torrent: TorrentItem): string | null => {
-    if (!report) return null;
-    const family = advertisedCodec(torrent);
-    if (!family || isDecodable(report, family)) return null;
-    return codecFamilyLabel(family);
-  };
 
   const displayedTorrents = useMemo(() => {
     if (onlyHevc) {
@@ -392,14 +355,10 @@ export function TorrentsTab({ releaseId }: TorrentsTabProps) {
           {hasHevc && (
             <Badge
               variant="outline"
-              className={`text-[10px] ${
-                !hevcBlocked
-                  ? "border-emerald-500/40 bg-emerald-950/30 text-emerald-400"
-                  : "border-amber-500/40 bg-amber-950/30 text-amber-300"
-              }`}
+              className="text-[10px] border-emerald-500/40 bg-emerald-950/30 text-emerald-400"
             >
               <Sparkles className="h-3 w-3 mr-1" />
-              {!hevcBlocked ? "HEVC доступен" : "HEVC не декодируется — рекомендуем H.264"}
+              HEVC доступен
             </Badge>
           )}
         </div>
@@ -409,16 +368,10 @@ export function TorrentsTab({ releaseId }: TorrentsTabProps) {
             <button
               type="button"
               onClick={() => setOnlyHevc(!onlyHevc)}
-              disabled={hevcBlocked}
-              title={
-                hevcBlocked ? "Этот компьютер не декодирует HEVC во встроенном плеере" : undefined
-              }
               className={`rounded-lg px-3 py-1 text-xs font-medium border transition-colors ${
-                hevcBlocked
-                  ? "bg-white/[0.02] border-white/5 text-slate-500 cursor-not-allowed"
-                  : onlyHevc
-                    ? "bg-emerald-600 border-emerald-500 text-white cursor-pointer"
-                    : "bg-white/5 border-white/10 text-slate-300 hover:text-white cursor-pointer"
+                onlyHevc
+                  ? "bg-emerald-600 border-emerald-500 text-white cursor-pointer"
+                  : "bg-white/5 border-white/10 text-slate-300 hover:text-white cursor-pointer"
               }`}
             >
               Только HEVC (x265)
@@ -432,7 +385,6 @@ export function TorrentsTab({ releaseId }: TorrentsTabProps) {
           <TorrentCard
             key={t.id}
             torrent={t}
-            undecodableCodec={undecodableCodec(t)}
             activeDownload={activeDownloads[`torrent-${t.id}`]}
             isDownloadingFile={downloadingFileId === t.id}
             isCopied={copiedId === t.id}

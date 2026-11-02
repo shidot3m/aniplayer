@@ -1,65 +1,35 @@
-import type React from "react";
-import { Anime4kCanvas } from "./Anime4kCanvas";
-
 interface PlayerVideoViewportProps {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
   streamUrl: string;
-  anime4kEnabled?: boolean;
-  anime4kPreset?: string;
+  playbackError?: string | null;
   onTogglePlay: () => void;
   onToggleFullscreen: () => void;
-  onTimeUpdate: () => void;
-  onLoadedMetadata: () => void;
-  onPlay?: () => void;
-  onPause?: () => void;
-  onEnded?: () => void;
 }
 
 export function PlayerVideoViewport({
-  videoRef,
   streamUrl,
-  anime4kEnabled = false,
-  anime4kPreset = "mode-a",
+  playbackError,
   onTogglePlay,
   onToggleFullscreen,
-  onTimeUpdate,
-  onLoadedMetadata,
-  onPlay,
-  onPause,
-  onEnded,
 }: PlayerVideoViewportProps) {
   return (
     <button
       type="button"
       tabIndex={-1}
       aria-label="Переключить воспроизведение"
-      className="absolute inset-0 z-0 flex items-center justify-center bg-black cursor-pointer border-0 p-0 outline-hidden w-full h-full"
+      className="absolute inset-0 z-0 flex items-center justify-center bg-transparent cursor-pointer border-0 p-0 outline-hidden w-full h-full"
       onClick={onTogglePlay}
       onDoubleClick={onToggleFullscreen}
     >
-      <video
-        ref={videoRef}
-        className={`h-full w-full object-contain pointer-events-none transition-opacity duration-200 ${
-          anime4kEnabled ? "opacity-0" : "opacity-100"
-        }`}
-        playsInline
-        crossOrigin="anonymous"
-        onTimeUpdate={onTimeUpdate}
-        onLoadedMetadata={onLoadedMetadata}
-        onPlay={onPlay}
-        onPause={onPause}
-        onEnded={onEnded}
-      >
-        <track kind="captions" />
-      </video>
-
-      <Anime4kCanvas videoRef={videoRef} enabled={anime4kEnabled} preset={anime4kPreset} />
-
-      {!streamUrl && (
-        <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm">
+      {playbackError ? (
+        <div className="max-w-lg rounded-lg bg-black/85 px-6 py-4 text-center text-sm text-rose-300">
+          <p className="mb-2 font-semibold">Не удалось воспроизвести эпизод</p>
+          <p>{playbackError}</p>
+        </div>
+      ) : !streamUrl ? (
+        <div className="rounded-lg bg-black/70 px-4 py-2 text-slate-300 text-sm">
           Загрузка видеопотока...
         </div>
-      )}
+      ) : null}
     </button>
   );
 }

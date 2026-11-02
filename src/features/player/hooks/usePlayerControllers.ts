@@ -1,7 +1,9 @@
+import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import type { EpisodeItem, Release, VideoQuality } from "@/shared/types";
-import { useHlsVideo } from "../renderer/useHlsVideo";
+import { useNativePlayer } from "../renderer/useNativePlayer";
+import { usePlayerStore } from "../state/playerStore";
 import { getAvailableQualities } from "../state/playerStoreDefaults";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";
 
@@ -16,10 +18,6 @@ interface UsePlayerControllersOptions {
   autoplayNext: boolean;
   isPlaying: boolean;
   volume: number;
-  isMuted: boolean;
-  speed: number;
-  play: () => Promise<void>;
-  pause: () => Promise<void>;
   seekTo: (pos: number) => Promise<void>;
   togglePlay: () => Promise<void>;
   setVolume: (vol: number) => Promise<void>;
@@ -45,10 +43,6 @@ export function usePlayerControllers({
   autoplayNext,
   isPlaying,
   volume,
-  isMuted,
-  speed,
-  play,
-  pause,
   seekTo,
   togglePlay,
   setVolume,
@@ -68,7 +62,6 @@ export function usePlayerControllers({
 
   const availableQualities = useMemo(() => getAvailableQualities(episode), [episode]);
 
-  // Ensure activeQuality matches an available stream on the episode
   useEffect(() => {
     if (!availableQualities.includes(activeQuality)) {
       const best = availableQualities[0];
@@ -94,6 +87,11 @@ export function usePlayerControllers({
   }, [activeQuality, episode]);
 
   const lastSavedTimeRef = useRef<number>(0);
+  const playbackPositionRef = useRef({ currentTime, duration });
+  useEffect(() => {
+    playbackPositionRef.current = { currentTime, duration };
+  }, [currentTime, duration]);
+
   const saveProgress = useCallback(
     (cur: number, dur: number) => {
       if (dur > 0 && cur >= 0) {
@@ -104,24 +102,8 @@ export function usePlayerControllers({
     [release, episode],
   );
 
-  const {
-    videoRef,
-    seek: videoSeek,
-    togglePlay: toggleVideoPlay,
-    handleTimeUpdate,
-    handleLoadedMetadata,
-    handlePlay,
-    handlePause,
-    handleEnded,
-  } = useHlsVideo({
-    streamUrl,
-    isPlaying,
-    volume,
-    isMuted,
-    speed,
-    initialTime: currentTime,
-    onTimeUpdate: (cur, dur) => {
-      // Auto-skip opening or ending if enabled
+  const handleTimeUpdate = useCallback(
+    (cur: number, dur: number) => {
       if (autoSkipOpEd) {
         if (
           episode.opening?.start != null &&
@@ -130,7 +112,7 @@ export function usePlayerControllers({
           cur < episode.opening.stop
         ) {
           const target = episode.opening.stop + 0.5;
-          videoSeek(target);
+          void seekTo(target);
           updateTime(target, dur);
           return;
         }
@@ -141,7 +123,7 @@ export function usePlayerControllers({
           cur < episode.ending.stop
         ) {
           const target = episode.ending.stop + 0.5;
-          videoSeek(target);
+          void seekTo(target);
           updateTime(target, dur);
           return;
         }
@@ -152,53 +134,58 @@ export function usePlayerControllers({
         saveProgress(cur, dur);
       }
     },
-    onLoadedMetadata: (dur) => updateTime(currentTime, dur),
-    onPlay: play,
-    onPause: () => {
-      pause();
-      if (videoRef.current) {
-        saveProgress(videoRef.current.currentTime, videoRef.current.duration || 0);
-      }
-    },
-    onEnded: () => {
-      if (videoRef.current) {
-        saveProgress(videoRef.current.duration || 1440, videoRef.current.duration || 1440);
-      }
-      if (hasNext) handleNext();
-    },
+    [autoSkipOpEd, episode, saveProgress, seekTo, updateTime],
+  );
+
+  const handleEnded = useCallback(() => {
+    const position = playbackPositionRef.current;
+    saveProgress(position.duration || 1440, position.duration || 1440);
+    if (hasNext) handleNext();
+  }, [handleNext, hasNext, saveProgress]);
+
+  const handleFault = useCallback((message: string) => {
+    usePlayerStore.setState({ isPlaying: false, playbackError: message });
+    void invoke("player_close").catch(() => {});
+  }, []);
+
+  useNativePlayer({
+    onTimeUpdate: handleTimeUpdate,
+    onEnded: handleEnded,
+    onFault: handleFault,
+    onHardwareDecoder: (decoder) => usePlayerStore.setState({ hardwareDecoder: decoder }),
   });
 
   useEffect(() => {
-    const video = videoRef.current;
     return () => {
-      if (video) {
-        saveProgress(video.currentTime, video.duration || 0);
-      }
+      const position = playbackPositionRef.current;
+      saveProgress(position.currentTime, position.duration);
+      void invoke("player_close").catch(() => {});
     };
-  }, [saveProgress, videoRef]);
+  }, [saveProgress]);
 
   const handleSeek = useCallback(
     (pos: number) => {
-      videoSeek(pos);
-      seekTo(pos);
+      void seekTo(pos);
     },
-    [videoSeek, seekTo],
+    [seekTo],
   );
 
   const handleSeekRelative = useCallback(
     (offset: number) => {
       const totalDuration = duration || 999999;
       const newPosition = Math.max(0, Math.min(totalDuration, currentTime + offset));
-      videoSeek(newPosition);
-      seekTo(newPosition);
+      void seekTo(newPosition);
     },
-    [currentTime, duration, videoSeek, seekTo],
+    [currentTime, duration, seekTo],
   );
 
   const handleTogglePlay = useCallback(() => {
-    toggleVideoPlay();
-    togglePlay();
-  }, [toggleVideoPlay, togglePlay]);
+    if (isPlaying) {
+      const position = playbackPositionRef.current;
+      saveProgress(position.currentTime, position.duration);
+    }
+    void togglePlay();
+  }, [isPlaying, saveProgress, togglePlay]);
 
   const isInsideOpening =
     episode.opening?.start != null &&
@@ -237,7 +224,6 @@ export function usePlayerControllers({
   const isAutoplayCountdown = autoplayNext && hasNext && timeLeft <= 15 && timeLeft > 0;
 
   return {
-    videoRef,
     streamUrl,
     availableQualities,
     hasPrev,
@@ -246,11 +232,6 @@ export function usePlayerControllers({
     handleNext,
     handleSeek,
     handleTogglePlay,
-    handleTimeUpdate,
-    handleLoadedMetadata,
-    handlePlay,
-    handlePause,
-    handleEnded,
     timeLeft,
     isAutoplayCountdown,
     isInsideOpening,
