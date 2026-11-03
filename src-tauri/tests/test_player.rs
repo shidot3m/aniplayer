@@ -78,6 +78,22 @@ fn eof_flag_ends_the_episode_while_keep_open_holds_the_frame() {
     );
 }
 
+/// A reply to a command is transport, not playback: it belongs to the stall watchdog and must
+/// not surface to the interface as an event.
+#[test]
+fn command_answers_are_not_player_events() {
+    let mut events = PlaybackEvents::default();
+
+    assert_eq!(
+        events.handle_line(r#"{"error":"success","request_id":7}"#),
+        None
+    );
+    assert_eq!(
+        events.handle_line(r#"{"error":"some error","request_id":7}"#),
+        None
+    );
+}
+
 #[test]
 fn every_anime4k_preset_maps_to_real_shader_files() {
     let labels = [

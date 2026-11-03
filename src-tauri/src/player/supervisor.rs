@@ -1,10 +1,10 @@
 use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -13,10 +13,23 @@ use tauri::{
     WindowEvent,
 };
 
-use super::{Anime4kPreset, PlaybackEvents, PlayerEvent};
+use super::{
+    command_channel, reply_id, spawn_watchdog, spawn_writer, Anime4kPreset, CommandQueue, Liveness,
+    PlaybackEvents, PlayerEvent,
+};
 
 static NEXT_PIPE_ID: AtomicU64 = AtomicU64::new(0);
-static NEXT_REQUEST_ID: AtomicU64 = AtomicU64::new(1);
+
+/// How long mpv may keep a command unanswered before the player counts as wedged. mpv stays
+/// inside this budget whenever it puts anything at all on the pipe, so a player that is merely
+/// slow is not taken down for taking its time.
+const STALL_DEADLINE: Duration = Duration::from_secs(5);
+
+/// How often the watchdog looks at the clock.
+const STALL_PROBE: Duration = Duration::from_millis(250);
+
+/// What the interface shows when mpv stops answering.
+const STALL_FAULT: &str = "mpv stopped responding to the player controls";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -31,23 +44,17 @@ pub struct MpvOpenRequest {
 }
 
 struct MpvSession {
-    child: Child,
-    writer: Mutex<File>,
+    child: Arc<Mutex<Child>>,
+    commands: CommandQueue,
     video_window: Window,
     closing: Arc<AtomicBool>,
 }
 
 impl MpvSession {
+    /// Hand one command to the writer thread. This does not touch the pipe: a write that mpv
+    /// never drains (issue #43) parks the writer alone, and the watchdog reports the wedge.
     fn send(&self, command: Vec<Value>) -> Result<(), String> {
-        let request = json!({
-            "command": command,
-            "request_id": NEXT_REQUEST_ID.fetch_add(1, Ordering::Relaxed),
-        });
-        let mut writer = self.writer.lock().unwrap_or_else(|e| e.into_inner());
-        serde_json::to_writer(&mut *writer, &request).map_err(|e| e.to_string())?;
-        writer.write_all(b"\n").map_err(|e| e.to_string())?;
-        writer.flush().map_err(|e| e.to_string())?;
-        Ok(())
+        self.commands.push(command)
     }
 
     fn set_property(&self, name: &str, value: Value) -> Result<(), String> {
@@ -99,10 +106,19 @@ impl MpvSession {
 impl Drop for MpvSession {
     fn drop(&mut self) {
         self.closing.store(true, Ordering::Relaxed);
-        let _ = self.child.kill();
-        let _ = self.child.wait();
+        kill(&self.child);
         let _ = self.video_window.close();
     }
+}
+
+/// Take mpv down. The child dying is also what releases a pipe write the writer thread is
+/// still blocked in, so no thread of the player outlives the session.
+fn kill(child: &Arc<Mutex<Child>>) {
+    let mut child = child
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let _ = child.kill();
+    let _ = child.wait();
 }
 
 pub struct MpvSupervisor {
@@ -209,8 +225,16 @@ impl MpvSupervisor {
         }
     }
 
+    /// Re-aligns the video window with the main window. Called from the application event
+    /// loop, so it must never wait on the session mutex: `open()` holds that mutex across
+    /// window calls this thread is supposed to service, and it aligns the geometry itself
+    /// when it finishes. A busy mutex therefore means "skip, the next event will catch up".
     pub fn sync_geometry(&self, main: &WebviewWindow) {
-        let guard = self.lock();
+        let guard = match self.session.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::WouldBlock) => return,
+            Err(std::sync::TryLockError::Poisoned(e)) => e.into_inner(),
+        };
         if let Some(session) = guard.as_ref() {
             let _ = self.sync_window(main, &session.video_window);
         }
@@ -243,52 +267,64 @@ impl MpvSupervisor {
         let wid = video_window.hwnd().map_err(|e| e.to_string())?.0 as usize;
         let pipe_id = NEXT_PIPE_ID.fetch_add(1, Ordering::Relaxed);
         let pipe_name = format!(r"\\.\pipe\aniplayer-mpv-{}-{pipe_id}", std::process::id());
-        let mut child = Command::new(&executable)
-            .args([
-                "--no-config",
-                "--idle=yes",
-                "--force-window=yes",
-                "--keep-open=yes",
-                "--vo=gpu-next",
-                "--gpu-api=auto",
-                "--hwdec=auto-safe",
-                "--border=no",
-                "--osc=no",
-                "--osd-level=0",
-                "--input-default-bindings=no",
-                "--input-vo-keyboard=no",
-                "--input-cursor=no",
-                "--window-dragging=no",
-                "--terminal=no",
-                "--msg-level=all=warn",
-                // AniLiberty serves its streams to browsers only; a plain client is
-                // refused. Subtitle tracks are mpv's job, chosen by language.
-                "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Aniplayer/1.0",
-                "--slang=en,ru",
-            ])
-            .arg(format!("--wid={wid}"))
-            .arg(format!("--input-ipc-server={pipe_name}"))
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-            .map_err(|e| format!("Could not start mpv: {e}"))?;
+        let child = Arc::new(Mutex::new(
+            Command::new(&executable)
+                .args([
+                    "--no-config",
+                    "--idle=yes",
+                    "--force-window=yes",
+                    "--keep-open=yes",
+                    "--vo=gpu-next",
+                    "--gpu-api=auto",
+                    "--hwdec=auto-safe",
+                    "--border=no",
+                    "--osc=no",
+                    "--osd-level=0",
+                    "--input-default-bindings=no",
+                    "--input-vo-keyboard=no",
+                    "--input-cursor=no",
+                    "--window-dragging=no",
+                    "--terminal=no",
+                    "--msg-level=all=warn",
+                    // AniLiberty serves its streams to browsers only; a plain client is
+                    // refused. Subtitle tracks are mpv's job, chosen by language.
+                    "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Aniplayer/1.0",
+                    "--slang=en,ru",
+                ])
+                .arg(format!("--wid={wid}"))
+                .arg(format!("--input-ipc-server={pipe_name}"))
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .map_err(|e| format!("Could not start mpv: {e}"))?,
+        ));
 
         let pipe = match connect_pipe(&pipe_name) {
             Ok(pipe) => pipe,
             Err(error) => {
-                let _ = child.kill();
-                let _ = child.wait();
+                kill(&child);
                 let _ = video_window.close();
                 return Err(error);
             }
         };
-        let reader = pipe.try_clone().map_err(|e| e.to_string())?;
+        let reader = match pipe.try_clone() {
+            Ok(reader) => reader,
+            Err(error) => {
+                kill(&child);
+                let _ = video_window.close();
+                return Err(format!("Could not duplicate the mpv pipe: {error}"));
+            }
+        };
         let closing = Arc::new(AtomicBool::new(false));
-        spawn_reader(reader, app.clone(), closing.clone());
+        let liveness = Arc::new(Mutex::new(Liveness::default()));
+        let (commands, queued) = command_channel();
+        spawn_writer(Box::new(pipe), queued, liveness.clone(), closing.clone());
+        spawn_reader(reader, app.clone(), closing.clone(), liveness.clone());
+        watch_for_stall(app, liveness, closing.clone(), child.clone());
         Ok(MpvSession {
             child,
-            writer: Mutex::new(pipe),
+            commands,
             video_window,
             closing,
         })
@@ -378,13 +414,56 @@ fn connect_pipe(pipe_name: &str) -> Result<File, String> {
     ))
 }
 
-fn spawn_reader(pipe: File, app: AppHandle, closing: Arc<AtomicBool>) {
+/// Report and take down a player that stopped answering, so the user gets an error and a
+/// working close button instead of a frozen one (issue #43).
+fn watch_for_stall(
+    app: &AppHandle,
+    liveness: Arc<Mutex<Liveness>>,
+    closing: Arc<AtomicBool>,
+    child: Arc<Mutex<Child>>,
+) {
+    let app = app.clone();
+    spawn_watchdog(
+        liveness,
+        closing.clone(),
+        STALL_DEADLINE,
+        STALL_PROBE,
+        move || {
+            // The fault goes out before the child is taken down: killing mpv is what releases
+            // the pipe write the writer thread is parked in, and the reason must not wait on it.
+            closing.store(true, Ordering::Relaxed);
+            let _ = app.emit(
+                "player-event",
+                PlayerEvent::Fault {
+                    message: STALL_FAULT.to_string(),
+                },
+            );
+            kill(&child);
+        },
+    );
+}
+
+fn spawn_reader(
+    pipe: File,
+    app: AppHandle,
+    closing: Arc<AtomicBool>,
+    liveness: Arc<Mutex<Liveness>>,
+) {
     std::thread::spawn(move || {
         let mut events = PlaybackEvents::default();
         let reader = BufReader::new(pipe);
         for line in reader.lines() {
             match line {
                 Ok(line) => {
+                    {
+                        let mut liveness = liveness
+                            .lock()
+                            .unwrap_or_else(|poisoned| poisoned.into_inner());
+                        liveness.note_line(Instant::now());
+                        if let Some(id) = reply_id(&line) {
+                            liveness.note_reply(id);
+                        }
+                    }
                     if let Some(event) = events.handle_line(&line) {
                         let _ = app.emit("player-event", event);
                     }

@@ -110,4 +110,12 @@ _Avoid_: external player, mpv fallback
 A named operation through which the WebView asks the Rust backend to act.
 _Avoid_: API call, RPC, endpoint
 
+**Command queue**:
+The line of IPC commands one session keeps for mpv, drained by a single writer thread. Handing a command over never waits for mpv, so a pipe mpv has stopped reading costs the playback, not the controls.
+_Avoid_: buffer, mailbox, backlog
+
+**Stall watchdog**:
+The per-session check on whether mpv still answers the command it was given while the pipe stays silent. A player that fails it is reported as a fault and taken down, so the user gets an error and a working close instead of a frozen player.
+_Avoid_: heartbeat, ping, keepalive
+
 See [docs/architecture.md](docs/architecture.md) for how these concepts map onto modules, and [docs/adr/](docs/adr/) for the decisions behind them.

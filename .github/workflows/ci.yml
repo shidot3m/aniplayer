@@ -74,6 +74,7 @@ jobs:
           --test test_magnet_validation
           --test test_player
           --test test_player_command_threading
+          --test test_player_ipc
           --test test_scanner
           --test test_security_config
           --test test_startup
