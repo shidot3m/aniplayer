@@ -9,7 +9,7 @@
 - **Use skills for all work.** The skill set is vendored under `.agents/skills/` and version-controlled, so every clone carries it; draw from that directory. Select the relevant installed skill before acting. If none fits, state that explicitly and proceed with the closest applicable practice.
 - **Run the app yourself.** Do not hand runtime passes back to the user. Launch the actual app (or the closest runnable build), drive the affected flow, and record the evidence — commands, screenshots, observed values — in the ticket. Defer only checks that need hardware, credentials, or physical input an agent cannot supply.
 - **Land finished work yourself.** Once a change is complete and verified, commit and push it in the same turn, without waiting for a go-ahead. When every acceptance criterion of the ticket is met with evidence — automated gates green and behavior confirmed, including any manual runtime pass the ticket asks for — land the branch on `master` (`git push origin HEAD:master`) and delete it on the spot. A rejected push means `master` moved: rebase onto it and retry; never force. While a criterion is still open, keep the branch pushed and name the open criterion.
-- **Keep aislop at 100/100.** Run `npx aislop scan` before committing; the score must be 100 out of 100. Fix every finding instead of ignoring it.
+- **Keep aislop at 100/100.** Run `bunx aislop scan` before committing; the score must be 100 out of 100. Fix every finding instead of ignoring it.
 - **Ответы в чате — кратко и на русском.** Все ответы пользователю в чате должны быть короткими и на русском языке.
 
 ## Skill routing

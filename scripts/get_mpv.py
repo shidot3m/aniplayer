@@ -1,7 +1,7 @@
 """Fetch the pinned mpv runtime and stage it beside a build of the app.
 
 The release workflow calls this before `package_portable.py`; developers run it
-to make `npx tauri dev` and `npx tauri build` able to play. The download is
+to make `bun run tauri dev` and `bunx tauri build` able to play. The download is
 verified against the published SHA-256 digest and cached, so a run only pays
 the transfer once.
 """

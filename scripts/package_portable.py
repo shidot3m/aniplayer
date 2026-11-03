@@ -24,7 +24,7 @@ def package_portable():
         print("[OK] Copied compiled binary aniplayer.exe into bundle")
     else:
         print(
-            f"[ERROR] Compiled binary not found at {target_exe}; run `npx tauri build --no-bundle` first"
+            f"[ERROR] Compiled binary not found at {target_exe}; run `bunx tauri build --no-bundle` first"
         )
         sys.exit(1)
 

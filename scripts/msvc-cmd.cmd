@@ -1,7 +1,7 @@
 @echo off
 rem Runs an arbitrary command line with the Visual Studio MSVC toolchain
-rem environment loaded, for cargo/node invocations that cannot go through
-rem `npm run tauri` (tests, clippy, fmt). Same toolchain discovery as
+rem environment loaded, for cargo/bun invocations that cannot go through
+rem `bun run tauri` (tests, clippy, fmt). Same toolchain discovery as
 rem tauri-win.cmd. Usage: scripts\msvc-cmd.cmd cargo test
 setlocal
 set "VSCMD="

@@ -18,7 +18,7 @@ if not defined VSCMD (
 )
 call "%VSCMD%" -arch=x64 -no_logo || exit /b 1
 cd /d "%~dp0.."
-call npm run tauri -- %*
+call bun run tauri -- %*
 goto :eof
 
 rem Sets VSCMD to the dev-environment script of any edition under %1 that has the

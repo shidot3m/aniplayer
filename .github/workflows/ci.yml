@@ -20,21 +20,34 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 26
-          cache: npm
-      - run: npm ci
+      - uses: oven-sh/setup-bun@v2.2.0
+      - name: JS toolchain guard (Bun only)
+        run: |
+          # The character-class pattern is deliberate: it matches both legacy
+          # registry-client spellings without either appearing literally in
+          # this file, so the guard cannot flag its own source.
+          rc=0
+          matches=$(grep -rnE '\bnp[mx]\b' .github/workflows scripts) || rc=$?
+          if [ "$rc" -gt 1 ]; then
+            echo "::error::JS toolchain guard is misconfigured (grep exit $rc)"
+            exit 1
+          fi
+          if [ "$rc" -eq 0 ]; then
+            echo "$matches"
+            echo "::error::the JS toolchain is Bun; legacy registry-client commands may not appear in workflows or scripts"
+            exit 1
+          fi
+      - run: bun install --frozen-lockfile
       - name: Type-check app, tests, and build configuration
-        run: npm run typecheck
+        run: bun run typecheck
       - name: Biome
-        run: npm run lint
+        run: bun run lint
       - name: Vitest
-        run: npm run test
+        run: bun run test
       - name: aislop quality gate
-        run: npx aislop ci
+        run: bunx aislop ci
       - name: Build
-        run: npm run build
+        run: bun run build
 
   rust:
     name: Rust checks

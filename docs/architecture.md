@@ -54,7 +54,7 @@ Two facts that shape the rest of this document:
 - Feature slices under `src/features/`: `catalog`, `release`, `continue-watching`, `player`, `downloads`, `bookmarks`, `settings`. Each slice owns the UI, hooks, and state it needs, and exposes a public surface through its `index.ts`; not every slice has all three.
 - Shared layer: `src/shared/types` (API and domain types), `src/shared/ui` (Radix-based primitives), `src/shared/lib` (API base URLs and release helpers).
 - State is client-side and optimistic: `catalogStore` holds catalog screens, cached Releases, bookmarks, and history; `playerStore` holds playback state and Settings and drives mpv through the `player_*` commands; `downloadStore` holds downloads and subscribes to backend events.
-- The UI also runs in a plain browser (`npm run dev` without Tauri) for catalog work. In that mode catalog calls fall back to direct `fetch`, bookmarks and settings fall back to browser storage, and downloads are unavailable.
+- The UI also runs in a plain browser (`bun run dev` without Tauri) for catalog work. In that mode catalog calls fall back to direct `fetch`, bookmarks and settings fall back to browser storage, and downloads are unavailable.
 
 Boundary rule, enforced by `tests/test_feature_boundaries.test.ts`:
 
@@ -205,7 +205,8 @@ There is no migration framework: the initializer creates missing tables only. Ch
 
 ## Verification gates
 
-- Frontend: `npm run typecheck`, `npm run lint` (Biome), `npm run test` (Vitest), `npx aislop ci`, `npm run build`.
+- Frontend: `bun run typecheck`, `bun run lint` (Biome), `bun run test` (Vitest), `bunx aislop ci`, `bun run build`.
+- JS toolchain: Bun only ([ADR 0011](adr/0011-bun-as-the-js-toolchain.md)) — a CI guard step fails when an npm/npx reference appears in `.github/workflows/` or `scripts/`.
 - Rust: `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo audit`, and the hermetic test suites listed in `.github/workflows/ci.yml` — including `test_player`, which exercises the mpv event translation and the Anime4K preset chains, and `test_player_ipc`, which exercises the command queue, the stall judgement and the watchdog.
 - Packaging: the release workflow pins the mpv build by SHA-256 in `scripts/get_mpv.py`, and the archive check asserts `mpv/mpv.exe` and the Anime4K shaders are inside `Aniplayer-portable.zip`.
 - Feature boundaries, bundle budgets, CSP parity, and the playback-source confinement are enforced by tests, not by convention alone.

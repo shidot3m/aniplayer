@@ -102,6 +102,10 @@ _Avoid_: option, config
 The only distributed form of the app: a self-contained folder that needs no installation and keeps user data beside the executable.
 _Avoid_: installer, package, distribution
 
+**JS toolchain**:
+Bun — the single runtime, package manager, and script runner of the project's frontend tooling. It installs dependencies, runs every script and tool, and hosts the tests; no Node runtime or npm client path remains in the project.
+_Avoid_: npm, npx, node, package runner
+
 **Native playback**:
 Playback through the bundled mpv child process — the app's only playback path. The WebView draws the controls; video renders in the `native-player` window under the transparent main window, and every source (online HLS, Offline playlist, downloaded file) reaches mpv, not a `<video>` element.
 _Avoid_: external player, mpv fallback

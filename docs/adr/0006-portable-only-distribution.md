@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md); build command updated per [ADR 0011](0011-bun-as-the-js-toolchain.md)
 
 ## Context
 
@@ -11,7 +11,7 @@ The app is Windows-only and must keep all of its state — database, downloads, 
 ## Decision
 
 - The only distributed artifact is `Aniplayer-portable.zip`. It contains `aniplayer.exe` and an empty `data/` folder. `downloads/` is created on demand.
-- No MSI, NSIS, or standalone executable is published. The release workflow builds with `npx tauri build --no-bundle`, assembles the folder through `scripts/package_portable.py`, zips it, and verifies that the executable is present.
+- No MSI, NSIS, or standalone executable is published. The release workflow builds with `bunx tauri build --no-bundle`, assembles the folder through `scripts/package_portable.py`, zips it, and verifies that the executable is present.
 - All runtime paths are derived from the executable's directory: `data/aniplayer.db`, `downloads/<release_id>/`, and `downloads/torrents/<release_id>/`. Database, downloads, and settings live only there. Tauri forces WebView2's own cache into the default per-user location (`%LOCALAPPDATA%`), which carries no portable state and can be deleted.
 - The release workflow runs nightly, on manual dispatch for `master`, and on `v*` tags. Nightly and manual builds move the rolling `latest` tag; version tags publish a separate release.
 - Updating means replacing the program files while keeping `data/` and `downloads/`.

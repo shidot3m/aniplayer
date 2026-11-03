@@ -16,6 +16,7 @@
 | Слой         | Технологии                                                                  |
 | ------------ | --------------------------------------------------------------------------- |
 | UI           | React 19, TypeScript 7, Vite 8, Tailwind 4, Zustand, Radix UI, lucide-react |
+| JS-тулчейн   | Bun 1.4.4 (установщик, рантайм и запуск скриптов; ADR 0011)                 |
 | Оболочка     | Tauri 2.12 (Rust, edition 2021)                                             |
 | Бэкенд       | Tauri IPC: `librqbit` 9, `rusqlite` 0.41, `reqwest` 0.13, supervisor mpv    |
 | Плеер        | bundled mpv `v0.41.0` (отдельный процесс, JSON IPC по named pipe)           |
@@ -24,7 +25,7 @@
 ## Требования
 
 - Windows 10/11 x64
-- [Node.js](https://nodejs.org/) 26 LTS и npm
+- [Bun](https://bun.sh/) 1.4.4 — единственный JS-тулчейн проекта; Node.js и npm не нужны
 - [Rust](https://rustup.rs/) (stable, `x86_64-pc-windows-msvc`)
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) с C++ (для `rusqlite`/Tauri)
 - WebView2 Runtime (в Windows 11 уже есть)
@@ -45,26 +46,26 @@ WebView2 Tauri по умолчанию держит в `%LOCALAPPDATA%`. Под�
 ## Запуск
 
 ```bash
-npm ci
+bun install
 python scripts/get_mpv.py src-tauri/target/debug/mpv   # плеер для dev-сборки (кэш в .cache/)
-npm run tauri dev
+bun run tauri dev
 ```
 
-Фронтенд отдельно (без окна Tauri): `npm run dev` — http://127.0.0.1:1420; там плеера нет, каталог работает.
+Фронтенд отдельно (без окна Tauri): `bun run dev` — http://127.0.0.1:1420; там плеера нет, каталог работает.
 
 В Git Bash / MSYS-шеллах Rust не линкуется: `usr/bin/link.exe` из Git перекрывает
-линкер MSVC, а `INCLUDE`/`LIB` не экспортируются. Для этих шеллов есть `npm run
+линкер MSVC, а `INCLUDE`/`LIB` не экспортируются. Для этих шеллов есть `bun run
 tauri:win` — он подгружает окружение Visual Studio через `vsdevcmd.bat`
 (`scripts/tauri-win.cmd`) и передаёт аргументы в `tauri`:
 
 ```bash
-npm run tauri:win dev
+bun run tauri:win dev
 ```
 
 ## Сборка
 
 ```bash
-npx tauri build --no-bundle           # aniplayer.exe в src-tauri/target/release
+bunx tauri build --no-bundle           # aniplayer.exe в src-tauri/target/release
 python scripts/get_mpv.py src-tauri/target/release/mpv
 python scripts/package_portable.py    # portable-папка: aniplayer.exe + mpv/ + shaders/ + пустая data/
 ```
@@ -73,7 +74,7 @@ python scripts/package_portable.py    # portable-папка: aniplayer.exe + mpv
 
 ## CI и релизы
 
-`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_hls_playlist`, `test_magnet_validation`, `test_player`, `test_player_command_threading`, `test_player_ipc`, `test_scanner`, `test_security_config`, `test_startup`, `test_torrent_path_validation`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
+`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: guard JS-тулчейна (CI и скрипты не должны содержать обращений к прежнему npm-клиенту), типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_hls_playlist`, `test_magnet_validation`, `test_player`, `test_player_command_threading`, `test_player_ipc`, `test_scanner`, `test_security_config`, `test_startup`, `test_torrent_path_validation`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
 
 `.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную на ветке `master` (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows portable-сборку и публикует единственный артефакт:
 
@@ -84,11 +85,11 @@ python scripts/package_portable.py    # portable-папка: aniplayer.exe + mpv
 ## Тесты и качество кода
 
 ```bash
-npm run typecheck   # типы: src, tests и конфиги сборки
-npm run lint        # Biome (линт + форматирование)
-npm run test        # Vitest
-npm run build       # tsc + vite build
-npm run check       # typecheck + Biome + Vitest + aislop
+bun run typecheck   # типы: src, tests и конфиги сборки
+bun run lint        # Biome (линт + форматирование)
+bun run test        # Vitest
+bun run build       # tsc + vite build
+bun run check       # typecheck + Biome + Vitest + aislop
 ```
 
 Rust-проверки (из каталога `src-tauri`, с окружением MSVC):
