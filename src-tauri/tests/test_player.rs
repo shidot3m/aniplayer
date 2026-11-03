@@ -1,4 +1,19 @@
-use aniplayer_lib::player::{validate_playback_source, Anime4kPreset, PlaybackEvents, PlayerEvent};
+use aniplayer_lib::player::{
+    mpv_launch_args, validate_playback_source, Anime4kPreset, PlaybackEvents, PlayerEvent,
+};
+
+/// Issue #45: the AniLiberty CDN rotates the segment host on every redirect, so a hung
+/// host must cost mpv its own bounded wait — not the sixty-second default — before the
+/// HLS ladder opens a fresh connection. Losing this option returns the player to the
+/// spontaneous stalls the issue is about.
+#[test]
+fn mpv_is_launched_with_a_bounded_network_timeout() {
+    let args = mpv_launch_args(1234, r"\\.\pipe\aniplayer-test");
+    assert!(
+        args.iter().any(|arg| arg == "--network-timeout=10"),
+        "mpv must abort a hanging segment host on the app's budget, not the 60 s default: {args:?}"
+    );
+}
 
 #[test]
 fn mpv_property_events_drive_time_and_duration() {

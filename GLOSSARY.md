@@ -115,7 +115,7 @@ The line of IPC commands one session keeps for mpv, drained by a single writer t
 _Avoid_: buffer, mailbox, backlog
 
 **Stall watchdog**:
-The per-session check on whether mpv still answers the command it was given while the pipe stays silent. A player that fails it is reported as a fault and taken down, so the user gets an error and a working close instead of a frozen player.
+The per-session check on whether mpv still answers the command it was given while the pipe stays silent. Its silence budget is phase-aware: while a file is opening — until playback reports its first position — the check runs on the load budget, because mpv holds its core inside the network wait; once playback is established, it runs on the interactive deadline. A player that fails the check is reported as a fault and taken down, so the user gets an error and a working close instead of a frozen player.
 _Avoid_: heartbeat, ping, keepalive
 
 See [docs/architecture.md](docs/architecture.md) for how these concepts map onto modules, and [docs/adr/](docs/adr/) for the decisions behind them.

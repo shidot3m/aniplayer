@@ -15,6 +15,14 @@ use serde_json::{json, Value};
 
 static NEXT_REQUEST_ID: AtomicU64 = AtomicU64::new(1);
 
+/// The two silence budgets the stall watchdog judges a player by (see GLOSSARY "Stall
+/// watchdog"): `interactive` once playback is established, `load` while a file is opening.
+#[derive(Debug, Clone, Copy)]
+pub struct StallBudget {
+    pub interactive: Duration,
+    pub load: Duration,
+}
+
 /// Whether mpv still answers the commands it is handed.
 #[derive(Debug, Default)]
 pub struct Liveness {
@@ -24,6 +32,11 @@ pub struct Liveness {
     acked: u64,
     /// The last moment mpv put anything at all on the pipe.
     last_line: Option<Instant>,
+    /// The `request_id` of a `loadfile` whose playback has not been established yet, or
+    /// `None` while playback runs. From the write until the new file reports a position,
+    /// mpv keeps its core inside a blocking network open and the pipe says nothing at all
+    /// (issue #45), so the stall judgement runs on the load budget for as long as this holds.
+    loading: Option<u64>,
 }
 
 impl Liveness {
@@ -43,20 +56,47 @@ impl Liveness {
         self.last_line = Some(at);
     }
 
-    /// A command is stalled once `deadline` has passed with mpv silent: nothing answered it,
-    /// and nothing else came off the pipe either.
-    pub fn is_stalled(&self, now: Instant, deadline: Duration) -> bool {
+    /// Records that the player was told to open a file. Every load locks the core the same
+    /// way — cold starts, episode switches and quality switches all freeze the pipe while
+    /// the stream opens — so each one moves the stall judgement onto the load budget.
+    pub fn note_load(&mut self, id: u64) {
+        self.loading = Some(id);
+    }
+
+    /// Offers a playback position to end the load phase. It only establishes the _new_
+    /// file: a position line flushed from the previous file can reach the reader after
+    /// the switch's `loadfile` was written, while mpv has not even taken the command yet.
+    /// The load's own answer proves the core came back, so only then does a position
+    /// count. The line that carried it is recorded separately, like any other line.
+    pub fn note_tick(&mut self) {
+        if let Some(id) = self.loading {
+            if id <= self.acked {
+                self.loading = None;
+            }
+        }
+    }
+
+    /// A command is stalled once the budget for the player's current phase has passed with
+    /// mpv silent: nothing answered it, and nothing else came off the pipe either. While a
+    /// file is opening the budget is `load`, because mpv's own bounded network waits sit
+    /// inside it; once playback is established it is the interactive `deadline`.
+    pub fn is_stalled(&self, now: Instant, budget: StallBudget) -> bool {
         let Some((id, written_at)) = self.written else {
             return false;
         };
         if id <= self.acked {
             return false;
         }
+        let wait = if self.loading.is_some() {
+            budget.load
+        } else {
+            budget.interactive
+        };
         let quiet_since = self
             .last_line
             .filter(|line| *line > written_at)
             .unwrap_or(written_at);
-        now.saturating_duration_since(quiet_since) >= deadline
+        now.saturating_duration_since(quiet_since) >= wait
     }
 }
 
@@ -67,6 +107,18 @@ pub fn reply_id(line: &str) -> Option<u64> {
         .ok()?
         .get("request_id")?
         .as_u64()
+}
+
+/// Whether a line carries an actual playback position. Only `time-pos` says the file is
+/// open and playing: `duration` is reported from the playlist before playback starts, and
+/// a null `time-pos` is mpv saying "no position yet" (#45).
+pub fn position_line(line: &str) -> bool {
+    let Ok(message) = serde_json::from_str::<Value>(line) else {
+        return false;
+    };
+    message.get("event").and_then(Value::as_str) == Some("property-change")
+        && message.get("name").and_then(Value::as_str) == Some("time-pos")
+        && message.get("data").and_then(Value::as_f64).is_some()
 }
 
 /// A command on its way to mpv, carrying the `request_id` it will be answered under.
@@ -132,12 +184,21 @@ pub fn spawn_writer(
             };
             payload.push(b'\n');
             // Recorded before the write: a write that never finishes is exactly the command
-            // mpv did not answer.
-            if command.expects_reply {
-                liveness
+            // mpv did not answer. A load is also where the load budget starts: mpv holds
+            // its core inside the open, so silence while loading is expected (#45).
+            {
+                let mut liveness = liveness
                     .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner())
-                    .note_written(command.id, Instant::now());
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                if command.expects_reply {
+                    liveness.note_written(command.id, Instant::now());
+                }
+                if matches!(
+                    command.body.first().and_then(Value::as_str),
+                    Some("loadfile")
+                ) {
+                    liveness.note_load(command.id);
+                }
             }
             if pipe
                 .write_all(&payload)
@@ -150,12 +211,13 @@ pub fn spawn_writer(
     })
 }
 
-/// Watch for the wedge #43 describes: once a command has gone unanswered for `deadline`, run
-/// `on_stall`. It runs once, and never for a session that is already closing.
+/// Watch for the wedge #43 describes: once a command has gone unanswered for the budget of
+/// the player's current phase — the interactive `deadline`, or `load` while a file is
+/// opening — run `on_stall`. It runs once, and never for a session that is already closing.
 pub fn spawn_watchdog(
     liveness: Arc<Mutex<Liveness>>,
     closing: Arc<AtomicBool>,
-    deadline: Duration,
+    budget: StallBudget,
     probe: Duration,
     on_stall: impl FnOnce() + Send + 'static,
 ) -> JoinHandle<()> {
@@ -167,7 +229,7 @@ pub fn spawn_watchdog(
         let stalled = liveness
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .is_stalled(Instant::now(), deadline);
+            .is_stalled(Instant::now(), budget);
         if stalled {
             // Checked again before acting: a session torn down while this tick was in flight
             // is not the player the user is looking at, and reporting it would close a live

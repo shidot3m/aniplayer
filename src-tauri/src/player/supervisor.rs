@@ -14,16 +14,28 @@ use tauri::{
 };
 
 use super::{
-    command_channel, reply_id, spawn_watchdog, spawn_writer, Anime4kPreset, CommandQueue, Liveness,
-    PlaybackEvents, PlayerEvent,
+    command_channel, position_line, reply_id, spawn_watchdog, spawn_writer, Anime4kPreset,
+    CommandQueue, Liveness, PlaybackEvents, PlayerEvent, StallBudget,
 };
 
 static NEXT_PIPE_ID: AtomicU64 = AtomicU64::new(0);
 
-/// How long mpv may keep a command unanswered before the player counts as wedged. mpv stays
-/// inside this budget whenever it puts anything at all on the pipe, so a player that is merely
-/// slow is not taken down for taking its time.
+/// How long mpv may keep a command unanswered during playback before the player counts as
+/// wedged. mpv stays inside this budget whenever it puts anything at all on the pipe, so a
+/// player that is merely slow is not taken down for taking its time.
 const STALL_DEADLINE: Duration = Duration::from_secs(5);
+
+/// mpv's per-request network budget. The AniLiberty CDN rotates the segment host on every
+/// redirect, so a keepalive failure costs one fresh connection; a hanging host must cost
+/// ten seconds, not the default sixty (#45).
+const NETWORK_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// How long mpv may take to open a file. While a load is in flight mpv holds its core
+/// inside the network open — the pipe answers nothing and shows nothing — so the interactive
+/// budget would execute a player that is merely struggling with a slow CDN (issue #45).
+/// Three of mpv's network waits cover a load: the playlist, the segment its probe needs,
+/// and one retry onto a fresh host after the ladder's keepalive failure.
+const LOAD_BUDGET: Duration = Duration::from_secs(NETWORK_TIMEOUT.as_secs() * 3);
 
 /// How often the watchdog looks at the clock.
 const STALL_PROBE: Duration = Duration::from_millis(250);
@@ -323,30 +335,7 @@ impl MpvSupervisor {
         let pipe_name = format!(r"\\.\pipe\aniplayer-mpv-{}-{pipe_id}", std::process::id());
         let child = Arc::new(Mutex::new(
             Command::new(&executable)
-                .args([
-                    "--no-config",
-                    "--idle=yes",
-                    "--force-window=yes",
-                    "--keep-open=yes",
-                    "--vo=gpu-next",
-                    "--gpu-api=auto",
-                    "--hwdec=auto-safe",
-                    "--border=no",
-                    "--osc=no",
-                    "--osd-level=0",
-                    "--input-default-bindings=no",
-                    "--input-vo-keyboard=no",
-                    "--input-cursor=no",
-                    "--window-dragging=no",
-                    "--terminal=no",
-                    "--msg-level=all=warn",
-                    // AniLiberty serves its streams to browsers only; a plain client is
-                    // refused. Subtitle tracks are mpv's job, chosen by language.
-                    "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Aniplayer/1.0",
-                    "--slang=en,ru",
-                ])
-                .arg(format!("--wid={wid}"))
-                .arg(format!("--input-ipc-server={pipe_name}"))
+                .args(mpv_launch_args(wid, &pipe_name))
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
@@ -433,6 +422,42 @@ impl MpvSupervisor {
     }
 }
 
+/// The mpv launch vector, built in code so no path is interpolated into a shell string.
+/// The network budget is the part issue #45 cannot afford to lose: AniLiberty rotates the
+/// segment host on every redirect, and a host that stops answering must cost mpv its own
+/// timeout — not the sixty-second default — before the HLS ladder opens a fresh connection.
+pub fn mpv_launch_args(wid: usize, pipe_name: &str) -> Vec<String> {
+    let mut args: Vec<String> = [
+        "--no-config",
+        "--idle=yes",
+        "--force-window=yes",
+        "--keep-open=yes",
+        "--vo=gpu-next",
+        "--gpu-api=auto",
+        "--hwdec=auto-safe",
+        "--border=no",
+        "--osc=no",
+        "--osd-level=0",
+        "--input-default-bindings=no",
+        "--input-vo-keyboard=no",
+        "--input-cursor=no",
+        "--window-dragging=no",
+        "--terminal=no",
+        "--msg-level=all=warn",
+        // AniLiberty serves its streams to browsers only; a plain client is
+        // refused. Subtitle tracks are mpv's job, chosen by language.
+        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Aniplayer/1.0",
+        "--slang=en,ru",
+    ]
+    .iter()
+    .map(|arg| (*arg).to_string())
+    .collect();
+    args.push(format!("--network-timeout={}", NETWORK_TIMEOUT.as_secs()));
+    args.push(format!("--wid={wid}"));
+    args.push(format!("--input-ipc-server={pipe_name}"));
+    args
+}
+
 /// The playback gate of `player_open`: a stream must be an HTTP(S) URL, and a
 /// local file must canonicalize inside the app's downloads folder. A Windows
 /// path with a drive letter parses as a URL whose scheme is the letter itself
@@ -489,7 +514,10 @@ fn watch_for_stall(
     spawn_watchdog(
         liveness,
         closing.clone(),
-        STALL_DEADLINE,
+        StallBudget {
+            interactive: STALL_DEADLINE,
+            load: LOAD_BUDGET,
+        },
         STALL_PROBE,
         move || {
             // The fault goes out before the child is taken down: killing mpv is what releases
@@ -518,16 +546,25 @@ fn spawn_reader(
         for line in reader.lines() {
             match line {
                 Ok(line) => {
+                    let event = events.handle_line(&line);
                     {
                         let mut liveness = liveness
                             .lock()
                             .unwrap_or_else(|poisoned| poisoned.into_inner());
-                        liveness.note_line(Instant::now());
+                        let now = Instant::now();
+                        liveness.note_line(now);
                         if let Some(id) = reply_id(&line) {
                             liveness.note_reply(id);
                         }
+                        // The first position of the newly opened file says mpv came back
+                        // out of the open: from here the interactive budget applies again.
+                        // Only `time-pos` counts; `duration` arrives from the playlist
+                        // before playback and would end the load phase too early (#45).
+                        if position_line(&line) {
+                            liveness.note_tick();
+                        }
                     }
-                    if let Some(event) = events.handle_line(&line) {
+                    if let Some(event) = event {
                         let _ = app.emit("player-event", event);
                     }
                 }

@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted
+Status: accepted, amended 2026-11-03 ([#45](https://github.com/shidot3m/aniplayer/issues/45), see Amendment below)
 
 Supersedes: [ADR 0007](0007-remove-native-libmpv-layer.md) (its WebView-only rule), the playback-gate and remux parts of [ADR 0009](0009-matroska-remux-and-codec-probe.md), the `#EXT-X-MAP` / `#EXT-X-KEY` rejections and the hls.js dependency of [ADR 0008](0008-local-hls-offline-downloads.md), and the distribution sentence of [ADR 0006](0006-portable-only-distribution.md) that said the archive carries no native media runtime.
 
@@ -44,3 +44,8 @@ The project has been here before and turned back: `0bd8fa6` landed a libmpv FFI 
 - Torrent payloads no longer need classification: every file ffmpeg can demux is indexed and played; the unsupported-files reporting and `downloader_prepare_stream` are gone ([ADR 0009](0009-matroska-remux-and-codec-probe.md) superseded for playback).
 - Runtime behavior now depends on a shipped third-party binary: an mpv version bump is a code-plus-packaging change, pinned by digest in `scripts/get_mpv.py`, and its fault model is "the player closes", handled by `player-event` `fault`.
 - The guard test that asserted the app has _no_ native backend is replaced by behavioural tests over the IPC boundary; an assertion about which backend exists is always on the wrong side of the next decision.
+
+## Amendment (2026-11-03, [#45](https://github.com/shidot3m/aniplayer/issues/45))
+
+- The spawn vector carries `--network-timeout=10`. AniLiberty redirects every segment to a rotating host, so ffmpeg's keepalive can never survive a segment boundary and each fetch rides a fresh connection; a host that stops answering now costs one bounded wait before the HLS ladder retries onto a live edge, instead of the sixty-second default that let a single dead edge hold the whole player.
+- The stall watchdog is phase-aware. From each `loadfile` write until playback reports its first position, mpv keeps its core inside the network open — the pipe answers no command and emits no line — so the check runs on a 30 s load budget sized around mpv's own bounded waits; once a position has arrived, an unanswered command behind a silent pipe is a wedge after the interactive 5 s. Episode and quality switches re-enter the load phase. This is the fix for the symptom #45 measured: a player that was merely opening slowly was being executed at 5 s of silence while mpv was still recovering.
