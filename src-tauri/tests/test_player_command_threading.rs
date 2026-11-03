@@ -91,6 +91,47 @@ fn the_window_event_path_never_waits_on_the_session_mutex() {
     );
 }
 
+/// The window-event close path runs on the main thread too, so it must not wait on the
+/// session mutex either — `open()` holds that mutex across window calls the event loop
+/// services, and a close that blocks on it re-creates the #30 cycle on the way out (issue #44).
+#[test]
+fn the_window_event_close_path_never_waits_on_the_session_mutex() {
+    let supervisor = include_str!("../src/player/supervisor.rs");
+    let handler = supervisor
+        .split("pub fn handle_window_event(&self, window: &Window, event: &WindowEvent) {")
+        .last()
+        .expect("handle_window_event must exist")
+        .split(
+            "
+    }",
+        )
+        .next()
+        .expect("handle_window_event body");
+    assert!(
+        !handler.contains("self.close("),
+        "handle_window_event must not call close(): it waits on the session mutex open() holds"
+    );
+
+    let body = supervisor
+        .split("fn close_from_event_loop(&self) {")
+        .last()
+        .expect("the window-event path needs a close that never waits on the session mutex")
+        .split(
+            "
+    }",
+        )
+        .next()
+        .expect("close_from_event_loop body");
+    assert!(
+        body.contains("try_lock"),
+        "close_from_event_loop must use try_lock: blocking here deadlocks against open()"
+    );
+    assert!(
+        !body.contains("self.lock()"),
+        "close_from_event_loop must not take the blocking session lock"
+    );
+}
+
 #[test]
 fn no_player_command_runs_on_the_main_thread() {
     let commands = declared_commands();

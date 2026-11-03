@@ -124,7 +124,10 @@ fn kill(child: &Arc<Mutex<Child>>) {
 pub struct MpvSupervisor {
     app_dir: PathBuf,
     shaders_dir: PathBuf,
-    session: Mutex<Option<MpvSession>>,
+    session: Arc<Mutex<Option<MpvSession>>>,
+    /// The live mpv child handle, parked outside the session mutex so the window-event
+    /// path can stop mpv without waiting for `open()` (issue #44).
+    mpv: Mutex<Option<Arc<Mutex<Child>>>>,
 }
 
 impl MpvSupervisor {
@@ -132,7 +135,8 @@ impl MpvSupervisor {
         Self {
             shaders_dir: app_dir.join("shaders").join("anime4k"),
             app_dir,
-            session: Mutex::new(None),
+            session: Arc::new(Mutex::new(None)),
+            mpv: Mutex::new(None),
         }
     }
 
@@ -217,11 +221,59 @@ impl MpvSupervisor {
     }
 
     pub fn close(&self, main: Option<&WebviewWindow>) {
-        // The session is dropped (mpv killed) after the lock is released.
+        // Stop mpv first: the handle lives beside the session mutex, so the process dies
+        // even while open() still holds that lock.
+        self.kill_mpv();
+        // The session is dropped (mpv killed again harmlessly, window closed) after the
+        // lock is released.
         let session = self.lock().take();
         drop(session);
         if let Some(main) = main {
             let _ = main.set_always_on_top(false);
+        }
+    }
+
+    /// Close driven from the application event loop. Like `sync_geometry`, this must never
+    /// wait on the session mutex: `open()` holds it across window calls only this thread
+    /// services (issue #44). mpv is stopped through the handle parked beside the mutex, so
+    /// the process dies even if the app exits before the session is reclaimed; the session
+    /// itself is taken down inline when the lock is free, or on a worker as soon as the
+    /// starter releases it.
+    fn close_from_event_loop(&self) {
+        self.kill_mpv();
+        let mut guard = match self.session.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::WouldBlock) => {
+                let session = self.session.clone();
+                std::thread::spawn(move || {
+                    let mut guard = session
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
+                    let session = guard.take();
+                    drop(guard);
+                    drop(session);
+                });
+                return;
+            }
+            Err(std::sync::TryLockError::Poisoned(e)) => e.into_inner(),
+        };
+        let session = guard.take();
+        drop(guard);
+        drop(session);
+    }
+
+    /// Take down mpv through the handle kept outside the session mutex, so this never
+    /// waits on the lock `open()` holds.
+    fn kill_mpv(&self) {
+        let child = {
+            let mut slot = self
+                .mpv
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            slot.take()
+        };
+        if let Some(child) = child {
+            kill(&child);
         }
     }
 
@@ -250,7 +302,9 @@ impl MpvSupervisor {
                     self.sync_geometry(&main);
                 }
             }
-            WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed => self.close(None),
+            WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed => {
+                self.close_from_event_loop()
+            }
             _ => {}
         }
     }
@@ -299,11 +353,20 @@ impl MpvSupervisor {
                 .spawn()
                 .map_err(|e| format!("Could not start mpv: {e}"))?,
         ));
+        // Register the kill handle before anything can block: a close arriving while the
+        // pipe connects must find the process (#44).
+        {
+            let mut slot = self
+                .mpv
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            *slot = Some(child.clone());
+        }
 
         let pipe = match connect_pipe(&pipe_name) {
             Ok(pipe) => pipe,
             Err(error) => {
-                kill(&child);
+                self.kill_mpv();
                 let _ = video_window.close();
                 return Err(error);
             }
@@ -311,7 +374,7 @@ impl MpvSupervisor {
         let reader = match pipe.try_clone() {
             Ok(reader) => reader,
             Err(error) => {
-                kill(&child);
+                self.kill_mpv();
                 let _ = video_window.close();
                 return Err(format!("Could not duplicate the mpv pipe: {error}"));
             }
