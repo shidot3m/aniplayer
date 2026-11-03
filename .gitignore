@@ -42,4 +42,5 @@ Thumbs.db
 
 # Pinned runtime downloads (scripts/get_mpv.py)
 .cache/
+# Scratch artifacts of runtime acceptance sessions (screenshots, probe scripts)
 _evidence/

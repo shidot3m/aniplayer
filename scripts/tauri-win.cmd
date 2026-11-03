@@ -2,7 +2,7 @@
 rem Runs the Tauri dev/build pipeline with the Visual Studio MSVC toolchain
 rem environment loaded. Needed on Windows because Git Bash puts its own coreutils
 rem link.exe on PATH and never exports INCLUDE/LIB, so rustc's
-rem x86_64-pc-windows-msvc target cannot link. Usage: scripts\tauri-win.cmd dev
+rem x86_64-pc-windows-msvc target cannot link. Usage: bun run tauri:win dev
 rem
 rem Editions live two levels under a Visual Studio root — the root is numbered by
 rem year (2022) or by version (18), and a Build Tools edition sits under
