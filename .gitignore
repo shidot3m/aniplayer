@@ -42,3 +42,4 @@ Thumbs.db
 
 # Pinned runtime downloads (scripts/get_mpv.py)
 .cache/
+_evidence/
