@@ -4,6 +4,11 @@
 # unformatted. eol=lf keeps a Windows working tree byte-identical to CI.
 * text=auto eol=lf
 
+# cmd.exe misparses LF-only batch files (comment lines execute as commands),
+# so Windows bootstrapper scripts must stay CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
 # Never touch binary payloads
 *.png binary
 *.jpg binary

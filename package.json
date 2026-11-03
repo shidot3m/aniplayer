@@ -9,7 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "tauri:win": "scripts\\tauri-win.cmd",
+    "tauri:win": "scripts/tauri-win.cmd",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "test": "vitest run",
