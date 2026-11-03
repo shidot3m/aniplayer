@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import type { EpisodeItem, Release, VideoQuality } from "@/shared/types";
@@ -149,8 +148,7 @@ export function usePlayerControllers({
   }, [handleNext, hasNext, saveProgress]);
 
   const handleFault = useCallback((message: string) => {
-    usePlayerStore.setState({ isPlaying: false, playbackError: message });
-    void invoke("player_close").catch(() => {});
+    void usePlayerStore.getState().reportFault(message);
   }, []);
 
   useNativePlayer({
@@ -161,12 +159,14 @@ export function usePlayerControllers({
   });
 
   useEffect(() => {
-    // Only when the overlay goes away. Keying this on `saveProgress` would fire
-    // on every Episode switch and `player_close` would arrive after the new
-    // episode's `player_open`, killing the session that just started.
+    // Unmounting is not closing. React remounts this overlay in development, and a
+    // `player_close` from here would tear down the session the next mount is already
+    // playing into (issue #48). The store ends sessions — `closePlayer` on the way out,
+    // `reportFault` when mpv stops — and this effect only saves progress. Keying the save
+    // on `saveProgress` would fire on every Episode switch, so it reaches the latest one
+    // through a ref.
     return () => {
       latestSave.current();
-      void invoke("player_close").catch(() => {});
     };
   }, []);
 

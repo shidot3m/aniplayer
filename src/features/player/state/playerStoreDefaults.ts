@@ -96,6 +96,8 @@ export interface PlayerState {
   openPlayer: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;
   playEpisode: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;
   closePlayer: () => Promise<void>;
+  /** Ends the native session after mpv reported a fault, keeping the overlay to show why. */
+  reportFault: (message: string) => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
   togglePlay: () => Promise<void>;

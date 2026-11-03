@@ -16,7 +16,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use aniplayer_lib::player::{
-    command_channel, position_line, reply_id, spawn_watchdog, spawn_writer, Liveness, StallBudget,
+    command_channel, connect_pipe, position_line, reply_id, spawn_watchdog, spawn_writer,
+    Liveness, ProcessState, StallBudget,
 };
 use serde_json::{json, Value};
 
@@ -438,4 +439,113 @@ fn a_session_that_is_closing_is_never_reported_as_wedged() {
     watchdog
         .join()
         .expect("the watchdog stops when the session closes");
+}
+
+/// The wait for mpv's IPC pipe must not blame mpv for the supervisor's own kill. Windows
+/// hands exit code 1 to every process we terminate, so a wait that kills mpv and then
+/// reports its status reports our code, not mpv's — that is the number issue #48 chased for
+/// days. A process that stopped on its own is named by the code it stopped on, and only a
+/// process that was still running when the budget ran out is a connection timeout.
+#[test]
+fn a_process_that_stops_before_the_pipe_exists_is_reported_as_stopped() {
+    let budget = Duration::from_secs(5);
+    let started = Instant::now();
+    let fault = connect_pipe(
+        r"\.\pipe\aniplayer-ipc-test-absent",
+        &mut || ProcessState::Exited(Some(0)),
+        budget,
+        Duration::from_millis(5),
+    )
+    .expect_err("no pipe was ever created");
+
+    assert!(
+        started.elapsed() < budget,
+        "a process that already stopped must not be waited on for the whole budget"
+    );
+    let message = fault.to_string();
+    assert!(
+        message.contains("exit code 0"),
+        "the fault has to name the code mpv stopped on: {message}"
+    );
+    assert!(
+        !message.contains("os error"),
+        "a stopped process is not a connection timeout: {message}"
+    );
+}
+
+/// A graceful `quit` (code 0) and a refused start (code 1) are different failures for the
+/// user, so the code mpv stopped on survives into the message.
+#[test]
+fn the_code_mpv_stopped_on_survives_into_the_fault() {
+    let cases = [(Some(1), "1"), (Some(0), "0"), (None, "signal")];
+    for (code, expected) in cases {
+        let fault = connect_pipe(
+            r"\.\pipe\aniplayer-ipc-test-absent",
+            &mut || ProcessState::Exited(code),
+            Duration::from_millis(50),
+            Duration::from_millis(5),
+        )
+        .expect_err("no pipe was ever created");
+        assert!(
+            fault.to_string().contains(expected),
+            "exit {code:?} must be described as containing {expected:?}: {fault}"
+        );
+    }
+}
+
+/// mpv alive and silent is the failure the budget exists for, and it keeps the message the
+/// interface has always shown for it.
+#[test]
+fn a_process_that_never_opens_the_pipe_times_out_with_the_os_error() {
+    let fault = connect_pipe(
+        r"\.\pipe\aniplayer-ipc-test-absent",
+        &mut || ProcessState::Running,
+        Duration::from_millis(120),
+        Duration::from_millis(10),
+    )
+    .expect_err("no pipe was ever created");
+
+    let message = fault.to_string();
+    assert!(
+        message.contains("Could not connect to mpv over JSON IPC"),
+        "the timeout keeps its wording: {message}"
+    );
+    assert!(
+        message.contains("still running"),
+        "a timeout has to say mpv was alive: {message}"
+    );
+}
+
+/// A close that lands while the pipe is still coming up makes our own kill the last thing
+/// to touch mpv. The wait has to say the player was closed rather than quote the code that
+/// kill left behind — that is the same misattribution #48 was built on, arriving from the
+/// other side.
+#[test]
+fn a_close_during_the_pipe_wait_is_not_blamed_on_mpv() {
+    let mut polls = 0;
+    let fault = connect_pipe(
+        r"\.\pipe\aniplayer-ipc-test-absent",
+        &mut || {
+            polls += 1;
+            if polls == 1 {
+                ProcessState::Running
+            } else {
+                ProcessState::Stopped
+            }
+        },
+        Duration::from_secs(5),
+        Duration::from_millis(5),
+    )
+    .expect_err("no pipe was ever created");
+
+    let message = fault.to_string();
+    assert!(
+        message.contains("closed"),
+        "the fault has to name the close that stopped mpv: {message}"
+    );
+    assert!(
+        !message.contains("exit code"),
+        "our own kill must not be reported as mpv's code: {message}"
+    );
+    assert_eq!(polls, 2, "the close is reported as soon as it is seen");
 }

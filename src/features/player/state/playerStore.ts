@@ -158,6 +158,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     });
   },
 
+  reportFault: async (message) => {
+    // The overlay stays mounted to show the reason, so this does not run closePlayer;
+    // it is the second half of the same rule: the store, not the view, ends the session.
+    set({ isPlaying: false, playbackError: message });
+    await invokePlayer("player_close");
+  },
+
   play: async () => {
     set({ isPlaying: true });
     await invokePlayer("player_set_pause", { paused: false });

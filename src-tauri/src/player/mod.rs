@@ -9,4 +9,7 @@ pub use ipc::{
     Liveness, StallBudget,
 };
 pub use shaders::Anime4kPreset;
-pub use supervisor::{mpv_launch_args, validate_playback_source, MpvOpenRequest, MpvSupervisor};
+pub use supervisor::{
+    connect_pipe, mpv_launch_args, validate_playback_source, MpvOpenRequest, MpvSupervisor,
+    PipeFault, ProcessState,
+};

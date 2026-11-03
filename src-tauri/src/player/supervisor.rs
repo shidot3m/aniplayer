@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -42,6 +43,14 @@ const STALL_PROBE: Duration = Duration::from_millis(250);
 
 /// What the interface shows when mpv stops answering.
 const STALL_FAULT: &str = "mpv stopped responding to the player controls";
+
+/// How long mpv may take to bring its JSON IPC pipe up. mpv cold-starts in well under a
+/// second on the machines this runs on, so a budget this long only ever expires because
+/// mpv is not coming up at all.
+const PIPE_CONNECT_BUDGET: Duration = Duration::from_secs(5);
+
+/// How often the pipe wait retries. It is also how quickly a mpv that stopped is reported.
+const PIPE_CONNECT_PROBE: Duration = Duration::from_millis(50);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -352,12 +361,17 @@ impl MpvSupervisor {
             *slot = Some(child.clone());
         }
 
-        let pipe = match connect_pipe(&pipe_name) {
+        let pipe = match connect_pipe(
+            &pipe_name,
+            &mut process_state(&child, &self.mpv),
+            PIPE_CONNECT_BUDGET,
+            PIPE_CONNECT_PROBE,
+        ) {
             Ok(pipe) => pipe,
-            Err(error) => {
+            Err(fault) => {
                 self.kill_mpv();
                 let _ = video_window.close();
-                return Err(error);
+                return Err(fault.to_string());
             }
         };
         let reader = match pipe.try_clone() {
@@ -486,20 +500,105 @@ pub fn validate_playback_source(app_dir: &Path, source: &str) -> Result<String, 
     Ok(canonical.to_string_lossy().to_string())
 }
 
-fn connect_pipe(pipe_name: &str) -> Result<File, String> {
-    let mut last_error = String::new();
-    for _ in 0..100 {
-        match OpenOptions::new().read(true).write(true).open(pipe_name) {
-            Ok(pipe) => return Ok(pipe),
-            Err(error) => {
-                last_error = error.to_string();
-                std::thread::sleep(Duration::from_millis(50));
-            }
+/// What the supervisor saw when it looked at the mpv process while waiting for its pipe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProcessState {
+    Running,
+    /// mpv stopped, with the code it stopped on; `None` when a signal took it.
+    Exited(Option<i32>),
+    /// The supervisor reclaimed the kill handle, so it is mpv's executioner: whatever code
+    /// the process left behind is ours, not a fact about mpv.
+    Stopped,
+}
+
+/// Why the wait for mpv's JSON IPC pipe produced no pipe.
+#[derive(Debug)]
+pub enum PipeFault {
+    /// mpv stopped before it ever created the pipe. The code comes from the wait watching
+    /// the process, never from a kill the supervisor performed: Windows hands exit code 1
+    /// to every process `Child::kill` terminates, and reading that back as mpv's own death
+    /// is what sent issue #48 after a crash that had never happened.
+    Exited(Option<i32>),
+    /// A close reached mpv while its pipe was still coming up.
+    Stopped,
+    /// mpv was still running when the budget ran out.
+    TimedOut(String),
+}
+
+impl fmt::Display for PipeFault {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PipeFault::Exited(Some(code)) => write!(
+                formatter,
+                "mpv stopped before the player connected (mpv exit code {code})"
+            ),
+            PipeFault::Exited(None) => write!(
+                formatter,
+                "mpv stopped before the player connected (killed by a signal)"
+            ),
+            PipeFault::Stopped => write!(formatter, "The player was closed while mpv was starting"),
+            PipeFault::TimedOut(last_error) => write!(
+                formatter,
+                "Could not connect to mpv over JSON IPC: {last_error} (mpv was still running)"
+            ),
         }
     }
-    Err(format!(
-        "Could not connect to mpv over JSON IPC: {last_error}"
-    ))
+}
+
+/// Open mpv's JSON IPC pipe, giving up as soon as mpv stops or the budget runs out.
+/// `process` is asked before every attempt, so a process that is already gone is reported
+/// in one probe instead of after the whole budget.
+pub fn connect_pipe(
+    pipe_name: &str,
+    process: &mut impl FnMut() -> ProcessState,
+    budget: Duration,
+    probe: Duration,
+) -> Result<File, PipeFault> {
+    let started = Instant::now();
+    let mut last_error = String::new();
+    loop {
+        match process() {
+            ProcessState::Exited(code) => return Err(PipeFault::Exited(code)),
+            ProcessState::Stopped => return Err(PipeFault::Stopped),
+            ProcessState::Running => {}
+        }
+        if started.elapsed() >= budget {
+            return Err(PipeFault::TimedOut(last_error));
+        }
+        match OpenOptions::new().read(true).write(true).open(pipe_name) {
+            Ok(pipe) => return Ok(pipe),
+            Err(error) => last_error = error.to_string(),
+        }
+        std::thread::sleep(probe);
+    }
+}
+
+/// Watch the mpv child for the pipe wait. Once the kill handle has left the slot, whoever
+/// took it owns mpv's death: reporting the status it leaves behind as mpv's own is the
+/// mistake this whole wait exists not to repeat. A lock that will not free is not a stopped
+/// process either — the kill that holds it reports `Stopped` through the slot.
+fn process_state<'a>(
+    child: &'a Arc<Mutex<Child>>,
+    slot: &'a Mutex<Option<Arc<Mutex<Child>>>>,
+) -> impl FnMut() -> ProcessState + 'a {
+    move || {
+        let reclaimed = {
+            let guard = slot
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            !matches!(&*guard, Some(live) if Arc::ptr_eq(live, child))
+        };
+        if reclaimed {
+            return ProcessState::Stopped;
+        }
+        let Ok(mut child) = child.try_lock() else {
+            return ProcessState::Running;
+        };
+        match child.try_wait() {
+            Ok(Some(status)) => ProcessState::Exited(status.code()),
+            _ => ProcessState::Running,
+        }
+    }
 }
 
 /// Report and take down a player that stopped answering, so the user gets an error and a

@@ -1,4 +1,5 @@
 import { act, render } from "@testing-library/react";
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { usePlayerStore } from "@/features/player/state/playerStore";
 import { PlayerOverlay } from "@/features/player/ui/PlayerOverlay";
@@ -86,7 +87,7 @@ describe("player session lifetime", () => {
     );
   });
 
-  it("closes the native session when the overlay unmounts", async () => {
+  it("leaves the native session to the store when the overlay unmounts", async () => {
     const { unmount } = render(
       <PlayerOverlay
         release={release}
@@ -99,6 +100,26 @@ describe("player session lifetime", () => {
     unmount();
     await act(async () => {});
 
-    expect(closedPlayerCalls().length).toBeGreaterThan(0);
+    expect(closedPlayerCalls()).toHaveLength(0);
+  });
+
+  it("keeps the native session through the remount React does in development", async () => {
+    const { unmount } = render(
+      <StrictMode>
+        <PlayerOverlay
+          release={release}
+          episode={release.episodes[0]}
+          onBack={() => {}}
+          onGoToRelease={() => {}}
+        />
+      </StrictMode>,
+    );
+
+    await act(async () => {});
+    expect(closedPlayerCalls()).toHaveLength(0);
+
+    unmount();
+    await act(async () => {});
+    expect(closedPlayerCalls()).toHaveLength(0);
   });
 });
