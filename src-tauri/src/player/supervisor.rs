@@ -203,7 +203,7 @@ impl MpvSupervisor {
         session.observe(4, "eof-reached")?;
         session.load(&request, &self.shaders_dir)?;
         session.video_window.show().map_err(|e| e.to_string())?;
-        main.set_always_on_top(true).map_err(|e| e.to_string())?;
+        stack_player_windows(&session.video_window, main)?;
         main.set_focus().map_err(|e| e.to_string())?;
         *guard = Some(session);
         Ok(())
@@ -436,6 +436,46 @@ impl MpvSupervisor {
     }
 }
 
+/// A window the player moves into or out of the topmost band.
+///
+/// Real windows ask the windowing layer; the tests record the calls, because which of two
+/// windows ends up higher is a fact a headless run cannot observe.
+pub trait TopmostWindow {
+    fn set_topmost(&self, topmost: bool) -> Result<(), String>;
+}
+
+impl TopmostWindow for Window {
+    fn set_topmost(&self, topmost: bool) -> Result<(), String> {
+        self.set_always_on_top(topmost).map_err(|e| e.to_string())
+    }
+}
+
+impl TopmostWindow for WebviewWindow {
+    fn set_topmost(&self, topmost: bool) -> Result<(), String> {
+        self.set_always_on_top(topmost).map_err(|e| e.to_string())
+    }
+}
+
+/// Stacks the video window under the main window for good: the mpv frame has to stay visible
+/// through a focus change, so both windows live in the topmost band and the main window is the
+/// one moved into it last.
+///
+/// The video window joins the band because a plain top-level loses to any window the user
+/// activates: it fell under the main window, whose client area is a transparent hole, and the
+/// player showed whatever window sat behind the frame instead of the frame (#49).
+///
+/// The main window leaves the band first because rejoining it is not a move — the topmost flag
+/// is cached, so a window already in the band answers `set_topmost(true)` with nothing, and the
+/// video window would keep the place it just took: above the controls, covering the interface.
+pub fn stack_player_windows(
+    video: &impl TopmostWindow,
+    main: &impl TopmostWindow,
+) -> Result<(), String> {
+    main.set_topmost(false)?;
+    video.set_topmost(true)?;
+    main.set_topmost(true)
+}
+
 /// The mpv launch vector, built in code so no path is interpolated into a shell string.
 /// The network budget is the part issue #45 cannot afford to lose: AniLiberty rotates the
 /// segment host on every redirect, and a host that stops answering must cost mpv its own
@@ -583,9 +623,7 @@ fn process_state<'a>(
 ) -> impl FnMut() -> ProcessState + 'a {
     move || {
         let reclaimed = {
-            let guard = slot
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let guard = slot.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
             !matches!(&*guard, Some(live) if Arc::ptr_eq(live, child))
         };
         if reclaimed {

@@ -16,8 +16,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use aniplayer_lib::player::{
-    command_channel, connect_pipe, position_line, reply_id, spawn_watchdog, spawn_writer,
-    Liveness, ProcessState, StallBudget,
+    command_channel, connect_pipe, position_line, reply_id, spawn_watchdog, spawn_writer, Liveness,
+    ProcessState, StallBudget,
 };
 use serde_json::{json, Value};
 

@@ -10,6 +10,6 @@ pub use ipc::{
 };
 pub use shaders::Anime4kPreset;
 pub use supervisor::{
-    connect_pipe, mpv_launch_args, validate_playback_source, MpvOpenRequest, MpvSupervisor,
-    PipeFault, ProcessState,
+    connect_pipe, mpv_launch_args, stack_player_windows, validate_playback_source, MpvOpenRequest,
+    MpvSupervisor, PipeFault, ProcessState, TopmostWindow,
 };
