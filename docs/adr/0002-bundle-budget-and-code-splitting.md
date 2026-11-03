@@ -2,7 +2,7 @@
 
 Date: 2026-10-27
 
-Status: accepted
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
 
 ## Context
 
@@ -27,3 +27,8 @@ Splitting these libraries further than "on demand" is not possible: each ships a
   playback, behind a shell-with-spinner `Suspense` fallback.
 - Re-introducing a static player-UI import into the barrel or the shell turns `test_bundle_split.test.ts` red with a concrete artifact diff, so the boundary is regression-protected.
 - Upgrading `anime4k-webgpu` should re-check the 3.6 MB ceiling; if a future version ships per-preset entry points, split per preset and lower the budget.
+
+## Amendment (2026-11-02, [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md))
+
+- `hls.js` and `anime4k-webgpu` left the dependency graph with the WebView player, so their per-library budgets and chunk-placement signatures no longer exist. The 3.6 MB Anime4K tier is gone — the shaders moved to the portable archive and mpv runs them.
+- The rule this ADR keeps is the split itself: `LazyPlayerOverlay` stays lazy, and the initial JS budget (≤ 500 kB) is still enforced against the real production artifact by `tests/test_bundle_split.test.ts`.

@@ -41,11 +41,18 @@ pub struct EpisodeDownloadSpec<'a> {
     pub ed_stop: Option<f64>,
 }
 
-/// A downloaded HLS stream: the segments to fetch and the playlist that
-/// points at them once they are on disk.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalResource {
+    pub file_name: String,
+    pub url: String,
+}
+
+/// A downloaded HLS stream: media segments, initialization/key resources, and the
+/// playlist that points at all of them once they are on disk.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocalPlaylist {
     pub segment_urls: Vec<String>,
+    pub resources: Vec<LocalResource>,
     pub manifest: String,
 }
 
@@ -53,9 +60,34 @@ pub fn segment_file_name(index: usize) -> String {
     format!("segment-{index:05}.ts")
 }
 
-/// Turns a remote media playlist into a self-contained one whose segment
-/// URIs are local file names. Tags such as `#EXTINF` and the target duration
-/// are preserved, so the WebView can demux the result without the network.
+fn localize_uri_attribute(
+    line: &str,
+    base: &Url,
+    file_name: String,
+) -> Result<(String, LocalResource), String> {
+    let start = line
+        .find("URI=\"")
+        .map(|index| index + 5)
+        .ok_or_else(|| format!("HLS tag has no quoted URI: {line}"))?;
+    let relative_end = line[start..]
+        .find('"')
+        .ok_or_else(|| format!("HLS tag has an unterminated URI: {line}"))?;
+    let end = start + relative_end;
+    let resolved = base
+        .join(&line[start..end])
+        .map_err(|e| format!("Invalid HLS resource URI: {e}"))?;
+    let rewritten = format!("{}{file_name}{}", &line[..start], &line[end..]);
+    Ok((
+        rewritten,
+        LocalResource {
+            file_name,
+            url: resolved.to_string(),
+        },
+    ))
+}
+
+/// Turns a remote media playlist into a self-contained one whose media and key/map
+/// URIs are local file names. mpv reads the result directly, without the network.
 pub fn prepare_local_playlist(
     playlist_text: &str,
     playlist_url: &str,
@@ -64,6 +96,9 @@ pub fn prepare_local_playlist(
 
     let mut manifest_lines: Vec<String> = Vec::new();
     let mut segment_urls: Vec<String> = Vec::new();
+    let mut resources: Vec<LocalResource> = Vec::new();
+    let mut map_count = 0usize;
+    let mut key_count = 0usize;
     let mut has_endlist = false;
 
     for line in playlist_text.lines() {
@@ -72,18 +107,6 @@ pub fn prepare_local_playlist(
             continue;
         }
         if trimmed.starts_with('#') {
-            if trimmed.starts_with("#EXT-X-MAP") {
-                return Err(
-                    "HLS playlist uses fragmented MP4 (#EXT-X-MAP); only MPEG-TS streams can be stored offline"
-                        .to_string(),
-                );
-            }
-            if trimmed.starts_with("#EXT-X-KEY") {
-                return Err(
-                    "HLS playlist is encrypted (#EXT-X-KEY) and cannot be stored for offline playback"
-                        .to_string(),
-                );
-            }
             if trimmed.starts_with("#EXT-X-STREAM-INF") {
                 return Err(
                     "HLS master playlists are not supported; download a Quality stream instead"
@@ -96,10 +119,27 @@ pub fn prepare_local_playlist(
                         .to_string(),
                 );
             }
+            let resource_name = if trimmed.starts_with("#EXT-X-MAP:") {
+                let name = format!("init-{map_count:05}.mp4");
+                map_count += 1;
+                Some(name)
+            } else if trimmed.starts_with("#EXT-X-KEY:") && !trimmed.contains("METHOD=NONE") {
+                let name = format!("key-{key_count:05}.key");
+                key_count += 1;
+                Some(name)
+            } else {
+                None
+            };
+            if let Some(file_name) = resource_name {
+                let (rewritten, resource) = localize_uri_attribute(trimmed, &base, file_name)?;
+                manifest_lines.push(rewritten);
+                resources.push(resource);
+            } else {
+                manifest_lines.push(trimmed.to_string());
+            }
             if trimmed.starts_with("#EXT-X-ENDLIST") {
                 has_endlist = true;
             }
-            manifest_lines.push(trimmed.to_string());
             continue;
         }
 
@@ -128,6 +168,7 @@ pub fn prepare_local_playlist(
 
     Ok(LocalPlaylist {
         segment_urls,
+        resources,
         manifest,
     })
 }
@@ -240,9 +281,8 @@ impl HlsDownloader {
             .await
             .map_err(|e| e.to_string())?;
 
-        // Every episode owns a folder with its playlist and TS segments, which
-        // is the only layout the WebView can play offline: hls.js demuxes the
-        // segments itself instead of relying on a container WebView2 lacks.
+        // Every episode owns a folder with its playlist and the resources the
+        // playlist names, so mpv can replay it offline with no network access.
         let episode_dir = rel_folder.join(ordinal.to_string());
         let dest_path = episode_dir.join(PLAYLIST_FILE_NAME);
         let dest_str = dest_path.to_string_lossy().to_string();
@@ -328,9 +368,28 @@ impl HlsDownloader {
             Err(err_msg) => fail!(err_msg),
         };
 
-        // 2. Download the segments into the episode folder
+        // 2. Download initialization/key resources and media segments.
         let total_segments = playlist.segment_urls.len();
         let mut total_bytes = 0i64;
+
+        for resource in &playlist.resources {
+            if cancel_flag.load(Ordering::Relaxed) {
+                self.cleanup_cancelled(spec, &episode_dir, &app).await;
+                return Err("Download cancelled by user".to_string());
+            }
+            let response = match self.client.get(&resource.url).send().await {
+                Ok(response) => response,
+                Err(e) => fail!(format!("HLS resource network request error: {e}")),
+            };
+            let bytes = match response.bytes().await {
+                Ok(bytes) => bytes,
+                Err(e) => fail!(format!("HLS resource bytes read error: {e}")),
+            };
+            total_bytes += bytes.len() as i64;
+            if let Err(e) = fs::write(episode_dir.join(&resource.file_name), &bytes).await {
+                fail!(format!("HLS resource file write error: {e}"));
+            }
+        }
 
         for (index, segment_url) in playlist.segment_urls.iter().enumerate() {
             if cancel_flag.load(Ordering::Relaxed) {

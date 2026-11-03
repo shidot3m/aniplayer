@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted
+Status: accepted; its WebView-only rule is superseded by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
 
 ## Context
 

@@ -11,6 +11,10 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: (...args: unknown[]) => mockInvoke(...args),
 }));
 
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(() => Promise.resolve(() => {})),
+}));
+
 const mockRelease: Release = {
   id: 2001,
   name: { main: "Тестовое аниме" },

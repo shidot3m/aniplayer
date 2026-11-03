@@ -11,10 +11,42 @@ import {
   getInitialQuality,
   getInitialVolume,
   type PlayerState,
+  pickEpisodeSource,
   resolveEpisodeQuality,
 } from "./playerStoreDefaults";
 
 export { DEFAULT_HOTKEYS };
+
+function hasNativePlayer(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+async function invokePlayer(command: string, args?: Record<string, unknown>): Promise<void> {
+  if (!hasNativePlayer()) return;
+  try {
+    if (args === undefined) {
+      await invoke(command);
+    } else {
+      await invoke(command, args);
+    }
+  } catch (error) {
+    console.error(`Native player command ${command} failed:`, error);
+  }
+}
+
+function openRequest(source: string, start: number, state: PlayerState) {
+  return {
+    request: {
+      source,
+      start,
+      volume: state.volume,
+      muted: state.isMuted,
+      speed: state.speed,
+      anime4kEnabled: state.anime4kEnabled,
+      preset: state.anime4kPreset,
+    },
+  };
+}
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   isPlayerOpen: false,
@@ -37,16 +69,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentEpisode: null,
   isDrawerOpen: false,
   isSettingsOpen: false,
+  playbackError: null,
+  hardwareDecoder: null,
 
   openPlayer: async (release, episode, startPos = 0) => {
     let activeRelease = release;
     let activeEpisode = episode;
 
-    // If episode doesn't have stream URLs yet, fetch full release details
     if (!activeEpisode.hls_1080 && !activeEpisode.hls_720 && !activeEpisode.hls_480) {
       try {
         let fullRel: ReleaseDetails | null = null;
-        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+        if (hasNativePlayer()) {
           fullRel = await invoke<ReleaseDetails>("api_get_release", {
             idOrAlias: String(release.id),
           }).catch(() => null);
@@ -68,6 +101,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     const resolvedQuality = resolveEpisodeQuality(activeEpisode, get().preferredQuality);
+    const state = get();
+    const source = pickEpisodeSource(activeEpisode, resolvedQuality);
 
     set({
       isPlayerOpen: true,
@@ -77,7 +112,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       duration: activeEpisode.duration || 0,
       isPlaying: true,
       activeQuality: resolvedQuality,
+      playbackError: null,
     });
+
+    if (hasNativePlayer()) {
+      try {
+        await invoke("player_open", openRequest(source, startPos, state));
+      } catch (error) {
+        set({
+          isPlaying: false,
+          playbackError: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
   },
 
   playEpisode: async (release, episode, startPos = 0) => {
@@ -85,35 +132,40 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   closePlayer: async () => {
+    const closeNative = invokePlayer("player_close");
     try {
-      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+      if (hasNativePlayer()) {
         await invoke("app_set_fullscreen", { fullscreen: false });
       }
     } catch (_e) {
-      // ignore
+      // Native fullscreen may already be gone during window shutdown.
     }
     try {
       if (typeof document !== "undefined" && document.fullscreenElement) {
         await document.exitFullscreen().catch(() => {});
       }
     } catch (_e) {
-      // ignore
+      // Browser fullscreen may already be gone during unmount.
     }
+    await closeNative;
 
     set({
       isPlayerOpen: false,
       isPlaying: false,
       currentRelease: null,
       currentEpisode: null,
+      playbackError: null,
     });
   },
 
   play: async () => {
     set({ isPlaying: true });
+    await invokePlayer("player_set_pause", { paused: false });
   },
 
   pause: async () => {
     set({ isPlaying: false });
+    await invokePlayer("player_set_pause", { paused: true });
   },
 
   togglePlay: async () => {
@@ -126,6 +178,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   seek: async (seconds: number) => {
     set({ currentTime: seconds });
+    await invokePlayer("player_seek", { seconds });
   },
 
   seekTo: async (seconds: number) => {
@@ -134,7 +187,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   seekRelative: async (offset: number) => {
     const newPos = Math.max(0, get().currentTime + offset);
-    set({ currentTime: newPos });
+    await get().seek(newPos);
   },
 
   setVolume: async (volume: number) => {
@@ -143,6 +196,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_volume", String(clamped));
     }
+    await invokePlayer("player_set_volume", { volume: clamped, muted: clamped === 0 });
     try {
       await invoke("db_save_setting", {
         key: "volume",
@@ -154,24 +208,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   toggleMute: async () => {
-    const isMuted = get().isMuted;
-    if (isMuted) {
-      const restoreVol = get().volume || 80;
-      await get().setVolume(restoreVol);
-      set({ isMuted: false });
-    } else {
-      set({ isMuted: true });
-    }
+    const isMuted = !get().isMuted;
+    set({ isMuted });
+    await invokePlayer("player_set_volume", { volume: get().volume, muted: isMuted });
   },
 
   setSpeed: async (speed: number) => {
     set({ speed });
+    await invokePlayer("player_set_speed", { speed });
   },
 
   setPreset: async (preset: string) => {
     set({ anime4kPreset: preset });
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_anime4k_preset", preset);
+    }
+    if (get().anime4kEnabled) {
+      await invokePlayer("player_set_anime4k", { enabled: true, preset });
     }
     try {
       await invoke("db_save_setting", {
@@ -193,6 +246,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_anime4k_enabled", String(enabled));
     }
+    await invokePlayer("player_set_anime4k", { enabled, preset: get().anime4kPreset });
     try {
       await invoke("db_save_setting", {
         key: "anime4k_enabled",
@@ -215,6 +269,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setQuality: async (quality: VideoQuality) => {
     set({ activeQuality: quality });
+    const state = get();
+    const episode = state.currentEpisode;
+    if (!episode || !state.isPlayerOpen) return;
+    await invokePlayer(
+      "player_open",
+      openRequest(pickEpisodeSource(episode, quality), state.currentTime, state),
+    );
+    if (!state.isPlaying) {
+      await invokePlayer("player_set_pause", { paused: true });
+    }
   },
 
   setPreferredQuality: async (quality: VideoQuality) => {
@@ -304,7 +368,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       duration: duration > 0 ? duration : state.duration,
     });
 
-    // Auto-play next episode when reaching the end
     if (state.autoplayNext && duration > 0 && time >= duration - 1.5) {
       get().playNextEpisode();
     }

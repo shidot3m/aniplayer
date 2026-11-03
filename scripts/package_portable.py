@@ -28,6 +28,26 @@ def package_portable():
         )
         sys.exit(1)
 
+    # The mpv runtime is the only playback backend, so a bundle without it
+    # cannot play anything. `scripts/get_mpv.py` stages it beside the build.
+    mpv_dir = os.path.join(root_dir, "src-tauri", "target", "release", "mpv")
+    if os.path.isfile(os.path.join(mpv_dir, "mpv.exe")):
+        shutil.copytree(mpv_dir, os.path.join(dist_dir, "mpv"))
+        print(f"[OK] Copied mpv runtime from {mpv_dir} into bundle")
+    else:
+        print(
+            f"[ERROR] mpv runtime not found at {mpv_dir}; run `python scripts/get_mpv.py src-tauri/target/release/mpv` first"
+        )
+        sys.exit(1)
+
+    shaders_dir = os.path.join(root_dir, "shaders")
+    if os.path.isdir(shaders_dir):
+        shutil.copytree(shaders_dir, os.path.join(dist_dir, "shaders"))
+        print("[OK] Copied Anime4K shaders into bundle")
+    else:
+        print(f"[ERROR] Anime4K shaders not found at {shaders_dir}")
+        sys.exit(1)
+
     print(
         "\n[SUCCESS] Portable bundle structure prepared successfully at dist_portable/"
     )

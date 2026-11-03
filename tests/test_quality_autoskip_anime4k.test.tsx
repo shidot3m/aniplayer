@@ -1,7 +1,5 @@
 import { render } from "@testing-library/react";
-import { ModeA, ModeAA, ModeB, ModeBB, ModeC, ModeCA } from "anime4k-webgpu";
 import { describe, expect, it, vi } from "vitest";
-import { resolvePresetPipeline } from "@/features/player/renderer/anime4kRenderer";
 import {
   getAvailableQualities,
   resolveEpisodeQuality,
@@ -70,18 +68,5 @@ describe("SeekBar Timeline Markers (OP/ED)", () => {
     const edBlock = container.querySelector(".bg-indigo-400\\/80");
     expect(edBlock).toBeDefined();
     expect(edBlock?.getAttribute("title")).toBe("Эндинг");
-  });
-});
-
-describe("Anime4K Preset Mapping", () => {
-  it("maps every supported preset to its pipeline and falls back to Mode A+A", () => {
-    expect(resolvePresetPipeline("Mode A (HQ)")).toBe(ModeA);
-    expect(resolvePresetPipeline("Mode A+A (HQ)")).toBe(ModeAA);
-    expect(resolvePresetPipeline("Mode B (HQ)")).toBe(ModeB);
-    expect(resolvePresetPipeline("Mode B+B (HQ)")).toBe(ModeBB);
-    expect(resolvePresetPipeline("Mode C (HQ)")).toBe(ModeC);
-    expect(resolvePresetPipeline("Mode C+A (HQ)")).toBe(ModeCA);
-    expect(resolvePresetPipeline("Mode Fast (APU)")).toBe(ModeA);
-    expect(resolvePresetPipeline("Unknown preset")).toBe(ModeAA);
   });
 });

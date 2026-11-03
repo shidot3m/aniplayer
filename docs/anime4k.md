@@ -391,7 +391,7 @@ CTRL+0 no-osd change-list glsl-shaders clr ""; show-text "Anime4K: Выключ�
 ### Интеграция в архитектуру Aniplayer
 
 > [!NOTE]
-> В текущей версии Aniplayer используется только **вариант 3**: видео играет `<video>`-элемент в WebView (hls.js для HLS, asset protocol для скачанных файлов), а апскейл выполняет `anime4k-webgpu` на WebGPU. Варианты 1 и 2 ниже — исторический разбор альтернативных путей; нативный слой `libmpv`, каталог `shaders/anime4k/` и поставка GLSL-файлов из приложения удалены ([ADR 0007](../adr/0007-remove-native-libmpv-layer.md)).
+> В текущей версии Aniplayer играет встроенный mpv-процесс ([ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)), и апскейл выполняется **вариантом 1** — той же GLSL-цепочкой `change-list glsl-shaders`, только команда уходит не в FFI, а в JSON IPC supervisor'у (`player_set_anime4k`). Каталог `shaders/anime4k/` снова поставляется с приложением рядом с exe. Варианты 2 и 3 — исторический разбор альтернатив; WebGPU-путь (`anime4k-webgpu`) удалён вместе с WebView-плеером.
 
 Для проекта **Aniplayer** предусмотрено три стратегических пути внедрения Anime4K в зависимости от выбранного движка рендеринга:
 

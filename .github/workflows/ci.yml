@@ -39,7 +39,9 @@ jobs:
   rust:
     name: Rust checks
     runs-on: windows-latest
-    timeout-minutes: 15
+    # A cold Windows build of this graph takes ~13 minutes; the old 15-minute cap
+    # killed the job after every step had passed, during the cache save.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -70,8 +72,7 @@ jobs:
           --test test_db
           --test test_hls_playlist
           --test test_magnet_validation
-          --test test_remux
-          --test test_remux_service
+          --test test_player
           --test test_scanner
           --test test_security_config
           --test test_startup

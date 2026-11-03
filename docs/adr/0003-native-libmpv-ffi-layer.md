@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: superseded by [ADR 0007](0007-remove-native-libmpv-layer.md)
+Status: superseded by [ADR 0007](0007-remove-native-libmpv-layer.md); native playback returned under [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
 
 ## Context
 

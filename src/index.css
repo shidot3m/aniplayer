@@ -83,6 +83,10 @@ body {
   color: #f8fafc;
 }
 
+body.native-player-open {
+  background-color: transparent;
+}
+
 /* Custom smooth scrollbar */
 * {
   scrollbar-width: thin;

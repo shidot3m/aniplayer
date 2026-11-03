@@ -43,7 +43,6 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
   }, [exitFullscreenSideEffect]);
 
   const {
-    videoRef,
     streamUrl,
     hasPrev,
     hasNext,
@@ -51,11 +50,6 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     handleNext,
     handleSeek,
     handleTogglePlay,
-    handleTimeUpdate,
-    handleLoadedMetadata,
-    handlePlay,
-    handlePause,
-    handleEnded,
     availableQualities,
     timeLeft,
     isAutoplayCountdown,
@@ -72,10 +66,6 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     autoplayNext: playerStore.autoplayNext,
     isPlaying: playerStore.isPlaying,
     volume: playerStore.volume,
-    isMuted: playerStore.isMuted,
-    speed: playerStore.speed,
-    play: playerStore.play,
-    pause: playerStore.pause,
     seekTo: playerStore.seekTo,
     togglePlay: playerStore.togglePlay,
     setVolume: playerStore.setVolume,
@@ -101,19 +91,12 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
   );
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black select-none font-sans">
+    <div className="relative h-screen w-screen overflow-hidden bg-transparent select-none font-sans">
       <PlayerVideoViewport
-        videoRef={videoRef}
         streamUrl={streamUrl}
-        anime4kEnabled={playerStore.anime4kEnabled}
-        anime4kPreset={playerStore.anime4kPreset}
+        playbackError={playerStore.playbackError}
         onTogglePlay={handleTogglePlay}
         onToggleFullscreen={toggleFullscreen}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onPlay={handlePlay}
-        onPause={handlePause}
-        onEnded={handleEnded}
       />
 
       <PlayerTopBar

@@ -1,6 +1,6 @@
 # Aniplayer
 
-Aniplayer is a portable Windows player for anime from the AniLiberty catalog, with offline downloads and real-time Anime4K enhancement.
+Aniplayer is a portable Windows player for anime from the AniLiberty catalog, with offline downloads and real-time Anime4K enhancement, playing everything through its bundled mpv runtime.
 
 ## Language
 
@@ -47,7 +47,7 @@ A BitTorrent bundle published for a Release, identified by a torrent id and carr
 _Avoid_: magnet, file, download
 
 **Anime4K preset**:
-A named shader chain selected in Settings: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), Mode C+A (HQ), or Mode Fast (APU); enhancement can also be switched off.
+A named mpv GLSL shader chain selected in Settings: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), Mode C+A (HQ), or Mode Fast (APU); enhancement can also be switched off.
 _Avoid_: filter, mode, shader
 
 ### User state
@@ -77,20 +77,16 @@ A user-requested local copy of an Episode or Release, produced by an HLS downloa
 _Avoid_: save, cache, transfer
 
 **Downloaded episode**:
-A Download indexed in the local database with its file path, size, Quality, and Skip timecodes, so it can be played offline. An HLS Download stores a local Offline playlist; a Torrent Download stores a video file the app can deliver to the screen, either as it is or remuxed.
+A Download indexed in the local database with its file path, size, Quality, and Skip timecodes, so it can be played offline. An HLS Download stores a local Offline playlist; a Torrent Download stores the video file as it is — mpv plays any container.
 _Avoid_: local file, cached episode
 
 **Offline playlist**:
-The `index.m3u8` inside a downloaded Episode folder, whose segment URIs point at the local MPEG-TS segments. The WebView plays it through hls.js.
+The `index.m3u8` inside a downloaded Episode folder, whose segment, init-segment, and key URIs point at the local files beside it. mpv plays it directly, without the network.
 _Avoid_: cached playlist, manifest file
 
-**Remuxed playback**:
-Playback of a Torrent download whose container the WebView cannot demux: the payload is copied frame for frame into an MP4 the WebView does demux, without re-encoding, and reaches the player as a stream rather than as a second file. The player cannot tell it apart from a native episode.
-_Avoid_: transcode, converted file, second copy
-
-**Unsupported torrent file**:
-A video inside a Torrent download that the app cannot deliver to the screen — a container it cannot remux, or a codec this machine has no decoder for. It is not indexed as a Downloaded episode, and the Downloads screen reports which of the two it is, with the way out for each.
-_Avoid_: broken file, missing episode
+**Hardware decode**:
+Whether mpv put a hardware decoder on this stream (`hwdec-current`); software decode is the fallback. It informs the 4K warning only — no codec verdict gates playback.
+_Avoid_: codec probe, capability check
 
 **Download status**:
 One of PENDING, DOWNLOADING, COMPLETED, or FAILED.
@@ -106,12 +102,12 @@ _Avoid_: option, config
 The only distributed form of the app: a self-contained folder that needs no installation and keeps user data beside the executable.
 _Avoid_: installer, package, distribution
 
+**Native playback**:
+Playback through the bundled mpv child process — the app's only playback path. The WebView draws the controls; video renders in the `native-player` window under the transparent main window, and every source (online HLS, Offline playlist, downloaded file) reaches mpv, not a `<video>` element.
+_Avoid_: external player, mpv fallback
+
 **IPC command**:
 A named operation through which the WebView asks the Rust backend to act.
 _Avoid_: API call, RPC, endpoint
-
-**Codec capability probe**:
-The startup question that settles which codec families this machine can decode, answered per family as decodable, undecodable, or unknown. It is what separates a container the app can remux from a payload nobody can show, and an unknown verdict never opens playback.
-_Avoid_: feature check, browser sniffing
 
 See [docs/architecture.md](docs/architecture.md) for how these concepts map onto modules, and [docs/adr/](docs/adr/) for the decisions behind them.

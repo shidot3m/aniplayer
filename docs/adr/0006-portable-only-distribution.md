@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
 
 ## Context
 
@@ -27,3 +27,8 @@ The app is Windows-only and must keep all of its state — database, downloads, 
 - Upgrades are manual file replacement; user data is not removed by the app. The release notes name the preserved folders.
 - The Tauri bundler is still configured, but its installers are not part of the release path; only the portable zip is published. Any change to that policy must update the release workflow, `scripts/package_portable.py`, and this ADR.
 - The archive no longer carries native media libraries or GLSL shaders: playback and Anime4K run entirely in the WebView ([ADR 0007](0007-remove-native-libmpv-layer.md)).
+
+## Amendment (2026-11-02, [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md))
+
+- The archive is **`aniplayer.exe` plus its media runtime plus an empty `data/` folder**: `mpv/mpv.exe` with its DLLs (pinned by version and SHA-256 in `scripts/get_mpv.py`) and `shaders/anime4k/*.glsl` sit beside the executable. The last consequences line above — no native media libraries — no longer holds.
+- The archive check asserts `aniplayer.exe`, `mpv/mpv.exe`, and the Anime4K shaders; a bundle without the runtime cannot play anything, so `scripts/package_portable.py` refuses to produce one.

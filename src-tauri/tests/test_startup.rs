@@ -168,11 +168,7 @@ fn torrent_engine_failure_is_a_returned_error_instead_of_a_panic() {
     std::fs::write(&blocker, b"x").unwrap();
     let unusable_base = blocker.join("app");
 
-    let message = match startup::create_torrent_engine(
-        &unusable_base,
-        db,
-        std::sync::Arc::new(aniplayer_lib::codec::CodecCapabilities::default()),
-    ) {
+    let message = match startup::create_torrent_engine(&unusable_base, db) {
         Ok(_) => panic!("the engine must not report success when its folder cannot be created"),
         Err(err) => err.to_string(),
     };

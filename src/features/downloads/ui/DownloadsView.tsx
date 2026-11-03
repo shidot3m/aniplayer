@@ -1,27 +1,12 @@
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Film,
-  FolderDown,
-  FolderOpen,
-  HardDrive,
-  Play,
-  Trash2,
-} from "lucide-react";
+import { CheckCircle2, Film, FolderDown, FolderOpen, HardDrive, Play, Trash2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import { usePlayerStore } from "@/features/player";
 import { formatPosterUrl } from "@/shared/lib/releaseUtils";
 import { formatBytes } from "@/shared/lib/utils";
-import type {
-  DownloadedEpisodeMeta,
-  EpisodeItem,
-  Release,
-  UnsupportedTorrentFile,
-} from "@/shared/types";
+import type { DownloadedEpisodeMeta, EpisodeItem, Release } from "@/shared/types";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { offlineStreamUrl } from "../lib/offlineSource";
 import { useDownloadStore } from "../state/downloadStore";
 
 function DownloadedEpisodeRow({
@@ -181,109 +166,28 @@ function DownloadedReleaseCard({
   );
 }
 
-function UnsupportedFilesCard({
-  releaseId,
-  title,
-  files,
-  onOpenFolder,
-}: {
-  releaseId: number;
-  title: string;
-  files: UnsupportedTorrentFile[];
-  onOpenFolder: (releaseId: number) => void;
-}) {
-  const visible = files.slice(0, 6);
-  const hidden = files.length - visible.length;
-  const totalSize = files.reduce((acc, file) => acc + file.file_size, 0);
-
-  return (
-    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.05] p-5">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div className="flex items-start gap-3 min-w-0">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-          <div className="min-w-0">
-            <h3 className="text-sm font-bold text-white">{title}</h3>
-            <p className="mt-1 text-xs text-amber-200/80">
-              Встроенный плеер не откроет эти файлы ({files.length} шт., {formatBytes(totalSize)}).
-              Причина у каждого своя — она и подсказывает, что делать.
-            </p>
-            <ul className="mt-2 space-y-1.5 text-xs text-slate-300">
-              {visible.map((file) => (
-                <li key={file.file_path}>
-                  <span className="block truncate">
-                    {file.file_name} · {formatBytes(file.file_size)}
-                  </span>
-                  <span className="block text-amber-200/70">{file.reason}</span>
-                </li>
-              ))}
-              {hidden > 0 && <li className="text-slate-400">и ещё {hidden}</li>}
-            </ul>
-          </div>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onOpenFolder(releaseId)}
-          className="shrink-0 gap-1.5 text-xs border-amber-500/30 hover:border-amber-400/50 text-amber-200 hover:text-white"
-        >
-          <FolderOpen className="h-3.5 w-3.5" />
-          <span>Открыть папку</span>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * The downloaded episodes of one release as the player wants them, each pointing at
- * the stream its own file is played from: an Offline playlist, a native file through
- * the asset protocol, or a Matroska payload prepared on the remux protocol.
- *
- * One file that cannot be prepared leaves the others alone. A release whose tenth
- * episode is packed in a way the remuxer refuses must not cost the user the other
- * nine, so the failures come back beside the list instead of rejecting it.
- */
-async function buildOfflineEpisodes(
-  metas: DownloadedEpisodeMeta[],
-): Promise<{ episodes: EpisodeItem[]; failed: DownloadedEpisodeMeta[] }> {
-  const ordered = metas.slice().sort((a, b) => a.episode_ordinal - b.episode_ordinal);
-  const settled = await Promise.allSettled(
-    ordered.map(async (m): Promise<EpisodeItem> => {
-      const stream = await offlineStreamUrl(m.file_path);
+function buildOfflineEpisodes(metas: DownloadedEpisodeMeta[]): EpisodeItem[] {
+  return metas
+    .slice()
+    .sort((a, b) => a.episode_ordinal - b.episode_ordinal)
+    .map((meta) => {
       return {
-        id: m.episode_id,
-        ordinal: m.episode_ordinal,
+        id: meta.episode_id,
+        ordinal: meta.episode_ordinal,
         duration: 1440,
-        hls_1080: stream,
-        hls_720: stream,
-        hls_480: stream,
-        opening: {
-          start: m.opening_start,
-          stop: m.opening_stop,
-        },
-        ending: {
-          start: m.ending_start,
-          stop: m.ending_stop,
-        },
+        hls_1080: meta.file_path,
+        hls_720: meta.file_path,
+        hls_480: meta.file_path,
+        opening: { start: meta.opening_start, stop: meta.opening_stop },
+        ending: { start: meta.ending_start, stop: meta.ending_stop },
       };
-    }),
-  );
-
-  const episodes: EpisodeItem[] = [];
-  const failed: DownloadedEpisodeMeta[] = [];
-  settled.forEach((result, index) => {
-    if (result.status === "fulfilled") episodes.push(result.value);
-    else failed.push(ordered[index]);
-  });
-  return { episodes, failed };
+    });
 }
 
 export function DownloadsView() {
   const { latestReleases, bookmarks, history, setActiveScreen } = useCatalogStore();
   const {
     downloadedEpisodes,
-    unsupportedFiles,
     fetchDownloadedEpisodes,
     deleteDownloadedEpisode,
     openDownloadsFolder,
@@ -307,16 +211,6 @@ export function DownloadsView() {
 
   const totalSize = downloadedEpisodes.reduce((acc, curr) => acc + curr.file_size, 0);
 
-  const unsupportedByRelease = useMemo(() => {
-    const map = new Map<number, UnsupportedTorrentFile[]>();
-    for (const file of unsupportedFiles) {
-      const list = map.get(file.release_id) || [];
-      list.push(file);
-      map.set(file.release_id, list);
-    }
-    return map;
-  }, [unsupportedFiles]);
-
   // Cached release finder
   const findRelease = (releaseId: number): Release | null => {
     const inLatest = latestReleases.find((r) => r.id === releaseId);
@@ -334,22 +228,10 @@ export function DownloadsView() {
     return null;
   };
 
-  const handlePlayOffline = async (meta: DownloadedEpisodeMeta, foundRel: Release | null) => {
-    const releaseEpisodesMeta = groupedByRelease.get(meta.release_id) || [meta];
-    const { episodes: offlineEpisodes, failed } = await buildOfflineEpisodes(releaseEpisodesMeta);
-
-    const currentEpisode = offlineEpisodes.find((e) => e.id === meta.episode_id);
-    if (!currentEpisode) {
-      // A payload the backend refuses to prepare has to say so: opening the player
-      // on it would show a black frame instead of an answer.
-      window.alert(`Не удалось открыть эту серию: ${failed[0]?.file_path ?? meta.file_path}`);
-      return;
-    }
-    if (failed.length > 0) {
-      window.alert(
-        `Не удалось подготовить к воспроизведению: ${failed.map((f) => f.file_path).join(", ")}`,
-      );
-    }
+  const handlePlayOffline = (meta: DownloadedEpisodeMeta, foundRel: Release | null) => {
+    const offlineEpisodes = buildOfflineEpisodes(groupedByRelease.get(meta.release_id) || [meta]);
+    const currentEpisode = offlineEpisodes.find((episode) => episode.id === meta.episode_id);
+    if (!currentEpisode) return;
 
     const fallbackRelease: Release = {
       ...(foundRel || {
@@ -396,7 +278,7 @@ export function DownloadsView() {
       </div>
 
       {/* Content / Groups */}
-      {groupedByRelease.size === 0 && unsupportedByRelease.size === 0 ? (
+      {groupedByRelease.size === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center rounded-2xl border border-white/5 bg-white/[0.02]">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 text-slate-500 mb-4">
             <FolderDown className="h-8 w-8" />
@@ -421,15 +303,6 @@ export function DownloadsView() {
               onPlay={handlePlayOffline}
               onDelete={deleteDownloadedEpisode}
               onOpenFolder={openDownloadsFolder}
-            />
-          ))}
-          {Array.from(unsupportedByRelease.entries()).map(([releaseId, files]) => (
-            <UnsupportedFilesCard
-              key={`unsupported-${releaseId}`}
-              releaseId={releaseId}
-              title={findRelease(releaseId)?.name?.main || `Аниме #${releaseId}`}
-              files={files}
-              onOpenFolder={(id) => openDownloadsFolder(id, true)}
             />
           ))}
         </div>

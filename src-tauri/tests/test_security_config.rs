@@ -10,7 +10,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
-use tauri_utils::config::{Config, Csp, CspDirectiveSources, FsScope};
+use tauri_utils::config::{Config, Csp, CspDirectiveSources};
 
 fn app_config() -> Config {
     let path = Path::new("tauri.conf.json");
@@ -48,13 +48,6 @@ fn sources(map: &HashMap<String, CspDirectiveSources>, directive: &str) -> Vec<S
         .unwrap_or_default()
 }
 
-fn normalized_paths(paths: &[std::path::PathBuf]) -> Vec<String> {
-    paths
-        .iter()
-        .map(|path| path.to_string_lossy().replace('\\', "/"))
-        .collect()
-}
-
 fn assert_contains(map: &HashMap<String, CspDirectiveSources>, directive: &str, wanted: &[&str]) {
     let present = match map.get(directive) {
         Some(directive) => Vec::from(directive.clone()),
@@ -78,12 +71,10 @@ fn assert_excludes(map: &HashMap<String, CspDirectiveSources>, directive: &str, 
     }
 }
 
-/// Origins playback needs in any environment: the API hands out HLS playlists and
-/// posters for whatever host serves them, hls.js attaches a MediaSource blob to
-/// `<video>`, a downloaded episode is fetched over the asset protocol, and a remuxed
-/// Matroska episode arrives over the remux protocol.
-const PLAYBACK_SOURCES: &[&str] = &[
-    "https:",
+/// Origins media used to need in the WebView player. mpv is the only backend now
+/// ([ADR 0010]), so none of them may appear in the shipped policy any more: the
+/// webview must not be able to load media at all.
+const FORBIDDEN_MEDIA_SOURCES: &[&str] = &[
     "blob:",
     "asset:",
     "http://asset.localhost",
@@ -126,21 +117,18 @@ fn production_policy_allows_the_ipc_origins() {
 }
 
 #[test]
-fn production_policy_allows_hls_playback_and_image_loading() {
+fn production_policy_loads_no_media_into_the_webview() {
     let map = production();
 
     assert_contains(&map, "connect-src", &["'self'", "https:"]);
-    assert_contains(&map, "media-src", PLAYBACK_SOURCES);
+    // mpv fetches and decodes everything outside the webview; the page itself
+    // must not be able to attach media of any origin, local or remote.
+    assert_contains(&map, "media-src", &["'none'"]);
+    assert_excludes(&map, "media-src", FORBIDDEN_MEDIA_SOURCES);
     // Posters are remote or inline placeholders; local files never reach an <img>.
     assert_contains(&map, "img-src", &["'self'", "https:", "data:"]);
     assert_excludes(&map, "img-src", &["http:", "asset:"]);
-    // hls.js demuxes in a blob-backed worker and fetches segments itself.
-    assert_contains(&map, "worker-src", &["blob:"]);
-    assert_contains(&map, "connect-src", &["asset:", "http://asset.localhost"]);
-    // The remux protocol is for the media element and nothing else. Page script must
-    // not be able to fetch it, which would hand any injected code a byte-range
-    // reader over the torrent library.
-    assert_excludes(&map, "connect-src", &["http://remux.localhost"]);
+    assert_excludes(&map, "connect-src", FORBIDDEN_MEDIA_SOURCES);
 }
 
 #[test]
@@ -197,36 +185,18 @@ fn development_and_production_policies_differ_only_where_the_dev_server_needs_it
     }
 }
 
-/// A downloaded episode reaches the webview only through the asset protocol,
-/// whose scope is the second half of the protection: an enabled protocol with
-/// a wide scope would expose every file on disk. The downloads folder lives
-/// next to the executable, which `$RESOURCE` resolves to on Windows; `$EXE`
-/// cannot be used there because `dirs::executable_dir()` returns `None`.
+/// The webview has no media surface to protect: downloaded episodes are opened by
+/// path inside the Rust player supervisor, which confines them to `downloads/`.
+/// The asset protocol therefore must stay off — an enabled protocol would hand the
+/// page a file reader the backend already gates.
 #[test]
-fn asset_protocol_is_enabled_and_confined_to_downloads() {
+fn asset_protocol_is_disabled_and_media_stays_native() {
     let config = app_config();
-    let asset = config.app.security.asset_protocol;
     assert!(
-        asset.enable,
-        "the asset protocol must be enabled for offline playback"
+        !config.app.security.asset_protocol.enable,
+        "the asset protocol must be disabled now that mpv is the only backend"
     );
-
-    let (allowed, forbidden) = match asset.scope {
-        FsScope::AllowedPaths(paths) => (paths, Vec::new()),
-        FsScope::Scope { allow, deny, .. } => (allow, deny),
-    };
-    let allowed = normalized_paths(&allowed);
-    let forbidden = normalized_paths(&forbidden);
-
-    assert!(
-        forbidden.is_empty(),
-        "the asset protocol scope must not carve out denials: {forbidden:?}"
-    );
-    assert_eq!(
-        allowed,
-        vec!["$RESOURCE/downloads/**"],
-        "the asset protocol must expose exactly the downloads folder"
-    );
+    assert_contains(&development(), "media-src", &["'none'"]);
 }
 
 #[test]

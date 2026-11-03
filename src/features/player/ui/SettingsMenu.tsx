@@ -25,7 +25,16 @@ export function SettingsMenu({
     setAutoSkipOpEd,
     autoplayNext,
     setAutoplayNext,
+    hardwareDecoder,
   } = usePlayerStore();
+
+  const upscalerHint = !anime4kEnabled
+    ? "Выключен"
+    : hardwareDecoder == null
+      ? "Включен"
+      : hardwareDecoder
+        ? "Включен · аппаратный декодер"
+        : "Включен · софт-декод: на 4K возможны пропуски кадров";
 
   return (
     <DropdownMenu>
@@ -46,9 +55,7 @@ export function SettingsMenu({
               <Sparkles className="h-3.5 w-3.5" />
               Апскейлер 4K
             </span>
-            <span className="block text-[10px] text-slate-400 mt-0.5">
-              {anime4kEnabled ? "Включен" : "Выключен"}
-            </span>
+            <span className="block text-[10px] text-slate-400 mt-0.5">{upscalerHint}</span>
           </div>
           <Switch
             checked={anime4kEnabled}

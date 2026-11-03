@@ -1,15 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { create } from "zustand";
-import type {
-  DownloadedEpisodeMeta,
-  DownloadProgressEvent,
-  UnsupportedTorrentFile,
-} from "@/shared/types";
+import type { DownloadedEpisodeMeta, DownloadProgressEvent } from "@/shared/types";
 
 interface DownloadState {
   downloadedEpisodes: DownloadedEpisodeMeta[];
-  unsupportedFiles: UnsupportedTorrentFile[];
   activeDownloads: Record<string, DownloadProgressEvent>;
   isWidgetExpanded: boolean;
   isWidgetVisible: boolean;
@@ -57,7 +52,6 @@ interface RawDownloadProgressEvent {
 
 export const useDownloadStore = create<DownloadState>((set, get) => ({
   downloadedEpisodes: [],
-  unsupportedFiles: [],
   activeDownloads: {},
   isWidgetExpanded: true,
   isWidgetVisible: true,
@@ -67,18 +61,8 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
     if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
     set({ isLoading: true });
     try {
-      const [items, unsupported] = await Promise.all([
-        invoke<DownloadedEpisodeMeta[]>("db_get_all_downloaded_episodes"),
-        invoke<UnsupportedTorrentFile[]>("downloader_list_unsupported_files").catch((err) => {
-          console.error("Failed to list unsupported torrent files:", err);
-          return [] as UnsupportedTorrentFile[];
-        }),
-      ]);
-      set({
-        downloadedEpisodes: items || [],
-        unsupportedFiles: unsupported || [],
-        isLoading: false,
-      });
+      const items = await invoke<DownloadedEpisodeMeta[]>("db_get_all_downloaded_episodes");
+      set({ downloadedEpisodes: items || [], isLoading: false });
     } catch (err) {
       console.error("Failed to fetch downloaded episodes:", err);
       set({ isLoading: false });
