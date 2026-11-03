@@ -16,7 +16,7 @@
 
 const PLAYER_COMMAND_SOURCE: &str = include_str!("../src/commands/player.rs");
 
-/// `(command name, whether it can run on the main thread)` for every declared command.
+/// `(command name, whether it is dispatched off the main thread)` for every declared command.
 fn declared_commands() -> Vec<(String, bool)> {
     let mut commands = Vec::new();
     let mut annotated_async = false;
@@ -30,6 +30,9 @@ fn declared_commands() -> Vec<(String, bool)> {
             continue;
         };
         let is_async_fn = rest.starts_with("async fn ");
+        if !is_async_fn && !rest.starts_with("fn ") {
+            continue;
+        }
         let name = rest
             .trim_start_matches("async fn ")
             .trim_start_matches("fn ")
@@ -61,6 +64,31 @@ fn all_player_commands_are_covered() {
             "{expected} is not parsed as a command"
         );
     }
+}
+
+/// The window-event path also runs on the main thread, so it must not wait on the session
+/// mutex either — `open()` holds that mutex across window calls the event loop services.
+#[test]
+fn the_window_event_path_never_waits_on_the_session_mutex() {
+    let supervisor = include_str!("../src/player/supervisor.rs");
+    let body = supervisor
+        .split("pub fn sync_geometry(&self, main: &WebviewWindow) {")
+        .last()
+        .expect("sync_geometry must exist")
+        .split(
+            "
+    }",
+        )
+        .next()
+        .expect("sync_geometry body");
+    assert!(
+        body.contains("try_lock"),
+        "sync_geometry must use try_lock: blocking here deadlocks against open()"
+    );
+    assert!(
+        !body.contains("self.lock()"),
+        "sync_geometry must not take the blocking session lock"
+    );
 }
 
 #[test]
