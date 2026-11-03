@@ -8,7 +8,10 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tauri::{AppHandle, Emitter, Manager, WebviewWindow, Window, WindowBuilder, WindowEvent};
+use tauri::{
+    AppHandle, Emitter, Manager, PhysicalPosition, Position, WebviewWindow, Window, WindowBuilder,
+    WindowEvent,
+};
 
 use super::{Anime4kPreset, PlaybackEvents, PlayerEvent};
 
@@ -295,11 +298,24 @@ impl MpvSupervisor {
         validate_playback_source(&self.app_dir, source)
     }
 
+    /// Lays the video window's client area exactly over the main window's client area.
+    ///
+    /// `inner_position` reports the client area, but `set_position` moves the window frame,
+    /// and the borderless video window still carries a thin sizing border (8 px at left and
+    /// right, 8 px at the bottom on this machine). Without correcting for that inset the
+    /// mpv frame sits a few pixels right of the transparent hole it is meant to fill.
     fn sync_window(&self, main: &WebviewWindow, video: &Window) -> Result<(), String> {
-        let position = main.inner_position().map_err(|e| e.to_string())?;
+        let target = main.inner_position().map_err(|e| e.to_string())?;
         let size = main.inner_size().map_err(|e| e.to_string())?;
-        video.set_position(position).map_err(|e| e.to_string())?;
-        video.set_size(size).map_err(|e| e.to_string())
+        video.set_size(size).map_err(|e| e.to_string())?;
+        let inner = video.inner_position().map_err(|e| e.to_string())?;
+        let outer = video.outer_position().map_err(|e| e.to_string())?;
+        video
+            .set_position(Position::Physical(PhysicalPosition::new(
+                target.x - (inner.x - outer.x),
+                target.y - (inner.y - outer.y),
+            )))
+            .map_err(|e| e.to_string())
     }
 
     fn with_session(
