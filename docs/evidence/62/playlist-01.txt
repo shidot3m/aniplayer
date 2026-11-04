@@ -1,0 +1,1 @@
+﻿{"playlist":"1/720/9a834235125896cf518ddfa8850fc336.m3u8","status":200,"targetduration":12,"segments":138,"shortest":3.086622,"longest":11.761756,"median":10.01,"totalSeconds":1375}

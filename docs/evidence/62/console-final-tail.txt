@@ -1,0 +1,43 @@
+﻿23:18:52 exception OperationError: Failed to execute 'copyExternalImageToTexture' on 'GPUQueue': Failed to import texture from video element that doesn't have back resource.
+    at s.renderFrame (http://tauri.localhost/assets/anime4kRenderer-D8UqSExe.js:30359:2500)
+    at checkFrame (http://tauri.localhost/assets/anime4kRenderer-D8UqSExe.js:30359:2026)
+22:42:03 info intervention :: Images loaded lazily and replaced with placeholders. Load events are deferred. See https://go.microsoft.com/fwlink/?linkid=2048113
+22:42:15 warning rendering :: CopyExternalImageToTexture(): Browser fails extracting valid resourcefrom external image. This API call will return early.
+22:43:47 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:43:48 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:43:50 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:20 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:21 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:24 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:39 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:40 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:42 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:45 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:46 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:44:48 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:46:17 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:46:18 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:46:21 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:08 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:09 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:11 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:18 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:20 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:22 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:25 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:26 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:47:27 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:48:23 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:48:24 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:48:27 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:48:59 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:01 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:03 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:12 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:13 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:16 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:19 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:20 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:22 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:24 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED
+22:49:27 error network :: Failed to load resource: net::ERR_CONNECTION_REFUSED

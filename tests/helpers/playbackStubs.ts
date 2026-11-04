@@ -17,15 +17,22 @@ class FakeHls {
   static readonly instances: FakeHls[] = [];
   static readonly Events = {
     MANIFEST_PARSED: "hlsManifestParsed",
+    FRAG_LOADED: "hlsFragLoaded",
     ERROR: "hlsError",
   };
   static readonly ErrorTypes = {
     NETWORK_ERROR: "networkError",
     MEDIA_ERROR: "mediaError",
   };
+  static readonly ErrorDetails = {
+    FRAG_LOAD_ERROR: "fragLoadError",
+    FRAG_LOAD_TIMEOUT: "fragLoadTimeout",
+  };
   static isSupported = vi.fn(() => true);
 
   readonly handlers = new Map<string, Set<Handler>>();
+  /** What the player feature asked the library to do, captured at the constructor seam. */
+  readonly config: Record<string, unknown>;
   media: HTMLVideoElement | null = null;
   loadedSource: string | null = null;
   readonly attachMedia = vi.fn((media: HTMLVideoElement) => {
@@ -45,7 +52,8 @@ class FakeHls {
     if (index >= 0) FakeHls.instances.splice(index, 1);
   });
 
-  constructor() {
+  constructor(config: Record<string, unknown> = {}) {
+    this.config = config;
     FakeHls.instances.push(this);
   }
 
@@ -93,6 +101,17 @@ export function setMediaDuration(seconds: number): void {
 /** `HAVE_NOTHING` until media arrives, `HAVE_FUTURE_DATA` once it can keep playing. */
 export function setMediaReadyState(state: number): void {
   fakeReadyState = state;
+}
+
+/** The one buffered range the fake element reports: `[start, end]`, or none when `null`. */
+export function setMediaBuffered(range: [number, number] | null): void {
+  Object.defineProperty(HTMLMediaElement.prototype, "buffered", {
+    configurable: true,
+    get() {
+      if (!range) return { length: 0, start: () => 0, end: () => 0 };
+      return { length: 1, start: () => range[0], end: () => range[1] };
+    },
+  });
 }
 
 export function installMediaElementStub(): void {

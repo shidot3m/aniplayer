@@ -1,0 +1,49 @@
+﻿     3s REQ    https://cache-rfn.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00076.ts
+     3s REDIR  -> https://cache1.cache-ru2.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00076.ts?core=cache7.libria.fun&expires=1793816984&extra=zz5HmJ9pmIL44zFAGVfkBQ [302] Location=https://cache1.cache-ru2.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00076.ts?core=cache7.libria.fun&expires=1793816984&extra=zz5HmJ9pmIL44zFAGVfkBQ
+     3s RESP   https://cache1.cache-ru2.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00076.ts?core=cache7.libria.fun&expires=1793816984&extra=zz5HmJ9pmIL44zFAGVfkBQ [200]
+     5s REQ    http://ipc.localhost/db_save_history
+     5s REQ    http://ipc.localhost/db_save_history
+     5s RESP   http://ipc.localhost/db_save_history [200]
+     5s RESP   http://ipc.localhost/db_save_history [200]
+     7s REQ    http://ipc.localhost/db_save_history
+     9s RESP   http://ipc.localhost/db_save_history [200]
+    13s REQ    http://ipc.localhost/db_save_history
+    13s REQ    http://ipc.localhost/db_save_history
+    13s RESP   http://ipc.localhost/db_save_history [200]
+    13s RESP   http://ipc.localhost/db_save_history [200]
+    13s REQ    https://cache-rfn.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00077.ts
+    13s REDIR  -> https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00077.ts?core=cache7.libria.fun&expires=1793816995&extra=Ofy5jMHNoJ23tlqT1e-U9A [302] Location=https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00077.ts?core=cache7.libria.fun&expires=1793816995&extra=Ofy5jMHNoJ23tlqT1e-U9A
+    13s RESP   https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00077.ts?core=cache7.libria.fun&expires=1793816995&extra=Ofy5jMHNoJ23tlqT1e-U9A [200]
+    15s REQ    http://ipc.localhost/db_save_history
+    15s RESP   http://ipc.localhost/db_save_history [200]
+    21s REQ    http://ipc.localhost/db_save_history
+    21s REQ    http://ipc.localhost/db_save_history
+    21s RESP   http://ipc.localhost/db_save_history [200]
+    21s RESP   http://ipc.localhost/db_save_history [200]
+    21s REQ    https://cache-rfn.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00078.ts
+    24s REDIR  -> https://cache1.cache-ru1.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00078.ts?core=cache1.libria.fun&expires=1793817004&extra=pjrkKr23snbVypej6gx76w [302] Location=https://cache1.cache-ru1.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00078.ts?core=cache1.libria.fun&expires=1793817004&extra=pjrkKr23snbVypej6gx76w
+    24s RESP   https://cache1.cache-ru1.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00078.ts?core=cache1.libria.fun&expires=1793817004&extra=pjrkKr23snbVypej6gx76w [200]
+    26s REQ    http://ipc.localhost/db_save_history
+    26s RESP   http://ipc.localhost/db_save_history [200]
+    28s REQ    http://ipc.localhost/db_save_history
+    28s REQ    http://ipc.localhost/db_save_history
+    28s RESP   http://ipc.localhost/db_save_history [200]
+    28s RESP   http://ipc.localhost/db_save_history [200]
+    34s REQ    https://cache-rfn.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00079.ts
+    34s REDIR  -> https://cache2.cache-ru1.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00079.ts?core=cache6.libria.fun&expires=1793817015&extra=JtcdcKSy5NtdkJp26NhexA [302] Location=https://cache2.cache-ru1.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00079.ts?core=cache6.libria.fun&expires=1793817015&extra=JtcdcKSy5NtdkJp26NhexA
+    34s REQ    http://ipc.localhost/db_save_history
+    34s RESP   https://cache2.cache-ru1.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00079.ts?core=cache6.libria.fun&expires=1793817015&extra=JtcdcKSy5NtdkJp26NhexA [200]
+    34s RESP   http://ipc.localhost/db_save_history [200]
+    39s REQ    http://ipc.localhost/db_save_history
+    39s REQ    http://ipc.localhost/db_save_history
+    39s RESP   http://ipc.localhost/db_save_history [200]
+    39s RESP   http://ipc.localhost/db_save_history [200]
+    43s REQ    http://ipc.localhost/db_save_history
+    43s RESP   http://ipc.localhost/db_save_history [200]
+    43s REQ    https://cache-rfn.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00080.ts
+    43s REDIR  -> https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00080.ts?core=cache6.libria.fun&expires=1793817024&extra=tj1bEdsBbEtZL-mvWB_gSg [302] Location=https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00080.ts?core=cache6.libria.fun&expires=1793817024&extra=tj1bEdsBbEtZL-mvWB_gSg
+    43s RESP   https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/1/720/9a834235125896cf518ddfa8850fc336_00080.ts?core=cache6.libria.fun&expires=1793817024&extra=tj1bEdsBbEtZL-mvWB_gSg [200]
+    45s REQ    http://ipc.localhost/db_save_history
+    45s REQ    http://ipc.localhost/db_save_history
+    45s RESP   http://ipc.localhost/db_save_history [200]
+    45s RESP   http://ipc.localhost/db_save_history [200]

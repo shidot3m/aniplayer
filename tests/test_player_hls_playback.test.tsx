@@ -1,7 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { playback } from "@/features/player/renderer/playbackSession";
 import { usePlayerStore } from "@/features/player/state/playerStore";
 import { PlayerOverlay } from "@/features/player/ui/PlayerOverlay";
 import type { EpisodeItem, Release } from "@/shared/types";
@@ -13,6 +12,7 @@ import {
   setMediaDuration,
   setMediaReadyState,
 } from "./helpers/playbackStubs";
+import { closePlayerShell } from "./helpers/playerShell";
 
 const tauri = vi.hoisted(() => ({ invoke: vi.fn() }));
 
@@ -95,7 +95,6 @@ async function whenReady(video: HTMLVideoElement): Promise<void> {
 
 describe("WebView playback", () => {
   beforeEach(() => {
-    playback.close();
     resetHlsStub();
     installMediaElementStub();
     setMediaDuration(1440);
@@ -103,24 +102,7 @@ describe("WebView playback", () => {
     tauri.invoke.mockReset();
     resolveSources();
     (window as unknown as { __TAURI_INTERNALS__: unknown }).__TAURI_INTERNALS__ = {};
-    usePlayerStore.setState({
-      isPlayerOpen: false,
-      isPlaying: false,
-      currentTime: 0,
-      duration: 0,
-      volume: 80,
-      isMuted: false,
-      speed: 1,
-      anime4kEnabled: false,
-      anime4kPreset: "Mode A (HQ)",
-      preferredQuality: "1080p",
-      activeQuality: "1080p",
-      autoplayNext: false,
-      autoSkipOpEd: false,
-      playbackError: null,
-      currentRelease: null,
-      currentEpisode: null,
-    });
+    closePlayerShell();
   });
 
   it("plays a stream in the application window, with no second surface to stack", async () => {
@@ -231,21 +213,6 @@ describe("WebView playback", () => {
     expect(screen.getByText("Этот поток не декодируется на машине")).toBeDefined();
     expect(usePlayerStore.getState().isPlaying).toBe(false);
     expect(session.destroy).toHaveBeenCalledOnce();
-  });
-
-  it("reports a fatal network error as an explained fault instead of a black frame", async () => {
-    await openPlayer();
-
-    act(() => {
-      (activeSession() as FakeHls).emit(FakeHls.Events.ERROR, {
-        type: FakeHls.ErrorTypes.NETWORK_ERROR,
-        fatal: true,
-      });
-    });
-    await act(async () => {});
-
-    expect(screen.getByText("Не удалось загрузить поток: сеть не отвечает")).toBeDefined();
-    expect(screen.getByText("Не удалось воспроизвести эпизод")).toBeDefined();
   });
 
   it("carries the element's position and ending into the store and the next Episode", async () => {

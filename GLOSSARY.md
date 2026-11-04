@@ -106,6 +106,10 @@ _Avoid_: npm, npx, node, package runner
 The app's only playback path: a `<video>` element inside the main window, fed by hls.js through Media Source Extensions, drawing the frame under the React controls. Every source — online HLS, Offline playlist, downloaded file — reaches that element.
 _Avoid_: native playback, mpv, external player
 
+**Retry walk**:
+The session's own bounded answer to a CDN backend that stopped answering: after its count of failed segments is spent and the element has run out of buffered media, the playhead moves one segment past the hole, one segment further each step, until the walk itself runs out and the fault is explained. Steps are never taken while watchable media is still buffered, so a dead host costs its own segment and nothing else.
+_Avoid_: retry loop, infinite backoff, stall
+
 **Playable source**:
 The URL Rust hands the media element for an Episode source, and the only way a stored path reaches it: a re-parsed `http(s)` URL, or the asset URL of a canonical file inside the downloads folder.
 _Avoid_: file path, source string

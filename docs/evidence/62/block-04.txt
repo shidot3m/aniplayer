@@ -1,0 +1,106 @@
+﻿     2s PLAY   currentTime=196,9 readyState=4 paused=False bufferEnd=230 blocked=0 failed=0 answered=0
+     4s PLAY   currentTime=199 readyState=4 paused=False bufferEnd=230 blocked=0 failed=0 answered=0
+     6s BLOCK  
+     6s PLAY   currentTime=201 readyState=4 paused=False bufferEnd=230 blocked=1 failed=0 answered=0
+     8s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+     8s BLOCK  
+     8s PLAY   currentTime=203,1 readyState=4 paused=False bufferEnd=230 blocked=2 failed=1 answered=0
+    13s CLICK  pause click -> paused=True, second click -> paused=False
+    15s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    15s BLOCK  
+    15s PLAY   currentTime=207,6 readyState=4 paused=False bufferEnd=230 blocked=3 failed=2 answered=0
+    17s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    17s BLOCK  
+    17s PLAY   currentTime=209,7 readyState=4 paused=False bufferEnd=230 blocked=4 failed=3 answered=0
+    19s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    19s BLOCK  
+    19s PLAY   currentTime=211,8 readyState=4 paused=False bufferEnd=230 blocked=5 failed=4 answered=0
+    22s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    22s BLOCK  
+    22s PLAY   currentTime=213,9 readyState=4 paused=False bufferEnd=230 blocked=6 failed=5 answered=0
+    24s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    24s PLAY   currentTime=215,9 readyState=4 paused=False bufferEnd=230 blocked=6 failed=6 answered=0
+    26s BLOCK  
+    26s PLAY   currentTime=218 readyState=4 paused=False bufferEnd=230 blocked=7 failed=6 answered=0
+    28s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    28s BLOCK  
+    28s PLAY   currentTime=220,1 readyState=4 paused=False bufferEnd=230 blocked=8 failed=7 answered=0
+    30s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    30s BLOCK  
+    30s PLAY   currentTime=222,2 readyState=4 paused=False bufferEnd=230 blocked=9 failed=8 answered=0
+    32s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    32s PLAY   currentTime=224,2 readyState=4 paused=False bufferEnd=230 blocked=9 failed=9 answered=0
+    34s PLAY   currentTime=226,3 readyState=4 paused=False bufferEnd=230 blocked=9 failed=9 answered=0
+    36s PLAY   currentTime=228,3 readyState=4 paused=False bufferEnd=230 blocked=9 failed=9 answered=0
+    38s BLOCK  
+    38s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=10 failed=9 answered=0
+    40s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    40s BLOCK  
+    40s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=11 failed=10 answered=0
+    42s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    42s BLOCK  
+    42s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=12 failed=11 answered=0
+    44s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    44s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=12 failed=12 answered=0
+    46s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=12 failed=12 answered=0
+    48s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=12 failed=12 answered=0
+    50s BLOCK  
+    50s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=13 failed=12 answered=0
+    52s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    52s BLOCK  
+    52s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=14 failed=13 answered=0
+    54s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    54s BLOCK  
+    55s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=15 failed=14 answered=0
+    57s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    57s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=15 failed=15 answered=0
+    59s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=15 failed=15 answered=0
+    61s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=15 failed=15 answered=0
+    63s BLOCK  
+    63s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=16 failed=15 answered=0
+    65s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    65s BLOCK  
+    65s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=17 failed=16 answered=0
+    67s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    67s BLOCK  
+    67s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=18 failed=17 answered=0
+    69s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    69s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=18 failed=18 answered=0
+    71s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=18 failed=18 answered=0
+    73s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=18 failed=18 answered=0
+    75s BLOCK  
+    75s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=19 failed=18 answered=0
+    77s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    77s BLOCK  
+    77s PLAY   currentTime=230,1 readyState=2 paused=False bufferEnd=230 blocked=20 failed=19 answered=0
+    79s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    79s BLOCK  
+    79s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=20 answered=0
+    81s FAIL   net::ERR_CONNECTION_REFUSED 'XHR'
+    81s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    83s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    85s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    87s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    89s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    91s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    93s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    95s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    97s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+    99s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   101s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   103s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   105s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   107s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   109s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   111s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   113s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   115s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   118s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   120s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
+   122s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=21 failed=21 answered=0
++1s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++2s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++3s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++4s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++5s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++6s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0

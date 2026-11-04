@@ -1,0 +1,52 @@
+﻿{
+ "playlist": "2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67.m3u8?countryIso=RU&isAuthorized=0&isWithVideoAds=1&isWithVideoAdsAlways=1",
+ "distinctBackends": [
+  "cache1.cache-ru3.libria.fun",
+  "cache2.cache-ru3.libria.fun",
+  "cache2.cache-ru1.libria.fun",
+  "cache1.cache-ru2.libria.fun",
+  "cache1.cache-ru1.libria.fun"
+ ],
+ "perSegment": {
+  "f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00000.ts": [
+   "cache1.cache-ru3.libria.fun",
+   "cache1.cache-ru3.libria.fun",
+   "cache1.cache-ru3.libria.fun"
+  ],
+  "f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00001.ts": [
+   "cache2.cache-ru3.libria.fun",
+   "cache2.cache-ru3.libria.fun",
+   "cache2.cache-ru3.libria.fun"
+  ],
+  "f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00002.ts": [
+   "cache2.cache-ru3.libria.fun",
+   "cache2.cache-ru3.libria.fun",
+   "cache2.cache-ru3.libria.fun"
+  ],
+  "f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00003.ts": [
+   "cache2.cache-ru1.libria.fun",
+   "cache2.cache-ru1.libria.fun",
+   "cache2.cache-ru1.libria.fun"
+  ],
+  "f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00004.ts": [
+   "cache2.cache-ru1.libria.fun",
+   "cache2.cache-ru1.libria.fun",
+   "cache2.cache-ru1.libria.fun"
+  ],
+  "f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00005.ts": [
+   "cache1.cache-ru2.libria.fun",
+   "cache1.cache-ru2.libria.fun",
+   "cache1.cache-ru2.libria.fun"
+  ],
+  "f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00006.ts": [
+   "cache2.cache-ru3.libria.fun",
+   "cache2.cache-ru3.libria.fun",
+   "cache2.cache-ru3.libria.fun"
+  ],
+  "f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00007.ts": [
+   "cache1.cache-ru1.libria.fun",
+   "cache1.cache-ru1.libria.fun",
+   "cache1.cache-ru1.libria.fun"
+  ]
+ }
+}

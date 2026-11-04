@@ -1,0 +1,153 @@
+﻿     1s PLAY   currentTime=332,7 readyState=4 paused=False bufferEnd=371 blocked=0 failed=0 answered=0
+     2s PLAY   currentTime=333,8 readyState=4 paused=False bufferEnd=371 blocked=0 failed=0 answered=0
+     3s PLAY   currentTime=334,8 readyState=4 paused=False bufferEnd=371 blocked=0 failed=0 answered=0
+     4s PLAY   currentTime=335,8 readyState=4 paused=False bufferEnd=371 blocked=0 failed=0 answered=0
+     5s PLAY   currentTime=336,8 readyState=4 paused=False bufferEnd=371 blocked=0 failed=0 answered=0
+     6s PLAY   currentTime=337,9 readyState=4 paused=False bufferEnd=371 blocked=0 failed=0 answered=0
+     7s PLAY   currentTime=338,9 readyState=4 paused=False bufferEnd=371 blocked=0 failed=0 answered=0
+     8s PLAY   currentTime=339,9 readyState=4 paused=False bufferEnd=371 blocked=0 failed=0 answered=0
+    13s CLICK  pause click -> paused=True, second click -> paused=False
+    14s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818733&extra=4hIivCz8xFceTt5CWHUGuA
+    14s PLAY   currentTime=343,5 readyState=4 paused=False bufferEnd=371 blocked=1 failed=0 answered=0
+    15s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    15s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818736&extra=zJu33eOE9Jwg_HodW1RcRw
+    15s PLAY   currentTime=344,6 readyState=4 paused=False bufferEnd=371 blocked=2 failed=1 answered=0
+    16s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    16s PLAY   currentTime=345,6 readyState=4 paused=False bufferEnd=371 blocked=2 failed=2 answered=0
+    18s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818738&extra=HCIzSorQUWaAbim3aNITRA
+    18s PLAY   currentTime=346,7 readyState=4 paused=False bufferEnd=371 blocked=3 failed=2 answered=0
+    19s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    19s PLAY   currentTime=347,7 readyState=4 paused=False bufferEnd=371 blocked=3 failed=3 answered=0
+    20s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818741&extra=_vMM7wIvWbAt9KbJ0tTU3Q
+    20s PLAY   currentTime=348,8 readyState=4 paused=False bufferEnd=371 blocked=4 failed=3 answered=0
+    21s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    21s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818741&extra=_vMM7wIvWbAt9KbJ0tTU3Q
+    21s PLAY   currentTime=349,9 readyState=4 paused=False bufferEnd=371 blocked=5 failed=4 answered=0
+    22s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    22s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818743&extra=88KxQwdhbXrF-Cu5KtBS-w
+    22s PLAY   currentTime=350,9 readyState=4 paused=False bufferEnd=371 blocked=6 failed=5 answered=0
+    23s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    23s PLAY   currentTime=351,9 readyState=4 paused=False bufferEnd=371 blocked=6 failed=6 answered=0
+    24s PLAY   currentTime=353 readyState=4 paused=False bufferEnd=371 blocked=6 failed=6 answered=0
+    25s PLAY   currentTime=354 readyState=4 paused=False bufferEnd=371 blocked=6 failed=6 answered=0
+    26s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818747&extra=IELqLg4i-nC6lgMFPqtVpw
+    26s PLAY   currentTime=355,1 readyState=4 paused=False bufferEnd=371 blocked=7 failed=6 answered=0
+    27s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    27s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818748&extra=2cRHBu-6lFpAS-k6ZkTfOg
+    27s PLAY   currentTime=356,2 readyState=4 paused=False bufferEnd=371 blocked=8 failed=7 answered=0
+    28s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    28s PLAY   currentTime=357,3 readyState=4 paused=False bufferEnd=371 blocked=8 failed=8 answered=0
+    29s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818749&extra=M0FF6iBmuJHGBJwU8MByQg
+    29s PLAY   currentTime=358,3 readyState=4 paused=False bufferEnd=371 blocked=9 failed=8 answered=0
+    30s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    30s PLAY   currentTime=359,4 readyState=4 paused=False bufferEnd=371 blocked=9 failed=9 answered=0
+    31s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818752&extra=BhmnyrX-86eZX5q5FqnCTA
+    31s PLAY   currentTime=360,4 readyState=4 paused=False bufferEnd=371 blocked=10 failed=9 answered=0
+    32s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    32s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818753&extra=x5j87qlcL5aOY6Htr1oKpQ
+    32s PLAY   currentTime=361,5 readyState=4 paused=False bufferEnd=371 blocked=11 failed=10 answered=0
+    33s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    33s PLAY   currentTime=362,5 readyState=4 paused=False bufferEnd=371 blocked=11 failed=11 answered=0
+    34s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818755&extra=YB1ngTdcRMk0MEXEwlR91g
+    34s PLAY   currentTime=363,6 readyState=4 paused=False bufferEnd=371 blocked=12 failed=11 answered=0
+    35s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    35s PLAY   currentTime=364,6 readyState=4 paused=False bufferEnd=371 blocked=12 failed=12 answered=0
+    37s PLAY   currentTime=365,7 readyState=4 paused=False bufferEnd=371 blocked=12 failed=12 answered=0
+    38s PLAY   currentTime=366,7 readyState=4 paused=False bufferEnd=371 blocked=12 failed=12 answered=0
+    39s PLAY   currentTime=367,7 readyState=4 paused=False bufferEnd=371 blocked=12 failed=12 answered=0
+    40s PLAY   currentTime=368,8 readyState=4 paused=False bufferEnd=371 blocked=12 failed=12 answered=0
+    41s PLAY   currentTime=369,8 readyState=4 paused=False bufferEnd=371 blocked=12 failed=12 answered=0
+    42s PLAY   currentTime=370,9 readyState=4 paused=False bufferEnd=371 blocked=12 failed=12 answered=0
+    43s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818764&extra=6R3MJa1DDQX0KwLzZIh-mw
+    43s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=13 failed=12 answered=0
+    44s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    44s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818765&extra=BfHz5fswhXSfgqUn_wV3Zg
+    44s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=14 failed=13 answered=0
+    45s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    45s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=14 failed=14 answered=0
+    46s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818766&extra=zulEZtLcplCjIU_dtdCI7A
+    46s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=15 failed=14 answered=0
+    47s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    47s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=15 failed=15 answered=0
+    48s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=15 failed=15 answered=0
+    49s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=15 failed=15 answered=0
+    50s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=15 failed=15 answered=0
+    51s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818772&extra=Wgw4o5BDAFMRPvHEsMBscQ
+    51s PLAY   currentTime=371 readyState=2 paused=False bufferEnd=371 blocked=16 failed=15 answered=0
+    52s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    52s BLOCK  seg-00037  https://cache1.cache-ru3.libria.fun/videos/media/ts/9705/2/720/f2a5f7edcd4f3ccc2e1dc9e89e9eac67_00037.ts?core=cache4.libria.fun&expires=1793818773&extra=GiErlCmb5hCG2DZno1BFuA
+    52s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=16 answered=0
+    53s FAIL   seg-other 'net::ERR_CONNECTION_REFUSED'
+    53s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    54s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    55s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    56s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    57s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    58s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    59s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    60s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    61s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    62s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    63s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    64s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    65s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    67s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    68s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    69s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    70s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    71s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    72s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    73s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    74s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    75s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    76s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    77s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    78s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    79s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    80s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    81s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    82s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    83s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    84s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    85s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    86s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    87s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    88s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    89s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    90s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    91s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    92s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    93s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    94s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    95s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    96s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    97s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    98s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+    99s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   100s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   101s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   102s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   103s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   104s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   105s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   107s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   108s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   109s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   110s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   111s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   112s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   113s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   114s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   115s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   116s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   117s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   118s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   119s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   120s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
+   121s PLAY   currentTime=0 readyState=0 paused=True bufferEnd=0 blocked=17 failed=17 answered=0
++1s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++2s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++3s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++4s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++5s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0
++6s AFTER  currentTime=0 readyState=0 paused=True bufferEnd=0

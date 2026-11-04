@@ -1,0 +1,28 @@
+﻿     0s before {"t":1123.2,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1162,"fault":""}
+     5s play {"t":1128.3,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1162,"fault":""}
+    11s play {"t":1134.5,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1171,"fault":""}
+    17s play {"t":1139.7,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1171,"fault":""}
+    19s RETRY  attempt 1 did not find the quality control
+    23s quality-switch {"t":1146.4,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1171,"fault":""}
+    27s play {"t":1150.5,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1171,"fault":""}
+    33s RETRY  attempt 1 did not find the quality control
+    37s quality-switch {"t":1160.2,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1171,"fault":""}
+    38s play {"t":1161.3,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1171,"fault":""}
+    43s play {"t":1166.4,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1171,"fault":""}
+    46s RETRY  attempt 1 did not find the quality control
+    53s quality-switch {"t":1185.5,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1211,"fault":""}
+    58s play {"t":1190.4,"frame":"1920x1080","readyState":4,"paused":false,"bufferEnd":1211,"fault":""}
+    64s RETRY  attempt 1 did not find the quality control
+    68s quality-switch {"t":1197.9,"frame":"0x0","readyState":0,"paused":true,"bufferEnd":0,"fault":""}
+    68s play {"t":1197.9,"frame":"0x0","readyState":0,"paused":true,"bufferEnd":0,"fault":""}
+    74s play {"t":1209.9,"frame":"0x0","readyState":0,"paused":true,"bufferEnd":0,"fault":""}
+    78s RETRY  attempt 1 did not find the quality control
+    83s quality-switch {"t":1222.6,"frame":"1280x720","readyState":1,"paused":false,"bufferEnd":1211,"fault":""}
+    87s after {"t":1225.6,"frame":"1280x720","readyState":4,"paused":false,"bufferEnd":1262,"fault":""}
+    89s after {"t":1227.7,"frame":"1280x720","readyState":4,"paused":false,"bufferEnd":1262,"fault":""}
+    91s after {"t":1229.7,"frame":"1280x720","readyState":4,"paused":false,"bufferEnd":1262,"fault":""}
+    93s after {"t":1231.7,"frame":"1280x720","readyState":4,"paused":false,"bufferEnd":1262,"fault":""}
+    96s after {"t":1234.4,"frame":"1280x720","readyState":4,"paused":false,"bufferEnd":1270,"fault":""}
+    98s after {"t":1236.5,"frame":"1280x720","readyState":4,"paused":false,"bufferEnd":1270,"fault":""}
+   100s after {"t":1238.5,"frame":"1280x720","readyState":4,"paused":false,"bufferEnd":1270,"fault":""}
+   103s after {"t":1241.8,"frame":"1280x720","readyState":4,"paused":false,"bufferEnd":1282,"fault":""}
