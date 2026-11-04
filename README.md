@@ -72,7 +72,7 @@ python scripts/package_portable.py    # portable-папка: aniplayer.exe + mpv
 
 Релизный workflow скачивает pinned mpv-сборку и сверяет её SHA-256 (`scripts/get_mpv.py`), собирает ту же папку, упаковывает в `Aniplayer-portable.zip` и проверяет наличие `aniplayer.exe`, `mpv/mpv.exe` и Anime4K-шейдеров. Бандлы MSI/NSIS не публикуются.
 
-In-process рантайм (`libmpv-2.dll`) стаджится отдельно: `python scripts/get_libmpv.py <dir>` — pinned-сборка с проверкой SHA-256, кэш в `.cache/`, зеркало в релизе `latest`. Сейчас приложение его не грузит: воспроизведение идёт через `mpv.exe`, а DLL приходит вместе с in-process бэкендом ([#56](https://github.com/shidot3m/aniplayer/issues/56)/[#57](https://github.com/shidot3m/aniplayer/issues/57), [ADR 0012](docs/adr/0012-libmpv-runtime-is-a-pinned-mirrored-lgpl-build.md)).
+In-process рантайм (`libmpv-2.dll`) стаджится отдельно: `python scripts/get_libmpv.py <dir>` — pinned-сборка с проверкой SHA-256, кэш в `.cache/`, зеркало под тегом релиза [`libmpv-20261103-git-46787be250-lgpl`](../../releases/tag/libmpv-20261103-git-46787be250-lgpl), который не прунится. Сейчас приложение его не грузит: воспроизведение идёт через `mpv.exe`, а DLL приходит вместе с in-process бэкендом ([#56](https://github.com/shidot3m/aniplayer/issues/56)/[#57](https://github.com/shidot3m/aniplayer/issues/57), [ADR 0012](docs/adr/0012-libmpv-runtime-is-a-pinned-mirrored-lgpl-build.md)).
 
 ## CI и релизы
 

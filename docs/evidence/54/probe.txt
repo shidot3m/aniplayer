@@ -1,0 +1,48 @@
+Measured facts behind ADR 0012, on the development machine (2026-11-04).
+
+$ ffprobe -select_streams v:0 -show_entries codec_name,profile,pix_fmt -of csv=p=0
+hevc,Main 10,yuv420p10le
+
+
+$ powershell Get-AppxPackage *hevc* | Measure-Object Count
+0   # 0 = no system HEVC decoder installed
+
+
+$ objdump -p libmpv-2.dll | grep 'DLL Name'   (47 distinct imports)
+non-Microsoft imports: ['vulkan-1.dll']
+vulkan-1.dll imported: True, present in System32: True
+
+
+$ official mpv-v0.41.0-x86_64-w64-mingw32.zip, inner archive listing (27 entries)
+  avcodec-62.dll
+  avdevice-62.dll
+  avfilter-11.dll
+  avformat-62.dll
+  avutil-60.dll
+  libass-9.dll
+  libdav1d.dll
+  libfreetype-6.dll
+  libfribidi-0.dll
+  libgcc_s_seh-1.dll
+  libharfbuzz-0.dll
+  libiconv-2.dll
+  liblcms2.dll
+  libplacebo-358.dll
+  libshaderc_shared.dll
+  libspirv-cross-c-shared.dll
+  libssp-0.dll
+  libstdc++-6.dll
+  libwinpthread-1.dll
+  mpv-register.bat
+  mpv-unregister.bat
+  mpv.com
+  mpv.exe
+  swresample-6.dll
+  swscale-9.dll
+  vulkan-1.dll
+  zlib1.dll
+libmpv-2.dll present: False
+
+
+static FFmpeg version tags inside the pinned libmpv-2.dll: ['Lavc63.', 'Lavf57.', 'Lavf63.']
+today's bundled FFmpeg DLLs staged by get_mpv.py: ['avcodec-62.dll', 'avdevice-62.dll', 'avfilter-11.dll', 'avformat-62.dll', 'avutil-60.dll', 'swresample-6.dll', 'swscale-9.dll']

@@ -1,9 +1,9 @@
 """Fetch the pinned libmpv runtime and stage it beside a build of the app.
 
 `scripts/get_mpv.py` stages the out-of-process mpv runtime; this script stages the
-in-process `libmpv-2.dll` that replaces it (ADR 0012). The archive is mirrored in this
-repository's own `latest` release because the upstream build repository keeps its
-releases for only thirty days. Every download is verified against the pinned SHA-256
+in-process `libmpv-2.dll` that replaces it (ADR 0012). The archive is mirrored under a
+pinned tag in this repository's own releases because the upstream build repository keeps
+its releases for only thirty days. Every download is verified against the pinned SHA-256
 digest and cached, so a run pays the transfer once.
 """
 
@@ -18,17 +18,27 @@ import zipfile
 
 LIBMPV_PIN = "20261103-git-46787be250-lgpl"
 LIBMPV_ASSET = f"libmpv-2-{LIBMPV_PIN}.zip"
-MIRROR_RELEASE = "latest"
+MIRROR_RELEASE = f"libmpv-{LIBMPV_PIN}"
 MIRROR_REPO = "shidot3m/aniplayer"
 MIRROR_URL = f"https://github.com/{MIRROR_REPO}/releases/download/{MIRROR_RELEASE}/{LIBMPV_ASSET}"
 # Origin of the bytes: zhongfly/mpv-winbuild release 2026-11-03-46787be250, asset
-# mpv-dev-lgpl-x86_64-20261103-git-46787be250.7z, whose digest the upstream release
-# publishes in sha256.txt. The mirror repacks that archive's libmpv-2.dll unchanged.
-UPSTREAM_ARCHIVE_SHA256 = (
-    "ce2563d352aac81c2e6e9b2b63e846ec847f4bdabdec74fb14c5b29049c161d7"
-)
+# mpv-dev-lgpl-x86_64-20261103-git-46787be250.7z. The mirror repacks that archive
+# unchanged; its provenance digests are recorded in ADR 0012 and in the archive's
+# NOTICE.md rather than here, because this script never fetches the upstream URL.
 LIBMPV_ZIP_SHA256 = "c53d9c77c026740c14e479dbdbb1941d76585b2219ced79ca4c92cf65f33da15"
 LIBMPV_DLL_SHA256 = "63afb25809223c2893bdbcdbc7aa744cf32739cba403dcf0c8ca38a2858589e8"
+# Everything the pinned archive carries. The headers are the client-API contract #56
+# binds against, so they stay in the cache; only the runtime files travel to the build.
+ARCHIVE_FILES = (
+    "libmpv-2.dll",
+    "LICENSE.libmpv",
+    "LICENSE.ffmpeg",
+    "NOTICE.md",
+    "include/mpv/client.h",
+    "include/mpv/render.h",
+    "include/mpv/render_gl.h",
+    "include/mpv/stream_cb.h",
+)
 RUNTIME_FILES = ("libmpv-2.dll", "LICENSE.libmpv", "LICENSE.ffmpeg", "NOTICE.md")
 
 
@@ -120,29 +130,43 @@ def fetch_archive(dest):
 def unpack(archive, dest):
     with zipfile.ZipFile(archive) as package:
         names = set(package.namelist())
-        missing = [name for name in RUNTIME_FILES if name not in names]
+        missing = [name for name in ARCHIVE_FILES if name not in names]
         if missing:
             raise SystemExit(f"[ERROR] {archive} does not carry {missing}")
-        for name in RUNTIME_FILES:
-            with (
-                package.open(name) as source,
-                open(os.path.join(dest, name), "wb") as target,
-            ):
+        for name in ARCHIVE_FILES:
+            target_path = os.path.join(dest, name)
+            os.makedirs(os.path.dirname(target_path) or dest, exist_ok=True)
+            with package.open(name) as source, open(target_path, "wb") as target:
                 shutil.copyfileobj(source, target)
+    # A cache that unpacked to nothing would stage nothing, so the archive is kept only
+    # if every file it promised landed and is not empty.
+    empty = [
+        name for name in ARCHIVE_FILES if not os.path.getsize(os.path.join(dest, name))
+    ]
+    if empty:
+        raise SystemExit(f"[ERROR] {archive} unpacked empty files: {empty}")
     os.remove(archive)
+
+
+def cache_is_complete(dest):
+    """The cache counts as warm only if the whole runtime set is there and the DLL is ours."""
+    for name in RUNTIME_FILES:
+        path = os.path.join(dest, name)
+        if not os.path.isfile(path) or os.path.getsize(path) == 0:
+            return False
+    return sha256_of(os.path.join(dest, "libmpv-2.dll")) == LIBMPV_DLL_SHA256
 
 
 def fetch_asset():
     dest = runtime_dir()
-    dll = os.path.join(dest, "libmpv-2.dll")
-    if os.path.isfile(dll) and sha256_of(dll) == LIBMPV_DLL_SHA256:
+    if cache_is_complete(dest):
         print(f"[OK] Reusing cached libmpv runtime at {dest}")
         return dest
-    if os.path.isdir(dest) and not os.path.isfile(dll):
-        print(f"[..] Cache at {dest} holds no usable libmpv-2.dll; refetching")
+    if os.path.isdir(dest):
+        print(f"[..] Cache at {dest} holds no complete libmpv runtime; refetching")
     os.makedirs(dest, exist_ok=True)
     unpack(fetch_archive(dest), dest)
-    verify(dll, LIBMPV_DLL_SHA256, "cached libmpv-2.dll")
+    verify(os.path.join(dest, "libmpv-2.dll"), LIBMPV_DLL_SHA256, "cached libmpv-2.dll")
     print(f"[OK] Unpacked libmpv {LIBMPV_PIN} runtime into {dest}")
     return dest
 
@@ -152,8 +176,6 @@ def main():
         raise SystemExit("usage: python scripts/get_libmpv.py <destination-dir>")
     destination = sys.argv[1]
     source = fetch_asset()
-    if not os.path.isfile(os.path.join(source, "libmpv-2.dll")):
-        raise SystemExit(f"[ERROR] {source} is empty: libmpv-2.dll was never cached")
     os.makedirs(destination, exist_ok=True)
     for name in RUNTIME_FILES:
         shutil.copy2(os.path.join(source, name), os.path.join(destination, name))

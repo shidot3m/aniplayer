@@ -1,17 +1,23 @@
 # Evidence for #54 — the libmpv runtime source
 
 What the pinned `libmpv-2.dll` has to prove, and the numbers it produced on the development
-machine (Windows 10.0.19045 x64, no `Microsoft.HEVCVideoExtension` installed, so no system
-HEVC decoder).
+machine (Windows 10.0.19045 x64; `Get-AppxPackage *hevc*` counts zero packages, so there is
+no system HEVC decoder here).
 
-| File                                | What it is                                                                                                                                                    |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gate_libmpv.py`                    | Loads a candidate DLL, resolves the API surface, then plays the HEVC Main 10 fixture through `wid` into a window this process owns, and captures that window. |
-| `window_probe.py`                   | The Win32 side of the same spike: the plain window, its message pump, and the screen capture.                                                                 |
-| `gate-run.txt`                      | Console output of the run against the DLL staged by `scripts/get_libmpv.py`.                                                                                  |
-| `gate-result.json`                  | Machine-readable result: digests, API version, resolved symbols, playback properties, mpv log tail.                                                           |
-| `libmpv-wid-hevc-main10-client.png` | Screen capture of the host window's client area while mpv rendered into it.                                                                                   |
-| `libmpv-screenshot-hevc-main10.png` | The frame mpv itself wrote with the `screenshot` command.                                                                                                     |
+| File                                | What it is                                                                                                                                                                                               |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gate_libmpv.py`                    | Loads a candidate DLL, resolves the API surface, then plays the HEVC Main 10 fixture through `wid` into a window this process owns, and captures that window.                                            |
+| `window_probe.py`                   | The Win32 side of the same spike: the plain window, its message pump, and the screen capture.                                                                                                            |
+| `gate-run.txt`                      | Console output of the run against the DLL staged by `scripts/get_libmpv.py`.                                                                                                                             |
+| `gate-result.json`                  | Machine-readable result: digests, API version, resolved symbols, playback properties, mpv log tail.                                                                                                      |
+| `libmpv-wid-hevc-main10-client.png` | Screen capture of the host window's client area while mpv rendered into it.                                                                                                                              |
+| `libmpv-screenshot-hevc-main10.png` | The frame mpv itself wrote with the `screenshot` command.                                                                                                                                                |
+| `probe.txt`                         | The measured facts the ADR leans on that the gate does not print: the fixture's profile, the missing system HEVC package, the DLL's import table, the official archive's listing, and the FFmpeg majors. |
+
+The two PNGs are the harness's own outputs prepared for review: `host-window.bmp` cropped to
+the client area (the window's 8 px sizing border and title bar removed) and re-encoded, and
+`mpv-shot0001.png` copied. Both come out of the command below; the raw files stay in
+`.cache/gate-out/`.
 
 Reproduce:
 

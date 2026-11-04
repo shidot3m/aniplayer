@@ -53,13 +53,9 @@ PROBE_PROPERTIES = (
     "eof-reached",
 )
 
-EVENT_LOG_MESSAGE, EVENT_END_FILE, EVENT_IDLE = 2, 7, 11
-
+EVENT_LOG_MESSAGE, EVENT_END_FILE = 2, 7
 EVENT_VIDEO_RECONFIG, EVENT_PLAYBACK_RESTART = 17, 21
-
 SNAPSHOT_EVENTS = (EVENT_VIDEO_RECONFIG, EVENT_PLAYBACK_RESTART)
-
-P, C, I = ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int
 
 
 class LogMessage(ctypes.Structure):

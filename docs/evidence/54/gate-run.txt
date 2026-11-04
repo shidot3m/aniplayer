@@ -4,7 +4,7 @@
      mpv-version = mpv v0.41.0-1434-g46787be25
      ffmpeg-version = N-128356-gb8f159858
      libass-version = 24137728
-     host HWND = 0xd40f6c
+     host HWND = 0x5b0c4e
      loadfile rc=0
     mpv| hevc: Failed setup for format d3d11: hwaccel initialisation returned error.
     mpv| hevc: Error parsing NAL unit #0.
