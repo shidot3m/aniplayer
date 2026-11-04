@@ -1,4 +1,6 @@
-use aniplayer_lib::downloader::hls::{prepare_local_playlist, segment_file_name};
+use aniplayer_lib::downloader::hls::{
+    prepare_local_playlist, segment_file_name, DownloadProgressEvent,
+};
 
 const PLAYLIST_URL: &str = "https://cache.libria.fun/videos/10329/1080/index.m3u8?token=abc";
 
@@ -103,4 +105,49 @@ fn rejects_a_playlist_without_media_segments() {
 fn names_segments_in_download_order() {
     assert_eq!(segment_file_name(0), "segment-00000.ts");
     assert_eq!(segment_file_name(41), "segment-00041.ts");
+}
+
+/// The `download-progress` payload is the contract the floating widget reads.
+/// Network membership came from the retired torrent engine: an event that
+/// carried peers would mean an engine with peers to carry.
+#[test]
+fn download_progress_event_reports_transfer_and_no_network_membership() {
+    let event = DownloadProgressEvent {
+        episode_id: "ep-100".to_string(),
+        release_id: 42,
+        episode_ordinal: 3.0,
+        total_segments: 900,
+        downloaded_segments: 450,
+        downloaded_bytes: 205_550_000,
+        speed: 6_291_456,
+        percent: 50.0,
+        status: "DOWNLOADING".to_string(),
+        error: None,
+    };
+
+    let value = serde_json::to_value(&event).expect("progress event must serialize");
+    let mut fields: Vec<&str> = value
+        .as_object()
+        .expect("progress event must serialize to an object")
+        .keys()
+        .map(String::as_str)
+        .collect();
+    fields.sort_unstable();
+
+    assert_eq!(
+        fields,
+        [
+            "downloadedBytes",
+            "downloadedSegments",
+            "episodeId",
+            "episodeOrdinal",
+            "error",
+            "percent",
+            "releaseId",
+            "speed",
+            "status",
+            "totalSegments",
+        ],
+        "the progress event carries bytes, percentage and speed, and no network membership"
+    );
 }

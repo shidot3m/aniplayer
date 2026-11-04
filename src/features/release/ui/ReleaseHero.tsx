@@ -1,4 +1,4 @@
-import { Bookmark, CheckCircle2, ChevronDown, Clock, Download, Film, Play } from "lucide-react";
+import { Bookmark, CheckCircle2, ChevronDown, Clock, Film, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CATEGORY_NAMES, formatPosterUrl } from "@/shared/lib/releaseUtils";
 import { formatDurationMinutes, formatTotalWatchTime } from "@/shared/lib/utils";
@@ -21,7 +21,6 @@ interface ReleaseHeroProps {
   onPlay: (ep: EpisodeItem) => void;
   onBookmarkChange: (cat: BookmarkCategory) => void;
   onRemoveBookmark: () => void;
-  onOpenTorrents?: () => void;
 }
 
 export function ReleaseHero({
@@ -33,7 +32,6 @@ export function ReleaseHero({
   onPlay,
   onBookmarkChange,
   onRemoveBookmark,
-  onOpenTorrents,
 }: ReleaseHeroProps) {
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [canExpand, setCanExpand] = useState(false);
@@ -216,18 +214,6 @@ export function ReleaseHero({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {onOpenTorrents && (
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={onOpenTorrents}
-              className="gap-2 border-emerald-500/30 bg-emerald-950/20 text-emerald-400 hover:bg-emerald-900/30 hover:border-emerald-500/50 hover:text-emerald-300 h-11 text-xs font-semibold rounded-xl"
-            >
-              <Download className="h-4 w-4" />
-              <span>Торренты (HEVC)</span>
-            </Button>
-          )}
         </div>
       </div>
     </div>

@@ -39,11 +39,7 @@ function DownloadItemRow({
             <Loader2 className="h-4 w-4 text-rose-400 animate-spin shrink-0" />
           )}
           <span className="text-xs font-semibold text-white truncate">
-            {item.episodeOrdinal > 0
-              ? `Эпизод ${item.episodeOrdinal}`
-              : item.episodeId.startsWith("torrent-")
-                ? "Торрент раздача"
-                : "Загрузка"}
+            {item.episodeOrdinal > 0 ? `Эпизод ${item.episodeOrdinal}` : "Загрузка"}
           </span>
           <span className="text-[10px] text-slate-400">#{item.releaseId}</span>
         </div>
@@ -72,15 +68,14 @@ function DownloadItemRow({
         />
       </div>
 
-      <div className="flex items-center justify-between text-[10px] text-slate-400">
-        <span>
+      <div className="flex items-center justify-between gap-2 text-[10px] text-slate-400">
+        <span className="shrink-0">{formatBytes(item.downloadedBytes)}</span>
+        <span className="truncate">
           {item.totalSegments > 0
             ? `${item.downloadedSegments} / ${item.totalSegments} сегментов`
-            : item.speed != null && item.speed > 0
-              ? `${formatBytes(item.speed)}/s • ${item.peers ?? 0} пиров`
-              : "Загрузка..."}
+            : "Загрузка…"}
         </span>
-        <span>{formatBytes(item.totalBytes)}</span>
+        <span className="shrink-0">{formatBytes(item.speed)}/с</span>
       </div>
       {item.error && <div className="mt-1 text-[10px] text-rose-400 truncate">{item.error}</div>}
     </div>

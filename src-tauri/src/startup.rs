@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::api::AnilibriaClient;
 use crate::db::Database;
-use crate::downloader::{EngineInitError, HlsDownloader, TorrentDownloader, TorrentEngine};
+use crate::downloader::HlsDownloader;
 use crate::player::MpvSupervisor;
 use crate::state::AppState;
 
@@ -16,26 +16,11 @@ pub enum StartupError {
     #[error("Aniplayer could not open the database at {path}.\n{reason}\nCheck that the folder is writable and the disk is not full. If the file is locked, close the other program using it (a running Aniplayer, a database browser, an antivirus scan) and restart.")]
     Database { path: String, reason: String },
 
-    #[error("Aniplayer could not start the torrent engine.\n{reason}\nAnother instance of Aniplayer or another torrent client may already be using the required network port. Close it and restart Aniplayer.")]
-    TorrentEngine { reason: String },
-
-    #[error("Aniplayer could not prepare its torrent folder at {path}.\n{reason}\nCheck folder permissions and available disk space, then restart Aniplayer.")]
-    TorrentDataDir { path: String, reason: String },
+    #[error("Aniplayer could not clear the downloads an older version left in its library.\n{reason}\nCheck that the database file is writable and the disk is not full, then restart Aniplayer.")]
+    LegacyCleanup { reason: String },
 
     #[error("Aniplayer stopped with an internal error.\n{reason}")]
     Run { reason: String },
-}
-
-impl From<EngineInitError> for StartupError {
-    fn from(error: EngineInitError) -> Self {
-        match error {
-            EngineInitError::Folder { path, reason } => StartupError::TorrentDataDir {
-                path: path.display().to_string(),
-                reason,
-            },
-            EngineInitError::Session { reason } => StartupError::TorrentEngine { reason },
-        }
-    }
 }
 
 /// Opens the persistent database, creating its folder if needed. There is no
@@ -55,14 +40,20 @@ pub fn open_database(path: &std::path::Path) -> Result<Database, StartupError> {
     Database::new(path).map_err(|e| context(e.to_string()))
 }
 
-/// Brings up the torrent engine, keeping folder and session failures
-/// distinguishable for the user.
-pub fn create_torrent_engine(
-    app_dir: &std::path::Path,
-    db: Arc<Database>,
-) -> Result<TorrentEngine, StartupError> {
-    tauri::async_runtime::block_on(TorrentEngine::try_new(app_dir.to_path_buf(), db))
-        .map_err(StartupError::from)
+/// The id prefix the retired torrent scanner wrote its Downloaded episode rows
+/// under. Nothing produces those rows any more and nothing can play them, so
+/// they leave the library index at startup. The media files beside them are the
+/// user's property and are never touched.
+const LEGACY_TORRENT_ID_PREFIX: &str = "torrent-";
+
+/// Drops the Downloaded episodes an older build indexed from torrent payloads.
+/// Runs on every startup: it is one `DELETE` and stays correct after the rows
+/// are gone, so it needs no version marker of its own.
+pub fn purge_legacy_torrent_downloads(db: &Database) -> Result<usize, StartupError> {
+    db.delete_downloaded_episodes_with_id_prefix(LEGACY_TORRENT_ID_PREFIX)
+        .map_err(|e| StartupError::LegacyCleanup {
+            reason: e.to_string(),
+        })
 }
 
 /// The directory the application keeps its data in: next to the executable, so
@@ -80,15 +71,12 @@ pub fn bootstrap() -> Result<AppState, StartupError> {
     let app_dir = app_dir();
     let db_path = app_dir.join("data").join("aniplayer.db");
     let db = Arc::new(open_database(&db_path)?);
-    let downloader = Arc::new(HlsDownloader::new(db.clone()));
-    let torrent_engine = Arc::new(create_torrent_engine(&app_dir, db.clone())?);
+    purge_legacy_torrent_downloads(&db)?;
 
     Ok(AppState {
-        db,
+        db: db.clone(),
         api: Arc::new(AnilibriaClient::new()),
-        downloader,
-        torrent_downloader: Arc::new(TorrentDownloader::new()),
-        torrent_engine,
+        downloader: Arc::new(HlsDownloader::new(db)),
         player: Arc::new(MpvSupervisor::new(app_dir.clone())),
         app_dir,
     })

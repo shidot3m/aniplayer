@@ -147,22 +147,6 @@ impl AnilibriaClient {
             .map_err(|e| e.to_string())
     }
 
-    pub async fn get_release_torrents(&self, release_id: i64) -> Result<Vec<TorrentItem>, String> {
-        let url = format!(
-            "{}/anime/torrents/release/{}",
-            self.config.base_url, release_id
-        );
-        let resp = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-        resp.json::<Vec<TorrentItem>>()
-            .await
-            .map_err(|e| e.to_string())
-    }
-
     pub async fn get_release_franchises(
         &self,
         release_id: i64,

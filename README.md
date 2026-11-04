@@ -1,14 +1,13 @@
 # Aniplayer
 
-Десктопный аниме-плеер для Windows: Tauri 2 + React 19, воспроизведение через встроенный mpv (любые кодеки и контейнеры, ничего ставить не нужно), апскейл Anime4K через GLSL-цепочку mpv, каталог AniLiberty, торрент-загрузки и скачивание серий.
+Десктопный аниме-плеер для Windows: Tauri 2 + React 19, воспроизведение через встроенный mpv (любые кодеки и контейнеры, ничего ставить не нужно), апскейл Anime4K через GLSL-цепочку mpv, каталог AniLiberty и скачивание серий.
 
 ## Возможности
 
 - Любое видео играет встроенный mpv-процесс (JSON IPC): HEVC Main 10, AV1, VP9, Opus, DTS/AC3, MPEG-2/VC-1, любой контейнер — даже там, где Windows без кодеков показывает чёрный экран; онлайн-HLS, офлайн-плейлисты и скачанные файлы — одним путём ([ADR 0010](docs/adr/0010-mpv-subprocess-as-the-only-playback-backend.md))
 - Anime4K-апскейл в реальном времени GLSL-шейдерами mpv с пресетами и сохранением выбора; аппаратное декодирование используется, когда оно есть (hwdec=auto-safe)
 - Каталог, расписание, жанры, франшизы — API AniLiberty
-- Торрент-загрузки через встроенный движок `librqbit` со сканированием серий после завершения: скачанный файл играется как есть, контейнер и кодеки больше не важны
-- Скачивание серий, отслеживание активных загрузок с отменой, плавающий виджет прогресса
+- Скачивание серий через HLS — единственный путь получения серии: одна серия или весь релиз, отслеживание активных загрузок с отменой, плавающий виджет прогресса
 - Закладки, «Продолжить просмотр», история — SQLite (`data/aniplayer.db` рядом с exe)
 
 ## Стек
@@ -18,7 +17,7 @@
 | UI           | React 19, TypeScript 7, Vite 8, Tailwind 4, Zustand, Radix UI, lucide-react |
 | JS-тулчейн   | Bun 1.4.4 (установщик, рантайм и запуск скриптов; ADR 0011)                 |
 | Оболочка     | Tauri 2.12 (Rust, edition 2021)                                             |
-| Бэкенд       | Tauri IPC: `librqbit` 9, `rusqlite` 0.41, `reqwest` 0.13, supervisor mpv    |
+| Бэкенд       | Tauri IPC: `rusqlite` 0.41, `reqwest` 0.13, supervisor mpv                  |
 | Плеер        | bundled mpv `v0.41.0` (отдельный процесс, JSON IPC по named pipe)           |
 | Тесты / линт | Vitest 5, Testing Library, Biome 2.6, aislop                                |
 
@@ -76,7 +75,7 @@ In-process рантайм (`libmpv-2.dll`) стаджится отдельно: 
 
 ## CI и релизы
 
-`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: guard JS-тулчейна (CI и скрипты не должны содержать обращений к прежнему npm-клиенту), типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_hls_playlist`, `test_magnet_validation`, `test_player`, `test_player_command_threading`, `test_player_ipc`, `test_scanner`, `test_security_config`, `test_startup`, `test_torrent_path_validation`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
+`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: guard JS-тулчейна (CI и скрипты не должны содержать обращений к прежнему npm-клиенту), типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_hls_playlist`, `test_player`, `test_player_command_threading`, `test_player_ipc`, `test_player_window_stack`, `test_security_config`, `test_startup`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
 
 `.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную на ветке `master` (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows portable-сборку и публикует единственный артефакт:
 
@@ -100,11 +99,10 @@ Rust-проверки (из каталога `src-tauri`, с окружение�
 cargo fmt --check
 cargo clippy --all-targets --locked -- -D warnings
 cargo audit
-cargo test --locked --test test_db --test test_hls_playlist --test test_magnet_validation \
+cargo test --locked --test test_db --test test_hls_playlist \
   --test test_player --test test_player_command_threading --test test_player_ipc \
   --test test_player_window_stack \
-  --test test_scanner --test test_security_config --test test_startup \
-  --test test_torrent_path_validation
+  --test test_security_config --test test_startup
 ```
 
 `test_api` обращается к живому API AniLiberty и поэтому в CI не входит.
@@ -115,7 +113,7 @@ cargo test --locked --test test_db --test test_hls_playlist --test test_magnet_v
 src/app/             Оболочка приложения: композиция фичер (App, Header)
 src/features/        Фичеры: catalog, release, continue-watching, player, downloads, bookmarks, settings
 src/shared/          Общие ui-компоненты, утилиты и доменные типы (ui/lib/types)
-src-tauri/           Rust-бэкенд: API-клиент, БД, загрузки и торренты, supervisor mpv, IPC-команды
+src-tauri/           Rust-бэкенд: API-клиент, БД, HLS-загрузки, supervisor mpv, IPC-команды
 tests/               фронтенд-тесты (Vitest); границы фичер проверяет test_feature_boundaries.test.ts
 scripts/             скачивание pinned mpv, portable-упаковка, запуск Tauri и cargo из MSYS-шеллов
 docs/                архитектура, ADR, схема AniLiberty API, заметки по Anime4K, инструкции для агентов

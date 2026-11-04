@@ -21,7 +21,11 @@ pub struct DownloadProgressEvent {
     pub episode_ordinal: f64,
     pub total_segments: usize,
     pub downloaded_segments: usize,
-    pub total_bytes: i64,
+    /// Bytes written to disk so far. The source announces no episode size up
+    /// front, so this is a running total rather than a fraction of a known one.
+    pub downloaded_bytes: i64,
+    /// Mean throughput over the elapsed download, in bytes per second.
+    pub speed: u64,
     pub percent: f64,
     pub status: String, // "DOWNLOADING", "COMPLETED", "FAILED", "CANCELLED"
     pub error: Option<String>,
@@ -212,7 +216,8 @@ impl HlsDownloader {
                         episode_ordinal: 0.0,
                         total_segments: 0,
                         downloaded_segments: 0,
-                        total_bytes: 0,
+                        downloaded_bytes: 0,
+                        speed: 0,
                         percent: 0.0,
                         status: "CANCELLED".to_string(),
                         error: Some("Download cancelled by user".to_string()),
@@ -239,7 +244,8 @@ impl HlsDownloader {
                         episode_ordinal: 0.0,
                         total_segments: 0,
                         downloaded_segments: 0,
-                        total_bytes: 0,
+                        downloaded_bytes: 0,
+                        speed: 0,
                         percent: 0.0,
                         status: "CANCELLED".to_string(),
                         error: Some("All downloads cancelled".to_string()),
@@ -330,7 +336,8 @@ impl HlsDownloader {
                     episode_ordinal: ordinal,
                     total_segments: 0,
                     downloaded_segments: 0,
-                    total_bytes: 0,
+                    downloaded_bytes: 0,
+                    speed: 0,
                     percent: 0.0,
                     status: "DOWNLOADING".to_string(),
                     error: None,
@@ -370,7 +377,16 @@ impl HlsDownloader {
 
         // 2. Download initialization/key resources and media segments.
         let total_segments = playlist.segment_urls.len();
-        let mut total_bytes = 0i64;
+        let mut downloaded_bytes = 0i64;
+        let started = std::time::Instant::now();
+        let mean_speed = |bytes: i64| -> u64 {
+            let elapsed = started.elapsed().as_secs_f64();
+            if elapsed > 0.0 {
+                (bytes as f64 / elapsed).max(0.0) as u64
+            } else {
+                0
+            }
+        };
 
         for resource in &playlist.resources {
             if cancel_flag.load(Ordering::Relaxed) {
@@ -385,7 +401,7 @@ impl HlsDownloader {
                 Ok(bytes) => bytes,
                 Err(e) => fail!(format!("HLS resource bytes read error: {e}")),
             };
-            total_bytes += bytes.len() as i64;
+            downloaded_bytes += bytes.len() as i64;
             if let Err(e) = fs::write(episode_dir.join(&resource.file_name), &bytes).await {
                 fail!(format!("HLS resource file write error: {e}"));
             }
@@ -416,7 +432,7 @@ impl HlsDownloader {
                 return Err("Download cancelled by user".to_string());
             }
 
-            total_bytes += bytes.len() as i64;
+            downloaded_bytes += bytes.len() as i64;
             let segment_path = episode_dir.join(segment_file_name(index));
             if let Err(e) = fs::write(&segment_path, &bytes).await {
                 let err_msg = format!("File write error: {e}");
@@ -435,7 +451,8 @@ impl HlsDownloader {
                         episode_ordinal: ordinal,
                         total_segments,
                         downloaded_segments: downloaded,
-                        total_bytes,
+                        downloaded_bytes,
+                        speed: mean_speed(downloaded_bytes),
                         percent,
                         status: "DOWNLOADING".to_string(),
                         error: None,
@@ -446,7 +463,7 @@ impl HlsDownloader {
 
         // 3. Write the local playlist last: its presence marks a complete episode
         let manifest = playlist.manifest.into_bytes();
-        total_bytes += manifest.len() as i64;
+        downloaded_bytes += manifest.len() as i64;
         if let Err(e) = fs::write(&dest_path, &manifest).await {
             let err_msg = format!("Failed to write local playlist: {e}");
             fail!(err_msg);
@@ -457,7 +474,7 @@ impl HlsDownloader {
             release_id,
             episode_ordinal: ordinal,
             file_path: dest_str,
-            file_size: total_bytes,
+            file_size: downloaded_bytes,
             quality: quality.to_string(),
             opening_start: op_start,
             opening_stop: op_stop,
@@ -476,7 +493,8 @@ impl HlsDownloader {
                     episode_ordinal: ordinal,
                     total_segments,
                     downloaded_segments: total_segments,
-                    total_bytes,
+                    downloaded_bytes,
+                    speed: mean_speed(downloaded_bytes),
                     percent: 100.0,
                     status: "COMPLETED".to_string(),
                     error: None,
@@ -508,7 +526,8 @@ impl HlsDownloader {
                     episode_ordinal: spec.ordinal,
                     total_segments: 0,
                     downloaded_segments: 0,
-                    total_bytes: 0,
+                    downloaded_bytes: 0,
+                    speed: 0,
                     percent: 0.0,
                     status: "CANCELLED".to_string(),
                     error: Some("Download cancelled by user".to_string()),
@@ -557,7 +576,8 @@ impl HlsDownloader {
                     episode_ordinal: spec.ordinal,
                     total_segments: 0,
                     downloaded_segments: 0,
-                    total_bytes: 0,
+                    downloaded_bytes: 0,
+                    speed: 0,
                     percent: 0.0,
                     status: "FAILED".to_string(),
                     error: Some(error_msg.clone()),

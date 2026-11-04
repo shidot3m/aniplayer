@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted
+Status: superseded by [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md)
 
 ## Context
 

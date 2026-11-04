@@ -315,4 +315,14 @@ impl Database {
         )?;
         Ok(())
     }
+
+    /// Drops every Downloaded episode whose id starts with `prefix` and reports
+    /// how many rows left the index.
+    pub fn delete_downloaded_episodes_with_id_prefix(&self, prefix: &str) -> Result<usize> {
+        let conn = self.lock_conn()?;
+        conn.execute(
+            "DELETE FROM downloaded_episodes WHERE episode_id LIKE ?1",
+            params![format!("{prefix}%")],
+        )
+    }
 }

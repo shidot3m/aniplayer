@@ -126,36 +126,11 @@ export interface DownloadProgressEvent {
   episodeOrdinal: number;
   totalSegments: number;
   downloadedSegments: number;
-  totalBytes: number;
+  downloadedBytes: number;
+  speed: number;
   percent: number;
   status: "DOWNLOADING" | "COMPLETED" | "FAILED" | "CANCELLED";
   error?: string | null;
-  speed?: number;
-  peers?: number;
-  downloadedBytes?: number;
-}
-
-export interface TorrentCodec {
-  value: string;
-  label: string;
-  description?: string;
-}
-
-export interface TorrentItem {
-  id: number;
-  hash: string;
-  size?: number | null;
-  label?: string | null;
-  codec?: TorrentCodec | null;
-  filename?: string | null;
-  seeders?: number | null;
-  leechers?: number | null;
-  magnet?: string | null;
-  description?: string | null;
-  quality?: {
-    value: string;
-    description: string;
-  } | null;
 }
 
 export interface FranchiseReleaseItem {

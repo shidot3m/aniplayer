@@ -2,7 +2,6 @@ use tauri::State;
 
 use crate::api::models::{
     ApiStatus, FranchiseItem, GenreItem, GenreReleasesPage, ReleaseDetails, ReleasePreview,
-    TorrentItem,
 };
 use crate::state::AppState;
 
@@ -50,14 +49,6 @@ pub(crate) async fn api_get_release(
     id_or_alias: String,
 ) -> Result<ReleaseDetails, String> {
     state.api.get_release(&id_or_alias).await
-}
-
-#[tauri::command]
-pub(crate) async fn api_get_release_torrents(
-    state: State<'_, AppState>,
-    release_id: i64,
-) -> Result<Vec<TorrentItem>, String> {
-    state.api.get_release_torrents(release_id).await
 }
 
 #[tauri::command]

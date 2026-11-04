@@ -12,7 +12,6 @@ import { useStartEpisode } from "../hooks/useStartEpisode";
 import { EpisodesTabContent } from "./EpisodesTabContent";
 import { RelatedTab } from "./RelatedTab";
 import { ReleaseHero } from "./ReleaseHero";
-import { TorrentsTab } from "./TorrentsTab";
 
 interface ReleaseDetailsProps {
   release: Release;
@@ -76,16 +75,12 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         onPlay={handlePlay}
         onBookmarkChange={(category) => setBookmark(release.id, category, release)}
         onRemoveBookmark={() => removeBookmark(release.id)}
-        onOpenTorrents={() => setActiveTab("torrents")}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="episodes" className="px-5">
             Эпизоды ({release.episodes?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="torrents" className="px-5">
-            Торренты (HEVC)
           </TabsTrigger>
           <TabsTrigger value="related" className="px-5">
             Связанное {totalRelatedCount > 0 ? `(${totalRelatedCount})` : ""}
@@ -107,10 +102,6 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
             onDownload={handleDownload}
             onDownloadAll={handleDownloadAll}
           />
-        </TabsContent>
-
-        <TabsContent value="torrents">
-          <TorrentsTab releaseId={release.id} />
         </TabsContent>
 
         <TabsContent value="related">

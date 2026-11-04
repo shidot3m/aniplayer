@@ -3,14 +3,11 @@
 //! instead of a silent fallback or a panic.
 //!
 //! The seams under test are `aniplayer_lib::startup::open_database` and
-//! `aniplayer_lib::startup::create_torrent_engine` — the same calls `run()`
-//! performs before the app accepts control.
+//! `aniplayer_lib::startup::purge_legacy_torrent_downloads` — the same calls
+//! `run()` performs before the app accepts control.
 
 use std::path::PathBuf;
-use std::sync::{
-    atomic::{AtomicU32, Ordering},
-    Arc,
-};
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use aniplayer_lib::db::{
     models::{BookmarkItem, DownloadedEpisodeMeta, HistoryItem},
@@ -27,6 +24,27 @@ fn unique_temp_dir(label: &str) -> PathBuf {
     ));
     let _ = std::fs::remove_dir_all(&dir);
     dir
+}
+
+fn downloaded(
+    episode_id: &str,
+    release_id: i64,
+    ordinal: f64,
+    file_path: &str,
+) -> DownloadedEpisodeMeta {
+    DownloadedEpisodeMeta {
+        episode_id: episode_id.to_string(),
+        release_id,
+        episode_ordinal: ordinal,
+        file_path: file_path.to_string(),
+        file_size: 350_000_000,
+        quality: "1080p".to_string(),
+        opening_start: Some(23.0),
+        opening_stop: Some(113.0),
+        ending_start: None,
+        ending_stop: None,
+        download_status: "COMPLETED".to_string(),
+    }
 }
 
 fn bookmark(release_id: i64) -> BookmarkItem {
@@ -156,32 +174,136 @@ fn existing_but_unusable_database_file_is_reported_not_replaced() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// The Downloaded episode ids the index holds, in release/ordinal order.
+fn downloaded_ids(db: &Database) -> Vec<String> {
+    db.get_all_downloaded_episodes()
+        .expect("read downloaded episodes")
+        .into_iter()
+        .map(|item| item.episode_id)
+        .collect()
+}
+
 #[test]
-fn torrent_engine_failure_is_a_returned_error_instead_of_a_panic() {
-    let dir = unique_temp_dir("torrentfail");
-    let db = Arc::new(Database::init_in_memory().expect("in-memory database for the engine test"));
+fn startup_purge_drops_legacy_torrent_rows_and_keeps_everything_else() {
+    let dir = unique_temp_dir("torrentpurge");
+    let db_path = dir.join("data").join("aniplayer.db");
+    let db = startup::open_database(&db_path).expect("database must open at a writable path");
 
-    // The torrents folder cannot be created underneath a regular file, the way
-    // it cannot on a read-only or full disk.
-    let blocker = dir.join("blocking-file");
-    std::fs::create_dir_all(&dir).unwrap();
-    std::fs::write(&blocker, b"x").unwrap();
-    let unusable_base = blocker.join("app");
+    // Legacy inheritance: the torrent scanner indexed payload files under
+    // `downloads/torrents/<release_id>/` as `torrent-<release_id>-<ordinal>`.
+    let torrent_dir = dir.join("downloads").join("torrents").join("42");
+    std::fs::create_dir_all(&torrent_dir).unwrap();
+    std::fs::write(torrent_dir.join("ep01.mkv"), b"mkv payload").unwrap();
+    std::fs::write(torrent_dir.join("ep02.mkv"), b"mkv payload").unwrap();
 
-    let message = match startup::create_torrent_engine(&unusable_base, db) {
-        Ok(_) => panic!("the engine must not report success when its folder cannot be created"),
-        Err(err) => err.to_string(),
-    };
+    // An HLS download keeps its own folder with the offline playlist.
+    let hls_dir = dir.join("downloads").join("42").join("1");
+    std::fs::create_dir_all(&hls_dir).unwrap();
+    std::fs::write(hls_dir.join("index.m3u8"), b"#EXTM3U").unwrap();
 
-    let lowered = message.to_lowercase();
-    assert!(
-        lowered.contains("torrent"),
-        "the error must identify the failing subsystem, got: {lowered}"
+    db.save_downloaded_episode(&downloaded(
+        "torrent-42-1",
+        42,
+        1.0,
+        &torrent_dir.join("ep01.mkv").to_string_lossy(),
+    ))
+    .expect("seed torrent row");
+    db.save_downloaded_episode(&downloaded(
+        "torrent-42-2",
+        42,
+        2.0,
+        &torrent_dir.join("ep02.mkv").to_string_lossy(),
+    ))
+    .expect("seed torrent row");
+    db.save_downloaded_episode(&downloaded(
+        "ep-100",
+        42,
+        1.0,
+        &hls_dir.join("index.m3u8").to_string_lossy(),
+    ))
+    .expect("seed hls row");
+    db.save_bookmark(&bookmark(42)).expect("seed bookmark");
+    db.save_history(&HistoryItem {
+        release_id: 42,
+        episode_id: "ep-100".to_string(),
+        episode_ordinal: 1.0,
+        last_position: 520.0,
+        duration: 1420.0,
+        is_completed: false,
+        updated_at: None,
+    })
+    .expect("seed history");
+
+    assert_eq!(
+        startup::purge_legacy_torrent_downloads(&db).expect("purge must report success"),
+        2,
+        "both legacy torrent rows must leave the index"
+    );
+
+    assert_eq!(
+        downloaded_ids(&db),
+        vec!["ep-100"],
+        "only the legacy rows may leave; the HLS Download stays indexed"
     );
     assert!(
-        lowered.contains(&unusable_base.display().to_string().to_lowercase()),
-        "the error must name the folder the engine could not use, got: {lowered}"
+        hls_dir.join("index.m3u8").is_file(),
+        "the downloaded HLS episode folder must stay on disk"
     );
+    assert!(
+        torrent_dir.join("ep01.mkv").is_file() && torrent_dir.join("ep02.mkv").is_file(),
+        "the user's own media files are never the app's to delete"
+    );
+    assert_eq!(
+        db.get_bookmarks(None)
+            .expect("read bookmarks")
+            .iter()
+            .map(|b| b.release_id)
+            .collect::<Vec<_>>(),
+        vec![42],
+        "purging the download index must not touch other tables"
+    );
+    assert_eq!(
+        db.get_continue_watching().expect("read history").len(),
+        1,
+        "purging the download index must not touch other tables"
+    );
+
+    // A second launch of the same build against the same database.
+    drop(db);
+    let db = startup::open_database(&db_path).expect("database must reopen after restart");
+    assert_eq!(
+        startup::purge_legacy_torrent_downloads(&db).expect("purge is repeatable"),
+        0,
+        "a database already cleaned must not report a second purge"
+    );
+    assert_eq!(
+        downloaded_ids(&db),
+        vec!["ep-100"],
+        "the restart must leave the HLS Download where the first launch put it"
+    );
+    assert!(
+        torrent_dir.join("ep01.mkv").is_file() && hls_dir.join("index.m3u8").is_file(),
+        "the second launch must still delete nothing from disk"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn startup_purge_leaves_an_untouched_index_alone() {
+    let dir = unique_temp_dir("torrentpurge-noop");
+    let db = startup::open_database(&dir.join("data").join("aniplayer.db"))
+        .expect("database must open at a writable path");
+
+    db.save_downloaded_episode(&downloaded("ep-1", 7, 1.0, "downloads/7/1/index.m3u8"))
+        .expect("seed hls row");
+
+    assert_eq!(
+        startup::purge_legacy_torrent_downloads(&db).expect("purge must report success"),
+        0,
+        "a library with no legacy rows is not rewritten"
+    );
+    assert_eq!(downloaded_ids(&db), vec!["ep-1"]);
 
     let _ = std::fs::remove_dir_all(&dir);
 }

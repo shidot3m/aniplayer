@@ -145,25 +145,6 @@ pub struct ReleaseDetails {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TorrentCodec {
-    pub value: String,
-    pub label: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TorrentItem {
-    pub id: i64,
-    pub hash: String,
-    pub size: Option<i64>,
-    pub label: Option<String>,
-    pub codec: Option<TorrentCodec>,
-    pub filename: Option<String>,
-    pub seeders: Option<i64>,
-    pub leechers: Option<i64>,
-    pub magnet: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FranchiseReleaseItem {
     pub id: Option<String>,
     pub sort_order: Option<i64>,

@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use tauri::State;
 
-use crate::downloader::{EpisodeDownloadSpec, TorrentDownloader};
+use crate::downloader::EpisodeDownloadSpec;
 use crate::state::AppState;
 
 #[derive(Debug, serde::Deserialize)]
@@ -110,8 +110,9 @@ pub(crate) async fn downloader_delete_episode(
         .map_err(|e| e.to_string())
 }
 
-/// Removes the storage an episode owns: the whole folder for an HLS download
-/// (playlist plus segments) or the single file for a torrent episode.
+/// Removes the storage an episode owns: the whole folder of an HLS download
+/// (playlist plus segments), or the single file a pre-playlist layout left
+/// behind.
 async fn remove_download_storage(app_dir: &Path, file_path: &str) {
     let path = PathBuf::from(file_path);
     let downloads_root = app_dir.join("downloads");
@@ -138,20 +139,16 @@ async fn remove_download_storage(app_dir: &Path, file_path: &str) {
 pub(crate) fn downloader_open_folder(
     state: State<'_, AppState>,
     release_id: Option<i64>,
-    torrent: Option<bool>,
 ) -> Result<(), String> {
-    let folder = folder_for_release(&state.app_dir, release_id, torrent.unwrap_or(false));
+    let folder = folder_for_release(&state.app_dir, release_id);
     std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
 
     tauri_plugin_opener::open_path(&folder, None::<&str>).map_err(|e| e.to_string())?;
     Ok(())
 }
 
-fn folder_for_release(app_dir: &Path, release_id: Option<i64>, torrent: bool) -> PathBuf {
+fn folder_for_release(app_dir: &Path, release_id: Option<i64>) -> PathBuf {
     match release_id {
-        Some(id) if torrent => {
-            crate::downloader::torrent::torrents_root(app_dir).join(id.to_string())
-        }
         Some(id) => app_dir.join("downloads").join(id.to_string()),
         None => app_dir.join("downloads"),
     }
@@ -173,50 +170,4 @@ pub(crate) fn downloader_cancel_all(
 ) -> Result<(), String> {
     state.downloader.cancel_all(Some(&app));
     Ok(())
-}
-
-#[tauri::command]
-pub(crate) async fn downloader_download_torrent(
-    state: State<'_, AppState>,
-    torrent_id: i64,
-    filename: String,
-    auto_open: Option<bool>,
-) -> Result<String, String> {
-    let path = state
-        .torrent_downloader
-        .download_torrent_file(&state.app_dir, torrent_id, &filename)
-        .await?;
-    if auto_open.unwrap_or(true) {
-        let torrents_root = crate::downloader::torrent::torrents_root(&state.app_dir);
-        let _ = TorrentDownloader::open_torrent_file(&path, &torrents_root);
-    }
-    Ok(path.to_string_lossy().to_string())
-}
-
-#[tauri::command]
-pub(crate) fn downloader_open_magnet(magnet: String) -> Result<(), String> {
-    TorrentDownloader::open_magnet(&magnet)
-}
-
-#[tauri::command]
-pub(crate) async fn downloader_start_torrent(
-    app: tauri::AppHandle,
-    state: State<'_, AppState>,
-    release_id: i64,
-    torrent_id: i64,
-    magnet_or_url: String,
-) -> Result<String, String> {
-    state
-        .torrent_engine
-        .start_download(app, release_id, torrent_id, &magnet_or_url)
-        .await
-}
-
-#[tauri::command]
-pub(crate) fn downloader_cancel_torrent(
-    app: tauri::AppHandle,
-    state: State<'_, AppState>,
-    torrent_id: i64,
-) -> Result<(), String> {
-    state.torrent_engine.cancel_download(&app, torrent_id)
 }

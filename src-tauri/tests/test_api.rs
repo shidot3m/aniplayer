@@ -35,43 +35,6 @@ async fn test_api_fetch_latest_and_release_details() {
 }
 
 #[tokio::test]
-async fn test_api_fetch_torrents_and_codecs() {
-    // The API removes old releases, so discover a live one instead of pinning an id.
-    const CANDIDATE_RELEASES: u32 = 10;
-    let client = AnilibriaClient::new();
-    let latest = client
-        .get_latest_releases(CANDIDATE_RELEASES)
-        .await
-        .expect("Get latest failed");
-
-    let mut found = None;
-    let mut last_error = None;
-    for release in &latest {
-        match client.get_release_torrents(release.id).await {
-            Ok(torrents) if !torrents.is_empty() => {
-                found = Some(torrents);
-                break;
-            }
-            Ok(_) => {}
-            Err(error) => last_error = Some(error),
-        }
-    }
-
-    let torrents = found.unwrap_or_else(|| {
-        panic!(
-            "No torrents across {CANDIDATE_RELEASES} recent releases (last error: {last_error:?})"
-        )
-    });
-    assert!(
-        torrents.iter().any(|t| t
-            .codec
-            .as_ref()
-            .is_some_and(|codec| !codec.label.is_empty() && !codec.value.is_empty())),
-        "Expected at least one torrent with decoded codec metadata"
-    );
-}
-
-#[tokio::test]
 async fn test_api_fetch_genres() {
     let client = AnilibriaClient::new();
     let genres = client.get_genres().await.expect("Get genres failed");

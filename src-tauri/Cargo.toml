@@ -20,18 +20,8 @@ rusqlite = { version = "0.41", features = ["bundled"] }
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 thiserror = "2.0"
-librqbit = { version = "9.1", default-features = false, features = ["rust-tls", "http-api-client"] }
-regex = "1.13.1"
 tauri-plugin-opener = "2"
 rfd = { version = "0.16.1", default-features = false }
 
 [dev-dependencies]
 tauri-utils = "2"
-
-# librqbit-utp 0.7.0, the latest release, still depends on ringbuf 0.4.8
-# (RUSTSEC-2026-0293). The rev pins the head of upstream main, which carries the
-# ringbuf 0.5.2 fix (ikatson/librqbit-utp#3) and the Windows uTP dispatcher fix
-# (ikatson/librqbit-utp#4); drop the patch once a release depends on
-# ringbuf >= 0.5.2 (#37).
-[patch.crates-io]
-librqbit-utp = { git = "https://github.com/ikatson/librqbit-utp", rev = "06e1c53c8df6edb2830d6aab64a6d4bed8479908" }

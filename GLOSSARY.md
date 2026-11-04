@@ -42,10 +42,6 @@ _Avoid_: video URL, link, stream
 One selectable HLS stream tier: 480p, 720p, or 1080p.
 _Avoid_: resolution, bitrate
 
-**Torrent**:
-A BitTorrent bundle published for a Release, identified by a torrent id and carrying codec and quality metadata plus a magnet link or `.torrent` file.
-_Avoid_: magnet, file, download
-
 **Anime4K preset**:
 A named mpv GLSL shader chain selected in Settings: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), Mode C+A (HQ), or Mode Fast (APU); enhancement can also be switched off.
 _Avoid_: filter, mode, shader
@@ -73,11 +69,11 @@ The home-screen list of Episodes that have Watch progress and are not yet comple
 _Avoid_: resume list, recent, in progress
 
 **Download**:
-A user-requested local copy of an Episode or Release, produced by an HLS download or a Torrent download.
-_Avoid_: save, cache, transfer
+A user-requested local copy of an Episode or Release, produced by an HLS download — the only way to obtain an Episode.
+_Avoid_: save, cache, transfer, torrent
 
 **Downloaded episode**:
-A Download indexed in the local database with its file path, size, Quality, and Skip timecodes, so it can be played offline. An HLS Download stores a local Offline playlist; a Torrent Download stores the video file as it is — mpv plays any container.
+A Download indexed in the local database with its file path, size, Quality, and Skip timecodes, so it can be played offline. It stores the local Offline playlist of the Episode.
 _Avoid_: local file, cached episode
 
 **Offline playlist**:

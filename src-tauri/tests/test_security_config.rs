@@ -199,8 +199,12 @@ fn asset_protocol_is_disabled_and_media_stays_native() {
     assert_contains(&development(), "media-src", &["'none'"]);
 }
 
+/// The WebView hands nothing to the operating system. The torrent engine owned
+/// the only outward opening — `magnet:*` links — and it is gone ([ADR
+/// 0013](adr/0013-hls-only-delivery-drops-bittorrent.md)); opening a downloads
+/// folder is a Rust call, not a page-granted permission.
 #[test]
-fn capabilities_grant_only_the_magnet_opener() {
+fn capabilities_grant_no_external_opening() {
     let raw = std::fs::read_to_string("capabilities/default.json")
         .expect("default capability must be readable");
     let value: serde_json::Value =
@@ -218,26 +222,17 @@ fn capabilities_grant_only_the_magnet_opener() {
         })
         .collect();
 
-    assert!(
-        !identifiers.iter().any(|id| id.starts_with("shell:")),
-        "the removed shell plugin must not come back: {identifiers:?}"
-    );
-
-    let opener = permissions
+    let offenders: Vec<&str> = identifiers
         .iter()
-        .find(|p| p.get("identifier").and_then(|i| i.as_str()) == Some("opener:allow-open-url"))
-        .expect("magnet opening needs opener:allow-open-url");
-    let scoped = opener
-        .get("allow")
-        .and_then(|a| a.as_array())
-        .expect("opener permission must carry an explicit allow scope");
-    let urls: Vec<&str> = scoped
-        .iter()
-        .filter_map(|entry| entry.get("url").and_then(|u| u.as_str()))
+        .copied()
+        .filter(|id| id.starts_with("shell:") || id.starts_with("opener:"))
         .collect();
-    assert_eq!(
-        urls,
-        vec!["magnet:*"],
-        "the opener scope must be limited to magnet links"
+    assert!(
+        offenders.is_empty(),
+        "the page may open nothing outside the app: {offenders:?}",
+    );
+    assert!(
+        !raw.to_lowercase().contains("magnet"),
+        "the magnet scope must not come back: {raw}"
     );
 }
