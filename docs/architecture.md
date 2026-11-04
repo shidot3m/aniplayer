@@ -179,6 +179,8 @@ Aniplayer/
 
 All paths are relative to the executable's directory (`startup::app_dir`). `mpv/` and `shaders/` are staged by `scripts/get_mpv.py` and `scripts/package_portable.py`; the release workflow verifies the mpv archive's SHA-256 pin and the archive check asserts both directories are present.
 
+`scripts/get_libmpv.py` stages the pinned in-process runtime (`libmpv-2.dll` plus its `LICENSE.*`/`NOTICE.md`) into a folder of the caller's choosing and caches it under `.cache/libmpv-<pin>/`. Nothing loads it yet: playback still goes through the `mpv/` child process, and the DLL arrives with the in-process backend ([#56](https://github.com/shidot3m/aniplayer/issues/56), [#57](https://github.com/shidot3m/aniplayer/issues/57)) — the source, pin and license are decided in [ADR 0012](adr/0012-libmpv-runtime-is-a-pinned-mirrored-lgpl-build.md), with the HEVC Main 10 gate recorded in [`docs/evidence/54/`](evidence/54/).
+
 ## Persistence
 
 `data/aniplayer.db` is the local-first store (see [ADR 0004](adr/0004-sqlite-local-first-store.md)):

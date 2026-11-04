@@ -110,6 +110,10 @@ _Avoid_: npm, npx, node, package runner
 Playback through the bundled mpv child process — the app's only playback path. The WebView draws the controls; video renders in the `native-player` window under the transparent main window, and every source (online HLS, Offline playlist, downloaded file) reaches mpv, not a `<video>` element.
 _Avoid_: external player, mpv fallback
 
+**Runtime pin**:
+The one named third-party media-runtime build the app ships, held by its digest and mirrored where the project controls how long it stays downloadable. Moving the pin is a deliberate change that the playback gate has to pass again.
+_Avoid_: dependency, latest build, rolling runtime
+
 **IPC command**:
 A named operation through which the WebView asks the Rust backend to act.
 _Avoid_: API call, RPC, endpoint

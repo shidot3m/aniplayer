@@ -72,6 +72,8 @@ python scripts/package_portable.py    # portable-папка: aniplayer.exe + mpv
 
 Релизный workflow скачивает pinned mpv-сборку и сверяет её SHA-256 (`scripts/get_mpv.py`), собирает ту же папку, упаковывает в `Aniplayer-portable.zip` и проверяет наличие `aniplayer.exe`, `mpv/mpv.exe` и Anime4K-шейдеров. Бандлы MSI/NSIS не публикуются.
 
+In-process рантайм (`libmpv-2.dll`) стаджится отдельно: `python scripts/get_libmpv.py <dir>` — pinned-сборка с проверкой SHA-256, кэш в `.cache/`, зеркало в релизе `latest`. Сейчас приложение его не грузит: воспроизведение идёт через `mpv.exe`, а DLL приходит вместе с in-process бэкендом ([#56](https://github.com/shidot3m/aniplayer/issues/56)/[#57](https://github.com/shidot3m/aniplayer/issues/57), [ADR 0012](docs/adr/0012-libmpv-runtime-is-a-pinned-mirrored-lgpl-build.md)).
+
 ## CI и релизы
 
 `.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: guard JS-тулчейна (CI и скрипты не должны содержать обращений к прежнему npm-клиенту), типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_hls_playlist`, `test_magnet_validation`, `test_player`, `test_player_command_threading`, `test_player_ipc`, `test_scanner`, `test_security_config`, `test_startup`, `test_torrent_path_validation`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.

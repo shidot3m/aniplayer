@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted, amended 2026-11-03 ([#45](https://github.com/shidot3m/aniplayer/issues/45)) and 2026-11-04 ([#49](https://github.com/shidot3m/aniplayer/issues/49))
+Status: accepted, amended 2026-11-03 ([#45](https://github.com/shidot3m/aniplayer/issues/45)) and 2026-11-04 ([#49](https://github.com/shidot3m/aniplayer/issues/49)); the libmpv rejection below is superseded by draft [ADR 0012](0012-libmpv-runtime-is-a-pinned-mirrored-lgpl-build.md) ([#54](https://github.com/shidot3m/aniplayer/issues/54)), which finds a build that does carry the DLL
 
 Supersedes: [ADR 0007](0007-remove-native-libmpv-layer.md) (its WebView-only rule), the playback-gate and remux parts of [ADR 0009](0009-matroska-remux-and-codec-probe.md), the `#EXT-X-MAP` / `#EXT-X-KEY` rejections and the hls.js dependency of [ADR 0008](0008-local-hls-offline-downloads.md), and the distribution sentence of [ADR 0006](0006-portable-only-distribution.md) that said the archive carries no native media runtime.
 
