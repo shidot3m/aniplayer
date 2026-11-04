@@ -3,9 +3,12 @@
 // #64 if the player ever grows subtitles.
 // aislop-ignore-file jsx-a11y/media-has-caption -- no caption source exists in the catalog today.
 import { usePlaybackSurface } from "../renderer/usePlaybackSurface";
+import { Anime4kCanvas } from "./Anime4kCanvas";
 
 interface PlayerVideoViewportProps {
   playbackError?: string | null;
+  enhancementActive: boolean;
+  anime4kPreset: string;
   onTogglePlay: () => void;
   onToggleFullscreen: () => void;
 }
@@ -16,6 +19,8 @@ interface PlayerVideoViewportProps {
  */
 export function PlayerVideoViewport({
   playbackError,
+  enhancementActive,
+  anime4kPreset,
   onTogglePlay,
   onToggleFullscreen,
 }: PlayerVideoViewportProps) {
@@ -24,14 +29,17 @@ export function PlayerVideoViewport({
   return (
     <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
       {/* No native controls: the overlay draws them, and the element is never a tab stop. */}
+      {/* While the renderer is up the canvas paints over the element, which keeps decoding. */}
       {/* biome-ignore lint/a11y/useMediaCaption: the catalog ships no text track to caption with. */}
       <video
         ref={videoRef}
-        className="h-full w-full bg-black object-contain"
+        className={`h-full w-full bg-black object-contain ${enhancementActive ? "opacity-0" : ""}`}
         playsInline
         tabIndex={-1}
         aria-hidden="true"
       />
+
+      {enhancementActive && <Anime4kCanvas videoRef={videoRef} preset={anime4kPreset} />}
 
       <button
         type="button"

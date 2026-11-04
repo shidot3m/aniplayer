@@ -6,6 +6,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const ENTRY_BUDGET_KB = 500;
 // The player tier of docs/adr/0002: the overlay plus the HLS loader, fetched on demand.
 const ON_DEMAND_BUDGET_KB = 1024;
+// The Anime4K tier of docs/adr/0002: one chunk of WGSL shader tables, fetched only when the
+// enhancement is switched on. 3374 kB measured on the vendor floor of anime4k-webgpu 1.0.0.
+const RENDERER_BUDGET_KB = 3600;
+// A declaration only the Anime4K shader tables carry: it marks the WebGPU chunk wherever it
+// lands, so the guard does not depend on the file name the bundler happened to pick.
+const WEBGPU_MARKER = "texture_storage_2d<rgba16float, write>";
 const REPO_ROOT = resolve(import.meta.dirname, "..");
 const OUT_DIR = "dist-bundle-split-test";
 
@@ -77,8 +83,16 @@ describe("bundle split", () => {
       expect(chunks.find((chunk) => chunk.name === name)?.code).not.toContain("EXT-X-STREAM-INF");
     }
     const onDemand = chunks
-      .filter((chunk) => !initialNames.includes(chunk.name))
+      .filter((chunk) => !initialNames.includes(chunk.name) && !chunk.code.includes(WEBGPU_MARKER))
       .reduce((sum, chunk) => sum + chunk.sizeKb, 0);
     expect(onDemand).toBeLessThanOrEqual(ON_DEMAND_BUDGET_KB);
+  });
+
+  it("keeps the WebGPU renderer behind the enhancement switch and inside its own tier", () => {
+    const rendererChunks = chunks.filter((chunk) => chunk.code.includes(WEBGPU_MARKER));
+
+    expect(rendererChunks).toHaveLength(1);
+    expect(initialNames).not.toContain(rendererChunks[0].name);
+    expect(rendererChunks[0].sizeKb).toBeLessThanOrEqual(RENDERER_BUDGET_KB);
   });
 });

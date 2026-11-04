@@ -81,7 +81,10 @@ export function PlaybackTab() {
           />
         </div>
         <div className="text-[11px] text-slate-400 mb-2.5">
-          {blocked ?? (active ? "Включен (кадр идёт через WebGPU-рендерер)" : "Выключен (кадр идёт напрямую)")}
+          {blocked ??
+            (active
+              ? "Включен (кадр идёт через WebGPU-рендерер)"
+              : "Выключен (кадр идёт напрямую)")}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {ANIME4K_PRESETS.map((p) => (

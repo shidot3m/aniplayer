@@ -12,9 +12,10 @@ const config = defineConfig({
   },
   clearScreen: false,
   // Budget: docs/adr/0002; every tier is enforced by tests/test_bundle_split.test.ts.
-  // This limit is the on-demand ceiling, so the default Vite gate stays clean.
+  // This limit is the largest accepted on-demand chunk (the Anime4K renderer), so the default
+  // Vite gate stays clean while the real tiers are the ones the test measures.
   build: {
-    chunkSizeWarningLimit: 1024,
+    chunkSizeWarningLimit: 3600,
   },
   server: {
     host: "127.0.0.1",

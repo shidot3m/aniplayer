@@ -96,6 +96,8 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     <div className="relative h-screen w-screen overflow-hidden bg-black select-none font-sans">
       <PlayerVideoViewport
         playbackError={playerStore.playbackError}
+        enhancementActive={isEnhancementActive}
+        anime4kPreset={playerStore.anime4kPreset}
         onTogglePlay={handleTogglePlay}
         onToggleFullscreen={toggleFullscreen}
       />

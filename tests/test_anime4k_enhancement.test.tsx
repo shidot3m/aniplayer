@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { usePlayerStore } from "@/features/player";
@@ -6,6 +6,12 @@ import { playback } from "@/features/player/renderer/playbackSession";
 import { PlayerOverlay } from "@/features/player/ui/PlayerOverlay";
 import { PlaybackTab } from "@/features/settings/ui/PlaybackTab";
 import type { EpisodeItem, Release } from "@/shared/types";
+import {
+  activeRenderer,
+  FakeAnime4kRenderer,
+  installWebGPU,
+  resetEnhancementStub,
+} from "./helpers/enhancementStubs";
 import { installMediaElementStub, resetHlsStub, setMediaDuration } from "./helpers/playbackStubs";
 
 const tauri = vi.hoisted(() => ({ invoke: vi.fn() }));
@@ -48,7 +54,11 @@ function Harness() {
 async function openPlayer() {
   const view = render(<Harness />);
   await act(async () => {});
-  return view;
+  return {
+    ...view,
+    video: () => view.container.querySelector("video") as HTMLVideoElement,
+    canvas: () => view.container.querySelector("canvas"),
+  };
 }
 
 async function pressPresetKey(digit: string) {
@@ -57,33 +67,38 @@ async function pressPresetKey(digit: string) {
   });
 }
 
-describe("Anime4K enhancement hotkeys", () => {
-  beforeEach(() => {
-    playback.close();
-    resetHlsStub();
-    installMediaElementStub();
-    setMediaDuration(1440);
-    localStorage.clear();
-    tauri.invoke.mockReset().mockResolvedValue(null);
-    usePlayerStore.setState({
-      isPlayerOpen: false,
-      isPlaying: false,
-      currentTime: 0,
-      duration: 0,
-      volume: 80,
-      isMuted: false,
-      speed: 1,
-      anime4kEnabled: false,
-      anime4kPreset: "Mode A (HQ)",
-      preferredQuality: "1080p",
-      activeQuality: "1080p",
-      autoplayNext: false,
-      autoSkipOpEd: false,
-      playbackError: null,
-      currentRelease: null,
-      currentEpisode: null,
-    });
+/** The world every case here starts from: an open player, a stubbed media stack, no GPU. */
+function resetEnhancementWorld(): void {
+  playback.close();
+  resetHlsStub();
+  resetEnhancementStub();
+  installMediaElementStub();
+  setMediaDuration(1440);
+  localStorage.clear();
+  tauri.invoke.mockReset().mockResolvedValue(null);
+  usePlayerStore.setState({
+    isPlayerOpen: false,
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0,
+    volume: 80,
+    isMuted: false,
+    speed: 1,
+    anime4kEnabled: false,
+    anime4kPreset: "Mode A (HQ)",
+    enhancementFault: null,
+    preferredQuality: "1080p",
+    activeQuality: "1080p",
+    autoplayNext: false,
+    autoSkipOpEd: false,
+    playbackError: null,
+    currentRelease: null,
+    currentEpisode: null,
   });
+}
+
+describe("Anime4K enhancement hotkeys", () => {
+  beforeEach(resetEnhancementWorld);
 
   it("maps Shift+1..6 onto the six presets Settings offers, in the same order", async () => {
     await openPlayer();
@@ -119,6 +134,8 @@ describe("Anime4K enhancement hotkeys", () => {
 });
 
 describe("Anime4K on a machine without WebGPU", () => {
+  beforeEach(resetEnhancementWorld);
+
   it("explains the refusal in the player menu instead of promising a filtered frame", async () => {
     const { container } = await openPlayer();
 
@@ -162,5 +179,116 @@ describe("Anime4K on a machine without WebGPU", () => {
     expect(upscaler.hasAttribute("disabled")).toBe(true);
     expect(screen.getByText(/нужен webgpu/i)).toBeDefined();
     expect(screen.getByText("Mode C+A (HQ)")).toBeDefined();
+  });
+});
+
+describe("Applying the enhancement to a live Episode", () => {
+  beforeEach(() => {
+    resetEnhancementWorld();
+    installWebGPU();
+  });
+
+  it("takes the live frame into the renderer and shows the rendered canvas in its place", async () => {
+    usePlayerStore.setState({ anime4kEnabled: true, anime4kPreset: "Mode B+B (HQ)" });
+
+    const { canvas, video } = await openPlayer();
+    await waitFor(() => expect(canvas()).not.toBeNull());
+
+    const renderer = activeRenderer();
+    expect(renderer?.video).toBe(video());
+    expect(renderer?.canvas).toBe(canvas());
+    expect(renderer?.preset).toBe("Mode B+B (HQ)");
+    expect(renderer?.started).toBe(true);
+    expect(video().className).toContain("opacity-0");
+    expect(screen.getByText("4K Upscale")).toBeDefined();
+  });
+
+  it("rebuilds the renderer on the same canvas when the preset changes mid-playback", async () => {
+    usePlayerStore.setState({ anime4kEnabled: true, anime4kPreset: "Mode A (HQ)" });
+
+    const { canvas, video } = await openPlayer();
+    await waitFor(() => expect(canvas()).not.toBeNull());
+    const first = activeRenderer();
+    const firstCanvas = canvas();
+
+    await act(async () => {
+      await usePlayerStore.getState().setAnime4kPreset("Mode C+A (HQ)");
+    });
+    await waitFor(() => expect(activeRenderer()).not.toBe(first));
+
+    expect(first?.preset).toBe("Mode A (HQ)");
+    expect(first?.stopped).toBe(true);
+    expect(activeRenderer()?.preset).toBe("Mode C+A (HQ)");
+    expect(activeRenderer()?.started).toBe(true);
+    expect(canvas()).toBe(firstCanvas);
+    expect(video().className).toContain("opacity-0");
+  });
+
+  it("stops the renderer and hands the frame back to the element when switched off", async () => {
+    usePlayerStore.setState({ anime4kEnabled: true, anime4kPreset: "Mode A+A (HQ)" });
+
+    const { canvas, video } = await openPlayer();
+    await waitFor(() => expect(canvas()).not.toBeNull());
+    const renderer = activeRenderer();
+
+    await act(async () => {
+      await usePlayerStore.getState().setAnime4kEnabled(false);
+    });
+
+    expect(renderer?.stopped).toBe(true);
+    expect(canvas()).toBeNull();
+    expect(video().className).not.toContain("opacity-0");
+    expect(screen.queryByText("4K Upscale")).toBeNull();
+  });
+
+  it("switches back on with the preset it was switched off from, on the live session", async () => {
+    const { canvas, video } = await openPlayer();
+    expect(canvas()).toBeNull();
+
+    await act(async () => {
+      await usePlayerStore.getState().setAnime4kEnabled(true);
+    });
+    await waitFor(() => expect(canvas()).not.toBeNull());
+
+    expect(activeRenderer()?.preset).toBe("Mode A (HQ)");
+    expect(activeRenderer()?.video).toBe(video());
+  });
+
+  it("keeps playing, seeking and switching Quality while the frame is filtered", async () => {
+    usePlayerStore.setState({ anime4kEnabled: true, anime4kPreset: "Mode A (HQ)" });
+
+    const { canvas, video } = await openPlayer();
+    await waitFor(() => expect(canvas()).not.toBeNull());
+
+    await act(async () => {
+      await usePlayerStore.getState().seekTo(420);
+    });
+    expect(video().currentTime).toBe(420);
+
+    await act(async () => {
+      await usePlayerStore.getState().pause();
+    });
+    expect(video().paused).toBe(true);
+
+    await act(async () => {
+      await usePlayerStore.getState().play();
+    });
+    expect(video().paused).toBe(false);
+
+    expect(canvas()).not.toBeNull();
+    expect(activeRenderer()?.stopped).toBe(false);
+  });
+
+  it("falls back to the element and explains a renderer that never came up", async () => {
+    FakeAnime4kRenderer.failNextWith = "WebGPU-адаптер не отдан машине";
+    usePlayerStore.setState({ anime4kEnabled: true, anime4kPreset: "Mode A (HQ)" });
+
+    const { canvas, video } = await openPlayer();
+    await waitFor(() => expect(activeRenderer()).toBeDefined());
+
+    expect(usePlayerStore.getState().enhancementFault).toBe("WebGPU-адаптер не отдан машине");
+    await waitFor(() => expect(canvas()).toBeNull());
+    expect(video().className).not.toContain("opacity-0");
+    expect(screen.queryByText("4K Upscale")).toBeNull();
   });
 });
