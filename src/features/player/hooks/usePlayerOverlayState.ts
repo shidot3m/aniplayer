@@ -1,9 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-function isTauriWindow() {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
+import { isTauriRuntime } from "@/shared/lib/utils";
 
 export function useAutoHide(isPlaying: boolean, isDrawerOpen: boolean) {
   const [isVisible, setIsVisible] = useState(true);
@@ -51,7 +48,7 @@ export function useAutoHide(isPlaying: boolean, isDrawerOpen: boolean) {
 }
 
 function fullscreenStatus(): Promise<boolean> {
-  if (isTauriWindow()) {
+  if (isTauriRuntime()) {
     return invoke<boolean>("app_is_fullscreen").then(Boolean);
   }
   if (typeof document !== "undefined") {
@@ -62,7 +59,7 @@ function fullscreenStatus(): Promise<boolean> {
 
 async function runExitFullscreen() {
   try {
-    if (isTauriWindow()) {
+    if (isTauriRuntime()) {
       await invoke("app_set_fullscreen", { fullscreen: false });
     }
   } catch {
@@ -80,7 +77,7 @@ async function runExitFullscreen() {
 
 async function setWindowFullscreen(next: boolean) {
   try {
-    if (isTauriWindow()) {
+    if (isTauriRuntime()) {
       await invoke("app_set_fullscreen", { fullscreen: next });
       return;
     }

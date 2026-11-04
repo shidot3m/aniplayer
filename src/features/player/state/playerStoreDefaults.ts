@@ -90,13 +90,12 @@ export interface PlayerState {
   isDrawerOpen: boolean;
   isSettingsOpen: boolean;
   playbackError: string | null;
-  hardwareDecoder: string | null;
 
   // Actions
   openPlayer: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;
   playEpisode: (release: ReleaseDetails, episode: EpisodeItem, startPos?: number) => Promise<void>;
   closePlayer: () => Promise<void>;
-  /** Ends the native session after mpv reported a fault, keeping the overlay to show why. */
+  /** Ends the session after playback failed, keeping the overlay to show why. */
   reportFault: (message: string) => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
@@ -203,8 +202,8 @@ export function resolveEpisodeQuality(episode: EpisodeItem, preferred: VideoQual
 
 /**
  * The stream an Episode exposes at one Quality, falling back to the best the
- * Episode has when that tier is missing. Both the store (which opens mpv) and the
- * overlay (which shows what is playing) resolve a source the same way.
+ * Episode has when that tier is missing. Both the store (which opens the media element) and
+ * the overlay (which shows what is playing) resolve a source the same way.
  */
 export function pickEpisodeSource(
   episode: Pick<EpisodeItem, "hls_1080" | "hls_720" | "hls_480">,

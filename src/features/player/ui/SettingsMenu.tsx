@@ -25,16 +25,9 @@ export function SettingsMenu({
     setAutoSkipOpEd,
     autoplayNext,
     setAutoplayNext,
-    hardwareDecoder,
   } = usePlayerStore();
 
-  const upscalerHint = !anime4kEnabled
-    ? "Выключен"
-    : hardwareDecoder == null
-      ? "Включен"
-      : hardwareDecoder
-        ? "Включен · аппаратный декодер"
-        : "Включен · софт-декод: на 4K возможны пропуски кадров";
+  const upscalerHint = anime4kEnabled ? "Включен" : "Выключен";
 
   return (
     <DropdownMenu>

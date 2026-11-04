@@ -2,7 +2,7 @@ pub mod api;
 mod commands;
 pub mod db;
 pub mod downloader;
-pub mod player;
+pub mod playback;
 pub mod startup;
 mod state;
 
@@ -19,18 +19,9 @@ pub fn run() -> Result<(), StartupError> {
 }
 
 fn run_with_state(state: AppState) -> Result<(), StartupError> {
-    use tauri::Manager;
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(state)
-        .on_window_event(|window, event| {
-            window
-                .app_handle()
-                .state::<AppState>()
-                .player
-                .handle_window_event(window, event);
-        })
         .invoke_handler(tauri::generate_handler![
             commands::app::ping,
             commands::db::db_save_bookmark,
@@ -61,13 +52,7 @@ fn run_with_state(state: AppState) -> Result<(), StartupError> {
             commands::downloads::downloader_open_folder,
             commands::app::app_set_fullscreen,
             commands::app::app_is_fullscreen,
-            commands::player::player_open,
-            commands::player::player_close,
-            commands::player::player_set_pause,
-            commands::player::player_seek,
-            commands::player::player_set_volume,
-            commands::player::player_set_speed,
-            commands::player::player_set_anime4k,
+            commands::player::player_resolve_source,
         ])
         .run(tauri::generate_context!())
         .map_err(|e| StartupError::Run {

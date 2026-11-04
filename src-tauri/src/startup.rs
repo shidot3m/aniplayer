@@ -5,7 +5,6 @@ use thiserror::Error;
 use crate::api::AnilibriaClient;
 use crate::db::Database;
 use crate::downloader::HlsDownloader;
-use crate::player::MpvSupervisor;
 use crate::state::AppState;
 
 /// A fatal error detected while bringing the application up. The `display`
@@ -77,8 +76,7 @@ pub fn bootstrap() -> Result<AppState, StartupError> {
         db: db.clone(),
         api: Arc::new(AnilibriaClient::new()),
         downloader: Arc::new(HlsDownloader::new(db)),
-        player: Arc::new(MpvSupervisor::new(app_dir.clone())),
-        app_dir,
+        app_dir: app_dir.clone(),
     })
 }
 

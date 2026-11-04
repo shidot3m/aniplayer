@@ -1,13 +1,23 @@
 import { act, render } from "@testing-library/react";
 import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { playback } from "@/features/player/renderer/playbackSession";
 import { usePlayerStore } from "@/features/player/state/playerStore";
 import { PlayerOverlay } from "@/features/player/ui/PlayerOverlay";
-import type { Release } from "../src/shared/types";
+import type { Release } from "@/shared/types";
+import {
+  activeSession,
+  FakeHls,
+  installMediaElementStub,
+  resetHlsStub,
+  setMediaDuration,
+} from "./helpers/playbackStubs";
 
-const mockInvoke = vi.fn();
+const tauri = vi.hoisted(() => ({ invoke: vi.fn() }));
+
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (...args: unknown[]) => mockInvoke(...args),
+  invoke: (...args: unknown[]) => tauri.invoke(...(args as [])),
+  convertFileSrc: (path: string) => `http://asset.localhost/${encodeURIComponent(path)}`,
 }));
 
 vi.mock("@tauri-apps/api/event", () => ({
@@ -27,14 +37,19 @@ const release: Release = {
   ],
 };
 
-function closedPlayerCalls() {
-  return mockInvoke.mock.calls.filter(([cmd]) => cmd === "player_close");
-}
-
 describe("player session lifetime", () => {
   beforeEach(() => {
-    mockInvoke.mockReset();
-    mockInvoke.mockResolvedValue(null);
+    playback.close();
+    resetHlsStub();
+    installMediaElementStub();
+    setMediaDuration(1440);
+    localStorage.clear();
+    tauri.invoke.mockReset();
+    tauri.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) =>
+      command === "player_resolve_source"
+        ? { kind: "remote", value: String(args?.source ?? "") }
+        : null,
+    );
     (window as unknown as { __TAURI_INTERNALS__: unknown }).__TAURI_INTERNALS__ = {};
     usePlayerStore.setState({
       isPlayerOpen: true,
@@ -50,12 +65,13 @@ describe("player session lifetime", () => {
       activeQuality: "1080p",
       autoplayNext: false,
       autoSkipOpEd: false,
+      playbackError: null,
       currentRelease: release,
       currentEpisode: release.episodes[0],
     });
   });
 
-  it("keeps the native session alive while the episode switches", async () => {
+  it("keeps the playback session alive while the episode switches", async () => {
     const { rerender } = render(
       <PlayerOverlay
         release={release}
@@ -64,6 +80,11 @@ describe("player session lifetime", () => {
         onGoToRelease={() => {}}
       />,
     );
+    await act(async () => {});
+    await act(async () => {
+      await usePlayerStore.getState().openPlayer(release, release.episodes[0]);
+    });
+    const session = activeSession();
 
     await act(async () => {
       await usePlayerStore.getState().playEpisode(release, release.episodes[1]);
@@ -78,16 +99,12 @@ describe("player session lifetime", () => {
     );
     await act(async () => {});
 
-    expect(closedPlayerCalls()).toHaveLength(0);
-    const opened = mockInvoke.mock.calls.filter(([cmd]) => cmd === "player_open");
-    expect(opened[opened.length - 1]?.[1]).toEqual(
-      expect.objectContaining({
-        request: expect.objectContaining({ source: "https://test/ep2.m3u8" }),
-      }),
-    );
+    expect(FakeHls.instances).toHaveLength(1);
+    expect(session?.destroy).not.toHaveBeenCalled();
+    expect(session?.loadedSource).toBe("https://test/ep2.m3u8");
   });
 
-  it("leaves the native session to the store when the overlay unmounts", async () => {
+  it("leaves the session to the store when the overlay unmounts", async () => {
     const { unmount } = render(
       <PlayerOverlay
         release={release}
@@ -96,14 +113,19 @@ describe("player session lifetime", () => {
         onGoToRelease={() => {}}
       />,
     );
+    await act(async () => {
+      await usePlayerStore.getState().openPlayer(release, release.episodes[0]);
+    });
+    const session = activeSession();
 
     unmount();
     await act(async () => {});
 
-    expect(closedPlayerCalls()).toHaveLength(0);
+    expect(session?.destroy).not.toHaveBeenCalled();
+    expect(session?.media).toBeNull();
   });
 
-  it("keeps the native session through the remount React does in development", async () => {
+  it("keeps the session through the remount React does in development", async () => {
     const { unmount } = render(
       <StrictMode>
         <PlayerOverlay
@@ -114,12 +136,17 @@ describe("player session lifetime", () => {
         />
       </StrictMode>,
     );
-
     await act(async () => {});
-    expect(closedPlayerCalls()).toHaveLength(0);
+    await act(async () => {
+      await usePlayerStore.getState().openPlayer(release, release.episodes[0]);
+    });
+    const session = activeSession();
+    expect(session?.destroy).not.toHaveBeenCalled();
+    expect(session?.media).not.toBeNull();
+    expect(FakeHls.instances).toHaveLength(1);
 
     unmount();
     await act(async () => {});
-    expect(closedPlayerCalls()).toHaveLength(0);
+    expect(session?.destroy).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,4 @@
 bin/
-shaders/
 target/
 src-tauri/target/
 node_modules/

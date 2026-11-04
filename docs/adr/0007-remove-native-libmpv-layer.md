@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted; its WebView-only rule is superseded by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
+Status: accepted; its WebView-only rule was superseded by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md) and is restored by [ADR 0014](0014-webview-is-the-only-playback-backend.md) — the webview is the only backend again, and no native media runtime ships
 
 ## Context
 

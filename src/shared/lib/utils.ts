@@ -5,6 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Whether the page runs inside the Tauri shell, where `invoke` reaches the Rust backend. */
+export function isTauriRuntime(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
 export function formatTime(seconds: number): string {
   if (Number.isNaN(seconds) || seconds < 0) return "00:00";
   const m = Math.floor(seconds / 60);

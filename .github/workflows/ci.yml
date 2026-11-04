@@ -85,9 +85,6 @@ jobs:
           --test test_db
           --test test_download_queue
           --test test_hls_playlist
-          --test test_player
-          --test test_player_command_threading
-          --test test_player_ipc
-          --test test_player_window_stack
+          --test test_playback_source
           --test test_security_config
           --test test_startup

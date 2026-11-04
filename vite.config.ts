@@ -12,9 +12,9 @@ const config = defineConfig({
   },
   clearScreen: false,
   // Budget: docs/adr/0002; every tier is enforced by tests/test_bundle_split.test.ts.
-  // This limit only silences the expected on-demand player/Anime4K chunk sizes.
+  // This limit is the on-demand ceiling, so the default Vite gate stays clean.
   build: {
-    chunkSizeWarningLimit: 3600,
+    chunkSizeWarningLimit: 1024,
   },
   server: {
     host: "127.0.0.1",

@@ -1,6 +1,6 @@
 # Aniplayer
 
-Aniplayer is a portable Windows player for anime from the AniLiberty catalog, with offline downloads and real-time Anime4K enhancement, playing everything through its bundled mpv runtime.
+Aniplayer is a portable Windows player for anime from the AniLiberty catalog, with offline downloads and real-time Anime4K enhancement. Playback runs in the app's own webview: a `<video>` element fed by hls.js, with the React controls over the frame.
 
 ## Language
 
@@ -43,7 +43,7 @@ One selectable HLS stream tier: 480p, 720p, or 1080p.
 _Avoid_: resolution, bitrate
 
 **Anime4K preset**:
-A named mpv GLSL shader chain selected in Settings: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), Mode C+A (HQ), or Mode Fast (APU); enhancement can also be switched off.
+A named Anime4K enhancement selected in Settings: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), Mode C+A (HQ), or Mode Fast (APU); enhancement can also be switched off. The choice is a persisted Setting; the webview renderer that applies it is [#61](https://github.com/shidot3m/aniplayer/issues/61), so between [#60](https://github.com/shidot3m/aniplayer/issues/60) and that ticket the frame is not filtered.
 _Avoid_: filter, mode, shader
 
 ### User state
@@ -77,12 +77,8 @@ A Download indexed in the local database with its file path, size, Quality, and 
 _Avoid_: local file, cached episode
 
 **Offline playlist**:
-The `index.m3u8` inside a downloaded Episode folder, whose segment, init-segment, and key URIs point at the local files beside it. mpv plays it directly, without the network.
+The `index.m3u8` inside a downloaded Episode folder, whose segment, init-segment, and key URIs point at the local files beside it. The webview plays it over the asset protocol, without the network.
 _Avoid_: cached playlist, manifest file
-
-**Hardware decode**:
-Whether mpv put a hardware decoder on this stream (`hwdec-current`); software decode is the fallback. It informs the 4K warning only — no codec verdict gates playback.
-_Avoid_: codec probe, capability check
 
 **Download status**:
 One of PENDING, DOWNLOADING, COMPLETED, or FAILED.
@@ -102,24 +98,16 @@ _Avoid_: installer, package, distribution
 Bun — the single runtime, package manager, and script runner of the project's frontend tooling. It installs dependencies, runs every script and tool, and hosts the tests; no Node runtime or npm client path remains in the project.
 _Avoid_: npm, npx, node, package runner
 
-**Native playback**:
-Playback through the bundled mpv child process — the app's only playback path. The WebView draws the controls; video renders in the `native-player` window under the transparent main window, and every source (online HLS, Offline playlist, downloaded file) reaches mpv, not a `<video>` element.
-_Avoid_: external player, mpv fallback
+**WebView playback**:
+The app's only playback path: a `<video>` element inside the main window, fed by hls.js through Media Source Extensions, drawing the frame under the React controls. Every source — online HLS, Offline playlist, downloaded file — reaches that element.
+_Avoid_: native playback, mpv, external player
 
-**Runtime pin**:
-The one named third-party media-runtime build the app ships, held by its digest and mirrored where the project controls how long it stays downloadable. Moving the pin is a deliberate change that the playback gate has to pass again.
-_Avoid_: dependency, latest build, rolling runtime
+**Playable source**:
+The Rust verdict on an Episode source, and the only way a stored path reaches the media element: a re-parsed `http(s)` URL, or a canonical file inside the downloads folder turned into an asset URL.
+_Avoid_: file path, source string
 
 **IPC command**:
 A named operation through which the WebView asks the Rust backend to act.
 _Avoid_: API call, RPC, endpoint
-
-**Command queue**:
-The line of IPC commands one session keeps for mpv, drained by a single writer thread. Handing a command over never waits for mpv, so a pipe mpv has stopped reading costs the playback, not the controls.
-_Avoid_: buffer, mailbox, backlog
-
-**Stall watchdog**:
-The per-session check on whether mpv still answers the command it was given while the pipe stays silent. Its silence budget is phase-aware: while a file is opening — until playback reports its first position — the check runs on the load budget, because mpv holds its core inside the network wait; once playback is established, it runs on the interactive deadline. A player that fails the check is reported as a fault and taken down, so the user gets an error and a working close instead of a frozen player.
-_Avoid_: heartbeat, ping, keepalive
 
 See [docs/architecture.md](docs/architecture.md) for how these concepts map onto modules, and [docs/adr/](docs/adr/) for the decisions behind them.

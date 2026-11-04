@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: superseded by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
+Status: superseded by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md); [ADR 0014](0014-webview-is-the-only-playback-backend.md) keeps the remux layer and the codec-capability probe out of the tree — an undecodable source is an explained fault, not a pre-flight check
 
 ## Context
 

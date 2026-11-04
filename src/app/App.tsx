@@ -40,11 +40,6 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
-    document.body.classList.toggle("native-player-open", isPlayerOpen);
-    return () => document.body.classList.remove("native-player-open");
-  }, [isPlayerOpen]);
-
-  useEffect(() => {
     loadInitialData();
     initSettings();
     let unlistenFn: (() => void) | undefined;

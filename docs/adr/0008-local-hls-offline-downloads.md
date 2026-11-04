@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md) and [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md)
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md) and [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md); the reader of the folder is the webview under [ADR 0014](0014-webview-is-the-only-playback-backend.md)
 
 ## Context
 

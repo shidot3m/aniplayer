@@ -1,0 +1,58 @@
+# 14. The WebView is the only playback backend: `<video>` fed by hls.js
+
+Date: 2026-11-04
+
+Status: accepted ([#60](https://github.com/shidot3m/aniplayer/issues/60))
+
+Supersedes: [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md) in full, and with it the subprocess design that replaced [ADR 0007](0007-remove-native-libmpv-layer.md)'s WebView-only rule — which this ADR restores. Amends the player tier of [ADR 0002](0002-bundle-budget-and-code-splitting.md), the archive contents of [ADR 0006](0006-portable-only-distribution.md), and the player that reads the folder in [ADR 0008](0008-local-hls-offline-downloads.md). Part of the [#58](https://github.com/shidot3m/aniplayer/issues/58) swap, after delivery became HLS-only under [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md).
+
+## Context
+
+[ADR 0010] justified a supervised mpv by a decoding gap: the WebView could not demux MPEG-TS-with-HEVC or decode AV1/VP9/Opus on a machine without those codecs, and the catalog's compact releases were exactly that. Its cost was a whole process-runtime stack — a named-pipe JSON IPC, a writer thread, a phase-aware stall watchdog, sessions serialized behind one mutex, an `async` flag on every player command, a second borderless window, a transparent hole in the main window, a topmost band and a pixel-level client-area fit — and that machinery is where the user-visible bug tail came from: [#43] controls wedged by a blocked pipe write, [#44] the event loop blocked by the session mutex, [#45] a stall on a rotating CDN host, [#48] a development remount closing the player, [#49] and [#52] the picture falling under another window, [#50] a Quality switch that errored, [#51] missing shaders in a dev build. The last attempt to fix the root cause — in-process libmpv ([#53]–[#57]) — was cancelled.
+
+The premise moved when delivery did. Measured for [#58] on 2026-11-04 across 25 Releases × 3 tiers = 75 HLS playlists and 1158 segment URIs: every AniLiberty HLS stream is **H.264 High / yuv420p + AAC-LC in plain MPEG-TS**, with no `#EXT-X-STREAM-INF`, no `#EXT-X-MAP`, no `#EXT-X-KEY` and no `CODECS=` attribute. HEVC and the exotic codecs lived in the torrents that [ADR 0013] removed from the product. H.264 + AAC in TS is what WebView2 decodes natively and what hls.js transmuxes into Media Source Extensions without help. The app is now shipping a ~100 MB media runtime to reach a stream its own webview can already play.
+
+## Decision
+
+- **The media element is the player.** `src/features/player/renderer/playbackSession.ts` owns one `<video>` element and one hls.js session; `PlayerVideoViewport` renders that element and the React controls lie over it in the same window. The subprocess layer is deleted without a trace: no supervisor, pipe channel, writer thread, watchdog, session mutex, or mandatory `async` on player commands, no second window, no transparency, no topmost band, no client-area fitting. The symptom classes those parts existed to manage stop being reachable.
+- **The session belongs to the store, as it did before.** `playerStore` opens and closes sessions; mounting and unmounting `PlayerOverlay` only hands the session an element and takes it back ([#48] is a property of React, not of mpv). `attach()` and `open()` may arrive in either order, and a remount re-binds the live session to the new element instead of starting over.
+- **Quality is a source reload, not a level switch.** Each tier is its own media playlist, so switching is `loadSource` under the live element with the position and the paused state carried over — [#50] stops being a session restart.
+- **One backend verdict stays in Rust.** `playback::resolve_source` accepts a re-parsed `http(s)` URL or a canonical file inside the app's `downloads/` folder and refuses everything else, in Russian, because the answer is shown to the user. The frontend interpolates nothing into it: the command takes the whole stored source as one argument.
+- **Downloaded episodes arrive over the asset protocol.** `app.security.assetProtocol` is enabled with the scope `$EXE/downloads/**` and `player_resolve_source` hands back the canonical path, which the page turns into an asset URL with `convertFileSrc`. hls.js fetches the Offline playlist and its segments from that origin, so a downloaded Episode plays with the network off. Tauri echoes the page origin into `Access-Control-Allow-Origin` on that protocol, which is what makes the cross-origin XHR legal.
+- **The CSP carries the media stack it now hosts.** `media-src blob:` (the MediaSource object URL), `worker-src 'self' blob:` (hls.js builds its transmuxer worker from a blob), and `connect-src` gains `asset:` / `http://asset.localhost`; the CDN rides the `https:` that catalog traffic already needed. The production and development policies stay identical outside `script-src` and `connect-src`, and `src-tauri/tests/test_security_config.rs` guards the whole contract — including that the window configuration is one opaque window.
+- **hls.js is loaded when playback starts.** The session dynamic-imports the library, so the entry chunk keeps its 500 kB budget while hls.js (~580 kB minified) ships as its own on-demand chunk next to the overlay chunk; the on-demand tier is 1 MB ([ADR 0002] amended, enforced by `tests/test_bundle_split.test.ts`).
+- **Failure is an explanation, not a probe.** One `recoverMediaError()` attempt, then the overlay shows a Russian fault and the session ends. The codec-capability probe and the Matroska remux layer do not return ([ADR 0009] stays superseded): nothing in the tree asks "can this machine decode it" before playing.
+- **Anime4K is planned as a WebGPU renderer over the same element** ([#61](https://github.com/shidot3m/aniplayer/issues/61)), not as an mpv GLSL chain. The mpv `shaders/anime4k/` directory leaves the archive with this ticket; until #61 lands, the preset and its toggle are persisted preferences that no frame is filtered by, which is the deliberate half-finished state of the [#58] swap and the reason the WebGPU ticket keeps the same controls in place.
+- **Retry policy is not decided here.** hls.js runs on its defaults for now; the bounded-retry policy against CDN host rotation is [#62](https://github.com/shidot3m/aniplayer/issues/62).
+
+## Considered options
+
+- **Keep mpv as a fallback for streams the webview cannot decode** — rejected: that is the two-stack split [ADR 0007] deleted 18.7k lines to end, and the measurement says the fallback would never fire on HLS-only delivery.
+- **Ship a native HLS demuxer into the webview** (a custom protocol plus hand-rolled transmuxing) — rejected: hls.js already is that, in a library the ecosystem maintains.
+- **In-process libmpv** ([#53]–[#57]) — cancelled with the epic. The pinned LGPL build drafted for it (the cancelled ADR 0012), its staging script and its gate evidence leave the tree with this ticket, so no half-arrived runtime is left behind.
+- **Keep the second window and only swap the decoder** — rejected: the window stack, the transparency and the topmost band were never about decoding. They existed to give a foreign HWND somewhere to paint.
+
+## Consequences
+
+- The portable archive is `aniplayer.exe` and an empty `data/`: no `mpv/`, no `shaders/`. The release workflow asserts the opposite of what it used to — a media runtime or a shader directory in the zip is now a build failure.
+- Playback reach becomes the platform's decoder list. The catalog's H.264 + AAC streams are inside it everywhere WebView2 runs; a future source outside it would need a real answer, not a probe-and-blame screen.
+- Subtitle handling changes shape: mpv selected embedded tracks with `--slang=en,ru`, and the webview path exposes none. Tracked as [#64](https://github.com/shidot3m/aniplayer/issues/64).
+- One window means the app's window behaviour is Tauri's default: Alt+Tab, focus changes and minimize cannot move the picture under another window, because there is only one surface.
+- Tests moved to the seams that remain: the frontend feature is tested through React Testing Library with hls.js as the module boundary, and the Rust side keeps the download pipeline, the store and the source verdict under test. `test_player*`, `test_player_ipc`, `test_player_command_threading`, `test_player_window_stack` and the native-playback frontend tests are deleted with the code they covered — a test that asserts which backend exists is always on the wrong side of the next decision, and this one is now guarded by behaviour instead.
+
+[ADR 0002]: 0002-bundle-budget-and-code-splitting.md
+[ADR 0006]: 0006-portable-only-distribution.md
+[ADR 0007]: 0007-remove-native-libmpv-layer.md
+[ADR 0008]: 0008-local-hls-offline-downloads.md
+[ADR 0009]: 0009-matroska-remux-and-codec-probe.md
+[ADR 0010]: 0010-mpv-subprocess-as-the-only-playback-backend.md
+[ADR 0013]: 0013-hls-only-delivery-drops-bittorrent.md
+[#43]: https://github.com/shidot3m/aniplayer/issues/43
+[#44]: https://github.com/shidot3m/aniplayer/issues/44
+[#45]: https://github.com/shidot3m/aniplayer/issues/45
+[#48]: https://github.com/shidot3m/aniplayer/issues/48
+[#49]: https://github.com/shidot3m/aniplayer/issues/49
+[#50]: https://github.com/shidot3m/aniplayer/issues/50
+[#51]: https://github.com/shidot3m/aniplayer/issues/51
+[#52]: https://github.com/shidot3m/aniplayer/issues/52
+[#58]: https://github.com/shidot3m/aniplayer/issues/58

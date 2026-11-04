@@ -1,62 +1,16 @@
-//! Player IPC. Every command here runs off the main thread: `MpvSupervisor` serializes
-//! sessions behind one mutex, and `open()` holds that mutex while it asks the main thread
-//! for window geometry and visibility. A command that waited on the mutex from the main
-//! thread would close the cycle and freeze all IPC (verified in #30).
+use tauri::State;
 
-use tauri::{Manager, State};
-
-use crate::player::MpvOpenRequest;
+use crate::playback::{resolve_source, ResolvedSource};
 use crate::state::AppState;
 
+/// The playable source behind an Episode's `hls_*` field: a stream URL the WebView may load
+/// directly, or a canonical file in the downloads folder it must load through the asset
+/// protocol. Validation is a couple of filesystem calls and guards no shared session, so it
+/// runs on the command thread it is handed and needs no `async`.
 #[tauri::command]
-pub(crate) async fn player_open(
-    app: tauri::AppHandle,
+pub(crate) fn player_resolve_source(
     state: State<'_, AppState>,
-    request: MpvOpenRequest,
-) -> Result<(), String> {
-    let main = app
-        .get_webview_window("main")
-        .ok_or_else(|| "Main window not found".to_string())?;
-    let player = state.player.clone();
-    tauri::async_runtime::spawn_blocking(move || player.open(&app, &main, request))
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[tauri::command(async)]
-pub(crate) fn player_close(app: tauri::AppHandle, state: State<'_, AppState>) {
-    state.player.close(app.get_webview_window("main").as_ref());
-}
-
-#[tauri::command(async)]
-pub(crate) fn player_set_pause(state: State<'_, AppState>, paused: bool) -> Result<(), String> {
-    state.player.set_pause(paused)
-}
-
-#[tauri::command(async)]
-pub(crate) fn player_seek(state: State<'_, AppState>, seconds: f64) -> Result<(), String> {
-    state.player.seek(seconds)
-}
-
-#[tauri::command(async)]
-pub(crate) fn player_set_volume(
-    state: State<'_, AppState>,
-    volume: f64,
-    muted: bool,
-) -> Result<(), String> {
-    state.player.set_volume(volume, muted)
-}
-
-#[tauri::command(async)]
-pub(crate) fn player_set_speed(state: State<'_, AppState>, speed: f64) -> Result<(), String> {
-    state.player.set_speed(speed)
-}
-
-#[tauri::command(async)]
-pub(crate) fn player_set_anime4k(
-    state: State<'_, AppState>,
-    enabled: bool,
-    preset: String,
-) -> Result<(), String> {
-    state.player.set_anime4k(enabled, &preset)
+    source: String,
+) -> Result<ResolvedSource, String> {
+    resolve_source(&state.app_dir, &source)
 }

@@ -91,7 +91,7 @@ fn localize_uri_attribute(
 }
 
 /// Turns a remote media playlist into a self-contained one whose media and key/map
-/// URIs are local file names. mpv reads the result directly, without the network.
+/// URIs are local file names. The player reads the result directly, without the network.
 pub fn prepare_local_playlist(
     playlist_text: &str,
     playlist_url: &str,
@@ -330,7 +330,7 @@ impl HlsDownloader {
             .map_err(|e| e.to_string())?;
 
         // Every episode owns a folder with its playlist and the resources the
-        // playlist names, so mpv can replay it offline with no network access.
+        // playlist names, so the player can replay it offline with no network access.
         let episode_dir = rel_folder.join(ordinal.to_string());
         let dest_path = episode_dir.join(PLAYLIST_FILE_NAME);
         let dest_str = dest_path.to_string_lossy().to_string();

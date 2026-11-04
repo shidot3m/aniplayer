@@ -4,6 +4,8 @@ import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const ENTRY_BUDGET_KB = 500;
+// The player tier of docs/adr/0002: the overlay plus the HLS loader, fetched on demand.
+const ON_DEMAND_BUDGET_KB = 1024;
 const REPO_ROOT = resolve(import.meta.dirname, "..");
 const OUT_DIR = "dist-bundle-split-test";
 
@@ -67,10 +69,16 @@ describe("bundle split", () => {
     );
   });
 
-  it("keeps the player overlay out of the initial JavaScript load", () => {
+  it("keeps the player overlay and the HLS loader out of the initial JavaScript load", () => {
     expect(chunks.some((chunk) => !initialNames.includes(chunk.name))).toBe(true);
     for (const name of initialNames) {
-      expect(chunks.find((chunk) => chunk.name === name)?.code).not.toContain("player-event");
+      // The tag only hls.js parses: it arriving in an entry chunk means the static import
+      // graph reached the media stack again, which ADR 0002 forbids.
+      expect(chunks.find((chunk) => chunk.name === name)?.code).not.toContain("EXT-X-STREAM-INF");
     }
+    const onDemand = chunks
+      .filter((chunk) => !initialNames.includes(chunk.name))
+      .reduce((sum, chunk) => sum + chunk.sizeKb, 0);
+    expect(onDemand).toBeLessThanOrEqual(ON_DEMAND_BUDGET_KB);
   });
 });

@@ -2,7 +2,7 @@
 
 Date: 2026-10-27
 
-Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md), amended again by [ADR 0014](0014-webview-is-the-only-playback-backend.md)
 
 ## Context
 
@@ -32,3 +32,10 @@ Splitting these libraries further than "on demand" is not possible: each ships a
 
 - `hls.js` and `anime4k-webgpu` left the dependency graph with the WebView player, so their per-library budgets and chunk-placement signatures no longer exist. The 3.6 MB Anime4K tier is gone — the shaders moved to the portable archive and mpv runs them.
 - The rule this ADR keeps is the split itself: `LazyPlayerOverlay` stays lazy, and the initial JS budget (≤ 500 kB) is still enforced against the real production artifact by `tests/test_bundle_split.test.ts`.
+
+## Amendment (2026-11-04, [ADR 0014](0014-webview-is-the-only-playback-backend.md))
+
+- `hls.js` is back in the frontend graph as the WebView playback loader, and `anime4k-webgpu` is not: the mpv shader chain left the tree with [#60](https://github.com/shidot3m/aniplayer/issues/60), and the WebGPU renderer that would replace it is [#61](https://github.com/shidot3m/aniplayer/issues/61), whose tier this ADR does not set in advance.
+- The split rule gains one level: `playbackSession` dynamic-imports `hls.js` when a session binds, so a static store import does not drag the loader into the entry chunk — the shape this ADR exists to prevent, now enforced inside the player feature rather than only at the barrel.
+- Current tiers, measured 2026-11-04 on the real production artifact: entry `index-*.js` 378 kB (budget ≤ 500 kB), on-demand `PlayerOverlay-*.js` 29 kB plus `hls-*.js` 579 kB (combined budget ≤ 1 MB). `build.chunkSizeWarningLimit` is set to that 1 MB on-demand ceiling.
+- `tests/test_bundle_split.test.ts` marks the loader by the `EXT-X-STREAM-INF` tag it parses: finding that tag in an entry chunk is the regression this amendment guards.

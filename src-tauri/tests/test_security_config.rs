@@ -10,7 +10,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
-use tauri_utils::config::{Config, Csp, CspDirectiveSources};
+use tauri_utils::config::{Color, Config, Csp, CspDirectiveSources, FsScope};
 
 fn app_config() -> Config {
     let path = Path::new("tauri.conf.json");
@@ -71,15 +71,12 @@ fn assert_excludes(map: &HashMap<String, CspDirectiveSources>, directive: &str, 
     }
 }
 
-/// Origins media used to need in the WebView player. mpv is the only backend now
-/// ([ADR 0010]), so none of them may appear in the shipped policy any more: the
-/// webview must not be able to load media at all.
-const FORBIDDEN_MEDIA_SOURCES: &[&str] = &[
-    "blob:",
-    "asset:",
-    "http://asset.localhost",
-    "http://remux.localhost",
-];
+/// The media stack the WebView now owns: hls.js hands the `<video>` element a `blob:`
+/// MediaSource URL and fetches playlists and segments with XHR, which for a downloaded
+/// Episode goes to the asset protocol. Both are the whole media surface, and nothing else
+/// may be reachable from it.
+const REQUIRED_MEDIA_SOURCES: &[&str] = &["blob:"];
+const ASSET_SOURCES: &[&str] = &["asset:", "http://asset.localhost"];
 const IPC_SOURCES: &[&str] = &["ipc:", "http://ipc.localhost"];
 
 #[test]
@@ -117,18 +114,32 @@ fn production_policy_allows_the_ipc_origins() {
 }
 
 #[test]
-fn production_policy_loads_no_media_into_the_webview() {
+fn production_policy_plays_hls_inside_the_webview() {
     let map = production();
 
     assert_contains(&map, "connect-src", &["'self'", "https:"]);
-    // mpv fetches and decodes everything outside the webview; the page itself
-    // must not be able to attach media of any origin, local or remote.
-    assert_contains(&map, "media-src", &["'none'"]);
-    assert_excludes(&map, "media-src", FORBIDDEN_MEDIA_SOURCES);
+    // The media element's only source is the MediaSource blob hls.js creates; a playlist
+    // and its segments arrive over XHR, from the CDN (https) or from the asset protocol.
+    assert_contains(&map, "media-src", REQUIRED_MEDIA_SOURCES);
+    assert_contains(&map, "worker-src", &["'self'", "blob:"]);
+    assert_contains(&map, "connect-src", ASSET_SOURCES);
+    assert_excludes(
+        &map,
+        "media-src",
+        &[
+            "'self'",
+            "https:",
+            "http:",
+            "asset:",
+            "http://asset.localhost",
+        ],
+    );
+    // hls.js ships as a module; nothing in the playback path evaluates code or frames a page.
+    assert_excludes(&map, "worker-src", &["https:", "http:"]);
     // Posters are remote or inline placeholders; local files never reach an <img>.
     assert_contains(&map, "img-src", &["'self'", "https:", "data:"]);
     assert_excludes(&map, "img-src", &["http:", "asset:"]);
-    assert_excludes(&map, "connect-src", FORBIDDEN_MEDIA_SOURCES);
+    assert_excludes(&map, "connect-src", &["http://remux.localhost"]);
 }
 
 #[test]
@@ -185,18 +196,65 @@ fn development_and_production_policies_differ_only_where_the_dev_server_needs_it
     }
 }
 
-/// The webview has no media surface to protect: downloaded episodes are opened by
-/// path inside the Rust player supervisor, which confines them to `downloads/`.
-/// The asset protocol therefore must stay off — an enabled protocol would hand the
-/// page a file reader the backend already gates.
+/// A downloaded Episode is an Offline playlist on disk, and the WebView reads it through the
+/// asset protocol. The protocol is therefore on, and confined to the folder the downloader
+/// writes into: the executable's own `downloads/`, which is also where `resolve_source`
+/// canonicalizes before handing a path out.
 #[test]
-fn asset_protocol_is_disabled_and_media_stays_native() {
+fn asset_protocol_is_enabled_and_confined_to_the_downloads_folder() {
     let config = app_config();
+    let asset = &config.app.security.asset_protocol;
     assert!(
-        !config.app.security.asset_protocol.enable,
-        "the asset protocol must be disabled now that mpv is the only backend"
+        asset.enable,
+        "the webview can only play a downloaded episode through the asset protocol"
     );
-    assert_contains(&development(), "media-src", &["'none'"]);
+    let allowed: Vec<String> = match &asset.scope {
+        FsScope::AllowedPaths(paths) => paths.iter().map(|p| p.display().to_string()).collect(),
+        FsScope::Scope { allow, deny, .. } => {
+            assert!(deny.is_empty(), "the downloads scope needs no deny list");
+            allow.iter().map(|p| p.display().to_string()).collect()
+        }
+    };
+    assert_eq!(
+        allowed,
+        vec![r"$EXE/downloads/**".to_string()],
+        "the asset protocol must serve the downloads folder and nothing else",
+    );
+    assert_contains(&production(), "connect-src", ASSET_SOURCES);
+    assert_contains(&development(), "connect-src", ASSET_SOURCES);
+}
+
+/// One window is the whole stack: the frame and the controls share it, so there is no second
+/// surface to keep on top of, no hole to cut in the main window, and no redirection-bitmap
+/// trick to hold that hole open. Losing any of these three returns the [#49] and [#52] class
+/// of symptoms — a picture that falls under another window on Alt+Tab — to the tree.
+///
+/// [ADR 0014](../../docs/adr/0014-webview-hls-playback.md) is why the WebView is the backend.
+#[test]
+fn the_window_stack_is_a_single_opaque_window() {
+    let config = app_config();
+    let windows = &config.app.windows;
+    assert_eq!(
+        windows.len(),
+        1,
+        "the player no longer needs a second window to draw into",
+    );
+    let main = &windows[0];
+    assert_eq!(main.label, "main");
+    assert!(!main.transparent, "the main window carries the frame now");
+    assert!(
+        !main.no_redirection_bitmap,
+        "noRedirectionBitmap only serves a transparent window",
+    );
+    assert!(
+        !main.always_on_top,
+        "nothing may pin the app above the desktop"
+    );
+    assert_eq!(
+        main.background_color,
+        Some(Color(9, 10, 15, 255)),
+        "the window opens in the app's own dark background instead of a transparent one",
+    );
 }
 
 /// The WebView hands nothing to the operating system. The torrent engine owned

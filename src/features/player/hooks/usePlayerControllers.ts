@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import type { EpisodeItem, Release, VideoQuality } from "@/shared/types";
-import { useNativePlayer } from "../renderer/useNativePlayer";
+import { usePlaybackEvents } from "../renderer/usePlaybackEvents";
 import { usePlayerStore } from "../state/playerStore";
 import { getAvailableQualities, pickEpisodeSource } from "../state/playerStoreDefaults";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";
@@ -151,19 +151,18 @@ export function usePlayerControllers({
     void usePlayerStore.getState().reportFault(message);
   }, []);
 
-  useNativePlayer({
+  usePlaybackEvents({
     onTimeUpdate: handleTimeUpdate,
     onEnded: handleEnded,
     onFault: handleFault,
-    onHardwareDecoder: (decoder) => usePlayerStore.setState({ hardwareDecoder: decoder }),
   });
 
   useEffect(() => {
-    // Unmounting is not closing. React remounts this overlay in development, and a
-    // `player_close` from here would tear down the session the next mount is already
-    // playing into (issue #48). The store ends sessions — `closePlayer` on the way out,
-    // `reportFault` when mpv stops — and this effect only saves progress. Keying the save
-    // on `saveProgress` would fire on every Episode switch, so it reaches the latest one
+    // Unmounting is not closing. React remounts this overlay in development, and releasing
+    // the session from here would take down the picture the next mount is already playing
+    // into (issue #48). The store ends sessions — `closePlayer` on the way out, `reportFault`
+    // when playback fails — and this effect only saves progress. Keying the save on
+    // `saveProgress` would fire on every Episode switch, so it reaches the latest one
     // through a ref.
     return () => {
       latestSave.current();

@@ -1,7 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { API_BASE_URL } from "@/shared/lib/constants";
+import { isTauriRuntime } from "@/shared/lib/utils";
 import type { PlayerHotkeysConfig, ReleaseDetails, VideoQuality } from "@/shared/types";
+import { playback } from "../renderer/playbackSession";
+import { resolvePlayableUrl } from "../renderer/sourceUrl";
 import {
   DEFAULT_HOTKEYS,
   fetchSettingsFromDb,
@@ -17,36 +20,8 @@ import {
 
 export { DEFAULT_HOTKEYS };
 
-function hasNativePlayer(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-
-async function invokePlayer(command: string, args?: Record<string, unknown>): Promise<void> {
-  if (!hasNativePlayer()) return;
-  try {
-    if (args === undefined) {
-      await invoke(command);
-    } else {
-      await invoke(command, args);
-    }
-  } catch (error) {
-    console.error(`Native player command ${command} failed:`, error);
-  }
-}
-
-function openRequest(source: string, start: number, state: PlayerState) {
-  return {
-    request: {
-      source,
-      start,
-      volume: state.volume,
-      muted: state.isMuted,
-      speed: state.speed,
-      anime4kEnabled: state.anime4kEnabled,
-      preset: state.anime4kPreset,
-    },
-  };
-}
+const asMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   isPlayerOpen: false,
@@ -70,7 +45,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   isDrawerOpen: false,
   isSettingsOpen: false,
   playbackError: null,
-  hardwareDecoder: null,
 
   openPlayer: async (release, episode, startPos = 0) => {
     let activeRelease = release;
@@ -79,7 +53,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (!activeEpisode.hls_1080 && !activeEpisode.hls_720 && !activeEpisode.hls_480) {
       try {
         let fullRel: ReleaseDetails | null = null;
-        if (hasNativePlayer()) {
+        if (isTauriRuntime()) {
           fullRel = await invoke<ReleaseDetails>("api_get_release", {
             idOrAlias: String(release.id),
           }).catch(() => null);
@@ -115,15 +89,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       playbackError: null,
     });
 
-    if (hasNativePlayer()) {
-      try {
-        await invoke("player_open", openRequest(source, startPos, state));
-      } catch (error) {
-        set({
-          isPlaying: false,
-          playbackError: error instanceof Error ? error.message : String(error),
-        });
-      }
+    try {
+      const url = await resolvePlayableUrl(source);
+      playback.open(url, startPos, {
+        volume: state.volume,
+        muted: state.isMuted || state.volume === 0,
+        speed: state.speed,
+      });
+    } catch (error) {
+      set({ isPlaying: false, playbackError: asMessage(error) });
     }
   },
 
@@ -132,13 +106,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   closePlayer: async () => {
-    const closeNative = invokePlayer("player_close");
+    playback.close();
     try {
-      if (hasNativePlayer()) {
+      if (isTauriRuntime()) {
         await invoke("app_set_fullscreen", { fullscreen: false });
       }
     } catch (_e) {
-      // Native fullscreen may already be gone during window shutdown.
+      // Fullscreen may already be gone during window shutdown.
     }
     try {
       if (typeof document !== "undefined" && document.fullscreenElement) {
@@ -147,7 +121,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     } catch (_e) {
       // Browser fullscreen may already be gone during unmount.
     }
-    await closeNative;
 
     set({
       isPlayerOpen: false,
@@ -160,19 +133,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   reportFault: async (message) => {
     // The overlay stays mounted to show the reason, so this does not run closePlayer;
-    // it is the second half of the same rule: the store, not the view, ends the session.
+    // it is the second half of the same rule: the store ends the session, not the view.
     set({ isPlaying: false, playbackError: message });
-    await invokePlayer("player_close");
+    playback.close();
   },
 
   play: async () => {
     set({ isPlaying: true });
-    await invokePlayer("player_set_pause", { paused: false });
+    playback.setPaused(false);
   },
 
   pause: async () => {
     set({ isPlaying: false });
-    await invokePlayer("player_set_pause", { paused: true });
+    playback.setPaused(true);
   },
 
   togglePlay: async () => {
@@ -185,7 +158,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   seek: async (seconds: number) => {
     set({ currentTime: seconds });
-    await invokePlayer("player_seek", { seconds });
+    playback.seek(seconds);
   },
 
   seekTo: async (seconds: number) => {
@@ -199,11 +172,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setVolume: async (volume: number) => {
     const clamped = Math.max(0, Math.min(100, volume));
-    set({ volume: clamped, isMuted: clamped === 0 });
+    const muted = clamped === 0;
+    set({ volume: clamped, isMuted: muted });
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_volume", String(clamped));
     }
-    await invokePlayer("player_set_volume", { volume: clamped, muted: clamped === 0 });
+    playback.setVolume(clamped, muted);
     try {
       await invoke("db_save_setting", {
         key: "volume",
@@ -217,21 +191,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   toggleMute: async () => {
     const isMuted = !get().isMuted;
     set({ isMuted });
-    await invokePlayer("player_set_volume", { volume: get().volume, muted: isMuted });
+    playback.setVolume(get().volume, isMuted);
   },
 
   setSpeed: async (speed: number) => {
     set({ speed });
-    await invokePlayer("player_set_speed", { speed });
+    playback.setSpeed(speed);
   },
 
   setPreset: async (preset: string) => {
     set({ anime4kPreset: preset });
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_anime4k_preset", preset);
-    }
-    if (get().anime4kEnabled) {
-      await invokePlayer("player_set_anime4k", { enabled: true, preset });
     }
     try {
       await invoke("db_save_setting", {
@@ -253,7 +224,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_anime4k_enabled", String(enabled));
     }
-    await invokePlayer("player_set_anime4k", { enabled, preset: get().anime4kPreset });
     try {
       await invoke("db_save_setting", {
         key: "anime4k_enabled",
@@ -279,12 +249,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const state = get();
     const episode = state.currentEpisode;
     if (!episode || !state.isPlayerOpen) return;
-    await invokePlayer(
-      "player_open",
-      openRequest(pickEpisodeSource(episode, quality), state.currentTime, state),
-    );
-    if (!state.isPlaying) {
-      await invokePlayer("player_set_pause", { paused: true });
+    try {
+      const url = await resolvePlayableUrl(pickEpisodeSource(episode, quality));
+      // The session survives the switch: hls.js reloads the tier's playlist under the live
+      // element and the position and the paused state are carried over by the session.
+      playback.switchUrl(url);
+    } catch (error) {
+      set({ isPlaying: false, playbackError: asMessage(error) });
     }
   },
 
