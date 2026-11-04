@@ -25,6 +25,29 @@ visible window class="Tao Thread Event Target" title=""          size=16x16    s
   в этом же тикете (подсказка теперь привязана к `readyState` элемента, тест — «promises a frame
   only while the media is starved…»).
 
+## Онлайн: что реально делает элемент
+
+`media_probe.ps1` на живом элементе во время онлайн-воспроизведения («Фантазии Речных
+заводей», серия 1):
+
+```
+sample 1: {"currentSrc":"blob:http://tauri.localhost/27d326de-…","readyState":4,"currentTime":15.5,"paused":false,"muted":false,"volume":0.17,"videoWidth":1280,"videoHeight":720,"mediaOrigins":{"https://cache-rfn.libria.fun":6}}
+sample 2: {"currentSrc":"blob:http://tauri.localhost/27d326de-…","readyState":4,"currentTime":23.5,"paused":false,"muted":false,"volume":0.17,"videoWidth":1280,"videoHeight":720,"mediaOrigins":{"https://cache-rfn.libria.fun":7}}
+```
+
+`currentSrc` — MediaSource-blob, то есть играет MSE, а не нативный HLS; `readyState` 4;
+позиция прибавляет ровно 8.0 с за 8 с; `muted: false`, `volume: 0.17` — сохранённая настройка
+громкости применена к элементу, звук не заглушён (отдельного замера уровня аудиовыхода не
+делалось); `1280x720` — тир, который резолвит `preferredQuality`; все медиа-запросы страницы —
+`https://cache-rfn.libria.fun`, то есть ротация хостов CDN идёт через hls.js.
+
+Seek из оверлея: клик по полосе позиции → `currentTime` 1498.7 (из ~30 с), причём позиция
+приземлилась сразу после эндинга — автопропуск OP/ED отработал на том же пути.
+
+Окончание серии и автопереход: после `ended` элемент перешёл на **новый** blob
+(`484e7db4-…` вместо `27d326de-…`) с `currentTime` 17.6 → 25.6 и `paused: false` — серия
+закончилась, следующая началась сама (`24-autoplay-next.png`).
+
 ## Скачанная серия играет с диска
 
 Скачивание: `10-episode-menu.png` → «Скачать эпизод (HLS)»; виджет показал

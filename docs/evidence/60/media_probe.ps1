@@ -46,6 +46,11 @@ $media = @'
     readyState: v.readyState,
     currentTime: Math.round(v.currentTime * 10) / 10,
     paused: v.paused,
+    muted: v.muted,
+    volume: v.volume,
+    audioTracks: v.audioTracks ? v.audioTracks.length : null,
+    videoWidth: v.videoWidth,
+    videoHeight: v.videoHeight,
     mediaOrigins: counts,
   });
 })()
