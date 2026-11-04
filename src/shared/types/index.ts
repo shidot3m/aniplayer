@@ -167,5 +167,4 @@ export interface Anime4kPresetItem {
   id: string;
   label: string;
   description: string;
-  tier: "HQ" | "Fast";
 }

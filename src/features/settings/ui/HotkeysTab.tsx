@@ -120,7 +120,7 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
 
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-2.5 text-[10px] text-slate-400 leading-relaxed">
         <span className="font-semibold text-slate-300">Дополнительно: </span>
-        <span className="font-mono text-slate-200">Shift + 1..4</span> — выбор пресетов Anime4K,{" "}
+        <span className="font-mono text-slate-200">Shift + 1..6</span> — выбор пресетов Anime4K,{" "}
         <span className="font-mono text-slate-200">Shift + 0</span> — отключение фильтра,{" "}
         <span className="font-mono text-slate-200">Esc</span> — отмена записи бинда.
       </div>

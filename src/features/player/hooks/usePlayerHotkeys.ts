@@ -20,15 +20,17 @@ export interface UsePlayerHotkeysProps {
   endingStop?: number | null;
   onNext: () => void;
   onPrev: () => void;
-  setPreset: (preset: string) => void;
+  setAnime4kPreset: (preset: string) => void;
+  setAnime4kEnabled: (enabled: boolean) => void;
 }
 
 const PRESET_HOTKEYS: Record<string, string> = {
-  Digit1: "Mode A+A (HQ)",
-  Digit2: "Mode A (Fast)",
-  Digit3: "Mode B+B (HQ)",
-  Digit4: "Mode C+A (HQ)",
-  Digit0: "Off",
+  Digit1: "Mode A (HQ)",
+  Digit2: "Mode A+A (HQ)",
+  Digit3: "Mode B (HQ)",
+  Digit4: "Mode B+B (HQ)",
+  Digit5: "Mode C (HQ)",
+  Digit6: "Mode C+A (HQ)",
 };
 
 function handlePlayerKey(e: KeyboardEvent, p: UsePlayerHotkeysProps, hk: PlayerHotkeysConfig) {
@@ -38,7 +40,13 @@ function handlePlayerKey(e: KeyboardEvent, p: UsePlayerHotkeysProps, hk: PlayerH
 
   if (e.shiftKey && PRESET_HOTKEYS[e.code]) {
     e.preventDefault();
-    p.setPreset(PRESET_HOTKEYS[e.code]);
+    p.setAnime4kPreset(PRESET_HOTKEYS[e.code]);
+    return;
+  }
+
+  if (e.shiftKey && e.code === "Digit0") {
+    e.preventDefault();
+    p.setAnime4kEnabled(false);
     return;
   }
 

@@ -20,7 +20,7 @@ export function SettingsMenu({
     speed,
     setSpeed,
     anime4kEnabled,
-    toggleAnime4k,
+    setAnime4kEnabled,
     autoSkipOpEd,
     setAutoSkipOpEd,
     autoplayNext,
@@ -52,7 +52,7 @@ export function SettingsMenu({
           </div>
           <Switch
             checked={anime4kEnabled}
-            onCheckedChange={toggleAnime4k}
+            onCheckedChange={setAnime4kEnabled}
             aria-label="Переключить апскейлер 4K"
           />
         </div>

@@ -187,7 +187,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     playback.setSpeed(speed);
   },
 
-  setPreset: async (preset: string) => {
+  setAnime4kPreset: async (preset: string) => {
     set({ anime4kPreset: preset });
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_anime4k_preset", preset);
@@ -202,12 +202,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
 
-  setAnime4kPreset: async (preset: string) => {
-    await get().setPreset(preset);
-  },
-
-  toggleAnime4k: async () => {
-    const enabled = !get().anime4kEnabled;
+  setAnime4kEnabled: async (enabled: boolean) => {
     set({ anime4kEnabled: enabled });
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_anime4k_enabled", String(enabled));

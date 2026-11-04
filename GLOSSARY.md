@@ -43,8 +43,8 @@ One selectable HLS stream tier: 480p, 720p, or 1080p.
 _Avoid_: resolution, bitrate
 
 **Anime4K preset**:
-A named Anime4K enhancement selected in Settings: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), Mode C+A (HQ), or Mode Fast (APU); enhancement can also be switched off. The choice is a persisted Setting; the webview renderer that applies it is [#61](https://github.com/shidot3m/aniplayer/issues/61), so between [#60](https://github.com/shidot3m/aniplayer/issues/60) and that ticket the frame is not filtered.
-_Avoid_: filter, mode, shader
+One of the six named enhancement modes the WebGPU renderer ships: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), or Mode C+A (HQ); the enhancement can also be switched off. The choice is a persisted Setting and applies to a live frame without restarting the session.
+_Avoid_: filter, mode, shader, Mode Fast, APU
 
 ### User state
 

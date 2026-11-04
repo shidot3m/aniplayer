@@ -60,7 +60,8 @@ function HotkeyTester({
     isInsideEnding: false,
     onNext: () => {},
     onPrev: () => {},
-    setPreset: () => {},
+    setAnime4kPreset: () => {},
+    setAnime4kEnabled: () => {},
   });
 
   return <div>Hotkey Tester</div>;

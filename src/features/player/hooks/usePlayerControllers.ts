@@ -22,6 +22,7 @@ interface UsePlayerControllersOptions {
   setVolume: (vol: number) => Promise<void>;
   toggleMute: () => Promise<void>;
   setAnime4kPreset: (preset: string) => Promise<void>;
+  setAnime4kEnabled: (enabled: boolean) => Promise<void>;
   playEpisode: (release: Release, ep: EpisodeItem) => Promise<void>;
   updateTime: (cur: number, dur: number) => void;
   handleUserActivity: () => void;
@@ -47,6 +48,7 @@ export function usePlayerControllers({
   setVolume,
   toggleMute,
   setAnime4kPreset,
+  setAnime4kEnabled,
   playEpisode,
   updateTime,
   handleUserActivity,
@@ -218,7 +220,8 @@ export function usePlayerControllers({
     endingStop: episode.ending?.stop,
     onNext: handleNext,
     onPrev: handlePrev,
-    setPreset: setAnime4kPreset,
+    setAnime4kPreset,
+    setAnime4kEnabled,
   });
 
   const timeLeft = duration > 0 ? duration - currentTime : 999;

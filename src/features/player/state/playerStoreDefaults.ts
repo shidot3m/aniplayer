@@ -7,53 +7,47 @@ import type {
   VideoQuality,
 } from "@/shared/types";
 
+export const DEFAULT_ANIME4K_PRESET = "Mode A+A (HQ)";
+
 export const ANIME4K_PRESETS: Anime4kPresetItem[] = [
   {
     id: "Mode A (HQ)",
     label: "Mode A (HQ)",
     description: "Восстановление четких контуров и апскейл. Идеально для качественного 1080p.",
-    tier: "HQ",
   },
   {
     id: "Mode A+A (HQ)",
     label: "Mode A+A (HQ)",
     description:
       "Максимальная четкость: двухпроходная CNN-реконструкция линий. Рекомендуется для мощных GPU.",
-    tier: "HQ",
   },
   {
     id: "Mode B (HQ)",
     label: "Mode B (HQ)",
     description:
       "Шумоподавление и сглаживание артефактов компрессии. Идеально для 720p/1080p с дефектами.",
-    tier: "HQ",
   },
   {
     id: "Mode B+B (HQ)",
     label: "Mode B+B (HQ)",
     description: "Усиленное подавление сильных артефактов и мягкая реконструкция контуров.",
-    tier: "HQ",
   },
   {
     id: "Mode C (HQ)",
     label: "Mode C (HQ)",
     description: "Глубокое удаление шумов и артефактов. Для старых аниме, DVD-рипов и 480p.",
-    tier: "HQ",
   },
   {
     id: "Mode C+A (HQ)",
     label: "Mode C+A (HQ)",
     description: "Удаление тяжелых шумов с последующим резким восстановлением контуров Mode A.",
-    tier: "HQ",
-  },
-  {
-    id: "Mode Fast (APU)",
-    label: "Mode Fast (APU)",
-    description:
-      "Облегченный быстрый режим для встроенной графики (iGPU / APU) и слабых видеокарт.",
-    tier: "Fast",
   },
 ];
+
+/** A stored preset that no longer names a real pipeline falls back to the default. */
+export function resolveStoredPreset(preset: string | null | undefined): string {
+  return ANIME4K_PRESETS.find((item) => item.id === preset)?.id ?? DEFAULT_ANIME4K_PRESET;
+}
 
 export const DEFAULT_HOTKEYS: PlayerHotkeysConfig = {
   togglePlay: "Space",
@@ -106,9 +100,8 @@ export interface PlayerState {
   setVolume: (volume: number) => Promise<void>;
   toggleMute: () => Promise<void>;
   setSpeed: (speed: number) => Promise<void>;
-  setPreset: (preset: string) => Promise<void>;
   setAnime4kPreset: (preset: string) => Promise<void>;
-  toggleAnime4k: () => Promise<void>;
+  setAnime4kEnabled: (enabled: boolean) => Promise<void>;
   setAutoSkipOpening: (enabled: boolean) => void;
   setAutoSkipEnding: (enabled: boolean) => void;
   setAutoSkipOpEd: (enabled: boolean) => void;
@@ -175,12 +168,9 @@ export const getInitialAnime4kEnabled = (): boolean => {
 
 export const getInitialAnime4kPreset = (): string => {
   if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("aniplayer_anime4k_preset");
-    if (saved) {
-      return saved;
-    }
+    return resolveStoredPreset(localStorage.getItem("aniplayer_anime4k_preset"));
   }
-  return "Mode A+A (HQ)";
+  return DEFAULT_ANIME4K_PRESET;
 };
 
 export function getAvailableQualities(episode: EpisodeItem | null | undefined): VideoQuality[] {
@@ -235,7 +225,7 @@ export async function fetchSettingsFromDb(): Promise<Partial<PlayerState>> {
       key: "anime4k_preset",
     });
     if (preset) {
-      patch.anime4kPreset = preset;
+      patch.anime4kPreset = resolveStoredPreset(preset);
     }
     const a4k = await invoke<string | null>("db_get_setting", {
       key: "anime4k_enabled",

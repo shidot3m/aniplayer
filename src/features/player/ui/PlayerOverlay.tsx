@@ -70,6 +70,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
     setVolume: playerStore.setVolume,
     toggleMute: playerStore.toggleMute,
     setAnime4kPreset: playerStore.setAnime4kPreset,
+    setAnime4kEnabled: playerStore.setAnime4kEnabled,
     playEpisode: playerStore.playEpisode,
     updateTime: playerStore.updateTime,
     handleUserActivity,

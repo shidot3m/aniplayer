@@ -19,7 +19,7 @@ export function PlaybackTab() {
     anime4kPreset,
     setAnime4kPreset,
     anime4kEnabled,
-    toggleAnime4k,
+    setAnime4kEnabled,
     autoSkipOpEd,
     setAutoSkipOpEd,
     autoplayNext,
@@ -74,7 +74,7 @@ export function PlaybackTab() {
           </span>
           <Switch
             checked={anime4kEnabled}
-            onCheckedChange={toggleAnime4k}
+            onCheckedChange={setAnime4kEnabled}
             aria-label="Переключить апскейлер Anime4K"
           />
         </div>
@@ -88,6 +88,7 @@ export function PlaybackTab() {
             <button
               key={p.id}
               type="button"
+              aria-pressed={anime4kPreset === p.id}
               onClick={() => setAnime4kPreset(p.id)}
               className={`rounded-xl p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                 anime4kPreset === p.id
@@ -95,18 +96,7 @@ export function PlaybackTab() {
                   : "border-white/10 bg-white/[0.02] backdrop-blur-md text-slate-300 hover:text-white hover:bg-white/[0.06]"
               }`}
             >
-              <div className="flex items-center justify-between gap-1.5 mb-1">
-                <span className="font-bold text-[11px] text-white leading-tight">{p.label}</span>
-                <span
-                  className={`text-[9px] font-semibold px-1.5 rounded-md ${
-                    p.tier === "Fast"
-                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                      : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                  }`}
-                >
-                  {p.tier}
-                </span>
-              </div>
+              <span className="font-bold text-[11px] text-white leading-tight mb-1">{p.label}</span>
               <p className="text-[10px] text-slate-400 leading-snug">{p.description}</p>
             </button>
           ))}
