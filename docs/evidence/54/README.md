@@ -8,7 +8,7 @@ HEVC decoder).
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `gate_libmpv.py`                    | Loads a candidate DLL, resolves the API surface, then plays the HEVC Main 10 fixture through `wid` into a window this process owns, and captures that window. |
 | `window_probe.py`                   | The Win32 side of the same spike: the plain window, its message pump, and the screen capture.                                                                 |
-| `gate-run.log`                      | Console output of the run against the DLL staged by `scripts/get_libmpv.py`.                                                                                  |
+| `gate-run.txt`                      | Console output of the run against the DLL staged by `scripts/get_libmpv.py`.                                                                                  |
 | `gate-result.json`                  | Machine-readable result: digests, API version, resolved symbols, playback properties, mpv log tail.                                                           |
 | `libmpv-wid-hevc-main10-client.png` | Screen capture of the host window's client area while mpv rendered into it.                                                                                   |
 | `libmpv-screenshot-hevc-main10.png` | The frame mpv itself wrote with the `screenshot` command.                                                                                                     |
