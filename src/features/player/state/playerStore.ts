@@ -34,6 +34,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   speed: 1.0,
   anime4kPreset: getInitialAnime4kPreset(),
   anime4kEnabled: getInitialAnime4kEnabled(),
+  enhancementFault: null,
   autoSkipOpening: true,
   autoSkipEnding: true,
   autoSkipOpEd: true,
@@ -215,6 +216,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     } catch (e) {
       console.error(e);
     }
+  },
+
+  setEnhancementFault: (fault: string | null) => {
+    // Session state only: the renderer's verdict is not the user's preference, so the
+    // stored Setting stays exactly as it was left.
+    set({ enhancementFault: fault });
   },
 
   setAutoSkipOpening: (enabled: boolean) => set({ autoSkipOpening: enabled }),

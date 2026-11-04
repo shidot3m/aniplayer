@@ -4,14 +4,15 @@ import type { Release } from "@/shared/types";
 export interface PlayerTopBarProps {
   isVisible: boolean;
   release: Release;
-  anime4kEnabled?: boolean;
+  /** The badge promises a filtered frame, so it shows only when the renderer is actually up. */
+  enhancementActive?: boolean;
   onBack: () => void;
 }
 
 export function PlayerTopBar({
   isVisible,
   release,
-  anime4kEnabled = false,
+  enhancementActive = false,
   onBack,
 }: PlayerTopBarProps) {
   return (
@@ -40,7 +41,7 @@ export function PlayerTopBar({
         </div>
       </div>
 
-      {anime4kEnabled && (
+      {enhancementActive && (
         <div className="flex items-center gap-1.5 rounded-full bg-rose-600/20 border border-rose-500/40 px-3 py-1 text-xs font-semibold text-rose-300 backdrop-blur-sm shadow-lg shadow-rose-950/30">
           <Sparkles className="h-3.5 w-3.5 text-rose-400" />
           <span>4K Upscale</span>

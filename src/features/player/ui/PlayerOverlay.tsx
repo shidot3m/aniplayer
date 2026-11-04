@@ -3,6 +3,7 @@ import { useCatalogStore } from "@/features/catalog";
 import type { EpisodeItem, Release } from "@/shared/types";
 import { usePlayerControllers } from "../hooks/usePlayerControllers";
 import { useAutoHide, useFullscreen } from "../hooks/usePlayerOverlayState";
+import { useEnhancement } from "../renderer/useEnhancement";
 import { usePlayerStore } from "../state/playerStore";
 import { EpisodeDrawer } from "./EpisodeDrawer";
 import { PlayerBottomBar } from "./PlayerBottomBar";
@@ -20,6 +21,7 @@ interface PlayerOverlayProps {
 export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: PlayerOverlayProps) {
   const { history } = useCatalogStore();
   const playerStore = usePlayerStore();
+  const { active: isEnhancementActive } = useEnhancement();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { isVisible, handleUserActivity } = useAutoHide(playerStore.isPlaying, isDrawerOpen);
@@ -101,7 +103,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
       <PlayerTopBar
         isVisible={isVisible}
         release={release}
-        anime4kEnabled={playerStore.anime4kEnabled}
+        enhancementActive={isEnhancementActive}
         onBack={handleBack}
       />
 

@@ -1,9 +1,10 @@
-import { act, fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { usePlayerStore } from "@/features/player";
 import { playback } from "@/features/player/renderer/playbackSession";
 import { PlayerOverlay } from "@/features/player/ui/PlayerOverlay";
+import { PlaybackTab } from "@/features/settings/ui/PlaybackTab";
 import type { EpisodeItem, Release } from "@/shared/types";
 import { installMediaElementStub, resetHlsStub, setMediaDuration } from "./helpers/playbackStubs";
 
@@ -114,5 +115,52 @@ describe("Anime4K enhancement hotkeys", () => {
       key: "anime4k_enabled",
       value: "false",
     });
+  });
+});
+
+describe("Anime4K on a machine without WebGPU", () => {
+  it("explains the refusal in the player menu instead of promising a filtered frame", async () => {
+    const { container } = await openPlayer();
+
+    fireEvent.click(screen.getByTitle("Настройки плеера"));
+    const upscaler = await screen.findByLabelText("Переключить апскейлер 4K");
+
+    expect(upscaler.hasAttribute("disabled")).toBe(true);
+    expect(upscaler.getAttribute("aria-checked")).toBe("false");
+    expect(screen.getByText(/нужен webgpu/i)).toBeDefined();
+
+    fireEvent.click(upscaler);
+    await act(async () => {});
+
+    expect(usePlayerStore.getState().anime4kEnabled).toBe(false);
+    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("video")).not.toBeNull();
+    // The rest of the menu is untouched: only the enhancement is out of order.
+    const skipSwitch = screen.getByLabelText("Пропуск опенингов и эндингов");
+    expect(skipSwitch.hasAttribute("disabled")).toBe(false);
+  });
+
+  it("does not let a preference saved on another machine pretend the frame is filtered", async () => {
+    usePlayerStore.setState({ anime4kEnabled: true });
+
+    const { container } = await openPlayer();
+
+    expect(container.querySelector("canvas")).toBeNull();
+    expect(screen.queryByText("4K Upscale")).toBeNull();
+    expect(container.querySelector("video")).not.toBeNull();
+
+    fireEvent.click(screen.getByTitle("Настройки плеера"));
+    const upscaler = await screen.findByLabelText("Переключить апскейлер 4K");
+    expect(upscaler.getAttribute("aria-checked")).toBe("false");
+    expect(upscaler.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("says the same thing in Settings, where the preset list still stays selectable", () => {
+    render(<PlaybackTab />);
+
+    const upscaler = screen.getByLabelText("Переключить апскейлер Anime4K");
+    expect(upscaler.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/нужен webgpu/i)).toBeDefined();
+    expect(screen.getByText("Mode C+A (HQ)")).toBeDefined();
   });
 });

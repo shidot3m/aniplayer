@@ -72,6 +72,8 @@ export interface PlayerState {
   speed: number;
   anime4kPreset: string;
   anime4kEnabled: boolean;
+  /** Why the WebGPU renderer gave up this session, or null while it is not running. */
+  enhancementFault: string | null;
   autoSkipOpening: boolean;
   autoSkipEnding: boolean;
   autoSkipOpEd: boolean;
@@ -102,6 +104,7 @@ export interface PlayerState {
   setSpeed: (speed: number) => Promise<void>;
   setAnime4kPreset: (preset: string) => Promise<void>;
   setAnime4kEnabled: (enabled: boolean) => Promise<void>;
+  setEnhancementFault: (fault: string | null) => void;
   setAutoSkipOpening: (enabled: boolean) => void;
   setAutoSkipEnding: (enabled: boolean) => void;
   setAutoSkipOpEd: (enabled: boolean) => void;

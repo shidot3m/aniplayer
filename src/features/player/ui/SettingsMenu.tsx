@@ -2,6 +2,7 @@ import { Settings, Sparkles, Zap } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu";
 import { Switch } from "@/shared/ui/switch";
 import { usePlayerStore } from "../state/playerStore";
+import { useEnhancement } from "../renderer/useEnhancement";
 
 interface SettingsMenuProps {
   currentQuality: "1080p" | "720p" | "480p";
@@ -19,7 +20,6 @@ export function SettingsMenu({
   const {
     speed,
     setSpeed,
-    anime4kEnabled,
     setAnime4kEnabled,
     autoSkipOpEd,
     setAutoSkipOpEd,
@@ -27,7 +27,8 @@ export function SettingsMenu({
     setAutoplayNext,
   } = usePlayerStore();
 
-  const upscalerHint = anime4kEnabled ? "Включен" : "Выключен";
+  const { active, blocked } = useEnhancement();
+  const upscalerHint = blocked ?? (active ? "Включен" : "Выключен");
 
   return (
     <DropdownMenu>
@@ -51,7 +52,8 @@ export function SettingsMenu({
             <span className="block text-[10px] text-slate-400 mt-0.5">{upscalerHint}</span>
           </div>
           <Switch
-            checked={anime4kEnabled}
+            checked={active}
+            disabled={blocked !== null}
             onCheckedChange={setAnime4kEnabled}
             aria-label="Переключить апскейлер 4K"
           />

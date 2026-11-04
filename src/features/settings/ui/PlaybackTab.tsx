@@ -1,5 +1,5 @@
 import { Sparkles, Tv, Volume2 } from "lucide-react";
-import { ANIME4K_PRESETS, usePlayerStore } from "@/features/player";
+import { ANIME4K_PRESETS, useEnhancement, usePlayerStore } from "@/features/player";
 import type { VideoQuality } from "@/shared/types";
 import { Slider } from "@/shared/ui/slider";
 import { Switch } from "@/shared/ui/switch";
@@ -18,13 +18,14 @@ export function PlaybackTab() {
     setPreferredQuality,
     anime4kPreset,
     setAnime4kPreset,
-    anime4kEnabled,
     setAnime4kEnabled,
     autoSkipOpEd,
     setAutoSkipOpEd,
     autoplayNext,
     setAutoplayNext,
   } = usePlayerStore();
+
+  const { active, blocked } = useEnhancement();
 
   return (
     <div className="space-y-5 text-xs text-slate-300">
@@ -73,15 +74,14 @@ export function PlaybackTab() {
             Апскейлер Anime4K
           </span>
           <Switch
-            checked={anime4kEnabled}
+            checked={active}
+            disabled={blocked !== null}
             onCheckedChange={setAnime4kEnabled}
             aria-label="Переключить апскейлер Anime4K"
           />
         </div>
         <div className="text-[11px] text-slate-400 mb-2.5">
-          {anime4kEnabled
-            ? "Включен (активен выбранный шейдер)"
-            : "Выключен (выберите пресет по умолчанию)"}
+          {blocked ?? (active ? "Включен (кадр идёт через WebGPU-рендерер)" : "Выключен (кадр идёт напрямую)")}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {ANIME4K_PRESETS.map((p) => (
