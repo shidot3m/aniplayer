@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isTauriRuntime } from "@/shared/lib/utils";
+import { exitAnyFullscreen } from "../renderer/fullscreen";
 
 export function useAutoHide(isPlaying: boolean, isDrawerOpen: boolean) {
   const [isVisible, setIsVisible] = useState(true);
@@ -57,24 +58,6 @@ function fullscreenStatus(): Promise<boolean> {
   return Promise.resolve(false);
 }
 
-async function runExitFullscreen() {
-  try {
-    if (isTauriRuntime()) {
-      await invoke("app_set_fullscreen", { fullscreen: false });
-    }
-  } catch {
-    /* ignore */
-  }
-
-  try {
-    if (typeof document !== "undefined" && document.fullscreenElement) {
-      await document.exitFullscreen().catch(() => {});
-    }
-  } catch {
-    /* ignore */
-  }
-}
-
 async function setWindowFullscreen(next: boolean) {
   try {
     if (isTauriRuntime()) {
@@ -127,12 +110,12 @@ export function useFullscreen() {
   }, [sync]);
 
   const exitFullscreenSideEffect = useCallback(async () => {
-    await runExitFullscreen();
+    await exitAnyFullscreen();
   }, []);
 
   const exitFullscreen = useCallback(async () => {
     apply(false);
-    await runExitFullscreen();
+    await exitAnyFullscreen();
   }, [apply]);
 
   const toggleFullscreen = useCallback(async () => {

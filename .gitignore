@@ -40,7 +40,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Pinned runtime downloads (scripts/get_mpv.py)
+# Staged third-party downloads and scratch runs (see docs/architecture.md)
 .cache/
 # Scratch artifacts of runtime acceptance sessions (screenshots, probe scripts)
 _evidence/

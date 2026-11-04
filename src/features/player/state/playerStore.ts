@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { API_BASE_URL } from "@/shared/lib/constants";
 import { isTauriRuntime } from "@/shared/lib/utils";
 import type { PlayerHotkeysConfig, ReleaseDetails, VideoQuality } from "@/shared/types";
+import { exitAnyFullscreen } from "../renderer/fullscreen";
 import { playback } from "../renderer/playbackSession";
 import { resolvePlayableUrl } from "../renderer/sourceUrl";
 import {
@@ -93,7 +94,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const url = await resolvePlayableUrl(source);
       playback.open(url, startPos, {
         volume: state.volume,
-        muted: state.isMuted || state.volume === 0,
+        muted: state.isMuted,
         speed: state.speed,
       });
     } catch (error) {
@@ -107,20 +108,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   closePlayer: async () => {
     playback.close();
-    try {
-      if (isTauriRuntime()) {
-        await invoke("app_set_fullscreen", { fullscreen: false });
-      }
-    } catch (_e) {
-      // Fullscreen may already be gone during window shutdown.
-    }
-    try {
-      if (typeof document !== "undefined" && document.fullscreenElement) {
-        await document.exitFullscreen().catch(() => {});
-      }
-    } catch (_e) {
-      // Browser fullscreen may already be gone during unmount.
-    }
+    await exitAnyFullscreen();
 
     set({
       isPlayerOpen: false,

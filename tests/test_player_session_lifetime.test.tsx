@@ -17,7 +17,6 @@ const tauri = vi.hoisted(() => ({ invoke: vi.fn() }));
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: (...args: unknown[]) => tauri.invoke(...(args as [])),
-  convertFileSrc: (path: string) => `http://asset.localhost/${encodeURIComponent(path)}`,
 }));
 
 vi.mock("@tauri-apps/api/event", () => ({
@@ -46,9 +45,7 @@ describe("player session lifetime", () => {
     localStorage.clear();
     tauri.invoke.mockReset();
     tauri.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) =>
-      command === "player_resolve_source"
-        ? { kind: "remote", value: String(args?.source ?? "") }
-        : null,
+      command === "player_resolve_source" ? String(args?.source ?? "") : null,
     );
     (window as unknown as { __TAURI_INTERNALS__: unknown }).__TAURI_INTERNALS__ = {};
     usePlayerStore.setState({

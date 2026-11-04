@@ -11,13 +11,13 @@ import {
   installMediaElementStub,
   resetHlsStub,
   setMediaDuration,
+  setMediaReadyState,
 } from "./helpers/playbackStubs";
 
 const tauri = vi.hoisted(() => ({ invoke: vi.fn() }));
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: (...args: unknown[]) => tauri.invoke(...(args as [])),
-  convertFileSrc: (path: string) => `http://asset.localhost/${encodeURIComponent(path)}`,
 }));
 
 vi.mock("@tauri-apps/api/event", () => ({
@@ -28,6 +28,9 @@ const EPISODE_1080 = "https://cache.test/videos/10303/5/1080/x.m3u8";
 const EPISODE_720 = "https://cache.test/videos/10303/5/720/y.m3u8";
 const NEXT_EPISODE_1080 = "https://cache.test/videos/10303/6/1080/z.m3u8";
 const OFFLINE_PLAYLIST = "C:\\aniplayer\\downloads\\10303\\5\\index.m3u8";
+// The shape `playback::asset_url` returns: one segment per directory, so hls.js resolves the
+// Episode's bare segment names beside the playlist instead of at the origin's root.
+const OFFLINE_ASSET_URL = "http://asset.localhost/C%3A/aniplayer/downloads/10303/5/index.m3u8";
 
 const first: EpisodeItem = {
   id: "ep-1",
@@ -56,14 +59,12 @@ const release: Release = {
   episodes: [first, next],
 };
 
-/** Resolves every source the way the backend does; one path can be declared local. */
-function resolveSources(local: string[] = []): void {
+/** Answers like the backend does: a stream URL passes through, a path becomes an asset URL. */
+function resolveSources(local: Record<string, string> = {}): void {
   tauri.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) => {
     if (command !== "player_resolve_source") return null;
     const source = String(args?.source ?? "");
-    return local.includes(source)
-      ? { kind: "local", value: source }
-      : { kind: "remote", value: source };
+    return local[source] ?? source;
   });
 }
 
@@ -139,16 +140,14 @@ describe("WebView playback", () => {
       hls_720: OFFLINE_PLAYLIST,
       hls_480: OFFLINE_PLAYLIST,
     };
-    resolveSources([OFFLINE_PLAYLIST]);
+    resolveSources({ [OFFLINE_PLAYLIST]: OFFLINE_ASSET_URL });
 
     await openPlayer(offline);
 
     expect(tauri.invoke).toHaveBeenCalledWith("player_resolve_source", {
       source: OFFLINE_PLAYLIST,
     });
-    expect(activeSession()?.loadedSource).toBe(
-      `http://asset.localhost/${encodeURIComponent(OFFLINE_PLAYLIST)}`,
-    );
+    expect(activeSession()?.loadedSource).toBe(OFFLINE_ASSET_URL);
   });
 
   it("resumes an Episode at its Watch progress when the media can be measured", async () => {
@@ -269,5 +268,28 @@ describe("WebView playback", () => {
     expect(session.loadedSource).toBe(NEXT_EPISODE_1080);
     expect(FakeHls.instances).toHaveLength(1);
     expect(usePlayerStore.getState().currentEpisode?.id).toBe("ep-2");
+  });
+
+  it("promises a frame only while the media is starved, never while the user is paused", async () => {
+    const { video } = await openPlayer();
+
+    expect(screen.getByText("Загрузка видеопотока...")).toBeDefined();
+
+    setMediaReadyState(3);
+    await act(async () => {
+      video().dispatchEvent(new Event("canplay"));
+    });
+    expect(screen.queryByText("Загрузка видеопотока...")).toBeNull();
+
+    await act(async () => {
+      await usePlayerStore.getState().pause();
+    });
+    expect(screen.queryByText("Загрузка видеопотока...")).toBeNull();
+
+    setMediaReadyState(0);
+    await act(async () => {
+      video().dispatchEvent(new Event("waiting"));
+    });
+    expect(screen.getByText("Загрузка видеопотока...")).toBeDefined();
   });
 });

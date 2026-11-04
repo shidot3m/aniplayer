@@ -45,6 +45,8 @@ dependencies = [
 name = "aniplayer"
 version = "1.0.0"
 dependencies = [
+ "dunce",
+ "percent-encoding",
  "reqwest",
  "rfd",
  "rusqlite",

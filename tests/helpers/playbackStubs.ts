@@ -17,13 +17,11 @@ class FakeHls {
   static readonly instances: FakeHls[] = [];
   static readonly Events = {
     MANIFEST_PARSED: "hlsManifestParsed",
-    LEVEL_SWITCHED: "hlsLevelSwitched",
     ERROR: "hlsError",
   };
   static readonly ErrorTypes = {
     NETWORK_ERROR: "networkError",
     MEDIA_ERROR: "mediaError",
-    OTHER_ERROR: "otherError",
   };
   static isSupported = vi.fn(() => true);
 
@@ -70,6 +68,11 @@ export function activeSession(): FakeHls | undefined {
   return FakeHls.instances[FakeHls.instances.length - 1];
 }
 
+export function resetMediaStub(): void {
+  fakeDuration = Number.NaN;
+  fakeReadyState = 0;
+}
+
 export function resetHlsStub(): void {
   FakeHls.instances.length = 0;
   FakeHls.isSupported.mockReturnValue(true);
@@ -81,9 +84,15 @@ export function resetHlsStub(): void {
  * was asked to do.
  */
 let fakeDuration = Number.NaN;
+let fakeReadyState = 0;
 
 export function setMediaDuration(seconds: number): void {
   fakeDuration = seconds;
+}
+
+/** `HAVE_NOTHING` until media arrives, `HAVE_FUTURE_DATA` once it can keep playing. */
+export function setMediaReadyState(state: number): void {
+  fakeReadyState = state;
 }
 
 export function installMediaElementStub(): void {
@@ -91,6 +100,11 @@ export function installMediaElementStub(): void {
     configurable: true,
     get: () => fakeDuration,
   });
+  Object.defineProperty(HTMLMediaElement.prototype, "readyState", {
+    configurable: true,
+    get: () => fakeReadyState,
+  });
+  fakeReadyState = 0;
   Object.defineProperty(HTMLMediaElement.prototype, "paused", {
     configurable: true,
     get: function paused(this: HTMLMediaElement & { _paused?: boolean }) {

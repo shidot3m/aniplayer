@@ -1,14 +1,17 @@
-//! The WebView is the only playback backend, so the source it is handed is the one
-//! surface where a stored path can reach a file reader. The Rust side still owns that
-//! decision: an Episode resolves either to a re-parsed HTTP(S) URL or to a canonical
-//! file inside the app's `downloads/` folder, and to nothing else.
+//! The WebView is the only playback backend, so the source it is handed is the one surface
+//! where a stored path can reach a file reader. The Rust side still owns that decision: an
+//! Episode resolves either to a re-parsed HTTP(S) URL or to an asset-protocol URL inside the
+//! app's `downloads/` folder, and to nothing else.
 
 use std::fs;
 
-use aniplayer_lib::playback::{resolve_source, ResolvedSource};
+use aniplayer_lib::playback::resolve_source;
+
+/// The origin WebView2 serves the asset protocol from, spelled out here so a change to the
+/// configuration has to disagree with this test on purpose rather than by accident.
+const ASSET_ORIGIN: &str = "http://asset.localhost";
 
 /// A scratch app folder with the `downloads/` directory the portable layout defines.
-/// The returned path is unique per test process so parallel tests cannot collide.
 fn scratch_app_dir(name: &str) -> std::path::PathBuf {
     let dir = std::env::temp_dir().join(format!(
         "aniplayer-playback-{name}-{}-{}",
@@ -23,44 +26,42 @@ fn scratch_app_dir(name: &str) -> std::path::PathBuf {
 #[test]
 fn an_https_stream_resolves_to_the_url_the_webview_may_load() {
     let dir = scratch_app_dir("remote");
-    let resolved = resolve_source(&dir, "https://cache.libria.fun/videos/a/720/x.m3u8?token=1")
-        .expect("an HTTPS playlist is a playable source");
+    let resolved =
+        resolve_source(&dir, "https://cache.libria.fun/videos/a/720/x.m3u8?token=1").unwrap();
 
-    // Re-parsed and re-serialized: the page gets an URL the parser produced, never a
-    // substring of whatever the API returned.
+    // Re-parsed and re-serialized: the page gets a URL the parser produced, never a substring
+    // of whatever the API returned.
     assert_eq!(
         resolved,
-        ResolvedSource::Remote {
-            value: "https://cache.libria.fun/videos/a/720/x.m3u8?token=1".to_string(),
-        }
+        "https://cache.libria.fun/videos/a/720/x.m3u8?token=1"
     );
 
     fs::remove_dir_all(&dir).ok();
 }
 
+/// An Offline playlist names its segments bare filenames, and hls.js resolves them against
+/// the playlist's own directory. A URL that escapes the whole path into a single segment —
+/// which is what `convertFileSrc` produces — would send every segment, key and init request
+/// to the asset origin's root, outside the downloads scope. So the folder has to stay in it.
 #[test]
-fn a_downloaded_playlist_resolves_to_its_canonical_path_inside_the_downloads_folder() {
+fn a_downloaded_playlist_resolves_to_an_asset_url_that_keeps_its_folder() {
     let dir = scratch_app_dir("local");
     let episode = dir.join("downloads").join("10303").join("5");
     fs::create_dir_all(&episode).expect("episode folder must be creatable");
-    let playlist = episode.join("index.m3u8");
-    fs::write(&playlist, "#EXTM3U\n").expect("playlist must be writable");
+    fs::write(episode.join("index.m3u8"), "#EXTM3U\n").expect("playlist must be writable");
 
-    // A non-canonical spelling of the same file is what the database may hold: the
-    // resolver answers with the canonical path the asset protocol then serves.
+    // A non-canonical spelling of the same file is what the database may hold.
     let messy = episode.join(".").join("index.m3u8");
-    let resolved = resolve_source(&dir, &messy.to_string_lossy())
-        .expect("a downloaded episode is a playable source");
+    let resolved = resolve_source(&dir, &messy.to_string_lossy()).unwrap();
 
-    assert_eq!(
-        resolved,
-        ResolvedSource::Local {
-            value: playlist
-                .canonicalize()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
-        }
+    assert!(
+        resolved.starts_with(&format!("{ASSET_ORIGIN}/")),
+        "the page must load the file over the asset protocol: {resolved}"
+    );
+    assert!(
+        resolved.ends_with("/downloads/10303/5/index.m3u8"),
+        "the playlist's folder must survive as addressable path segments so that relative \
+         segment URIs resolve beside it: {resolved}"
     );
 
     fs::remove_dir_all(&dir).ok();
@@ -69,11 +70,10 @@ fn a_downloaded_playlist_resolves_to_its_canonical_path_inside_the_downloads_fol
 #[test]
 fn a_path_that_climbs_out_of_the_downloads_folder_is_refused() {
     let dir = scratch_app_dir("escape");
-    let outside = dir.join("secret.m3u8");
-    fs::write(&outside, "#EXTM3U\n").expect("file must be writable");
+    fs::write(dir.join("secret.m3u8"), "#EXTM3U\n").expect("file must be writable");
 
-    let through_symlink_free = dir.join("downloads").join("..").join("secret.m3u8");
-    let error = resolve_source(&dir, &through_symlink_free.to_string_lossy())
+    let through_parent = dir.join("downloads").join("..").join("secret.m3u8");
+    let error = resolve_source(&dir, &through_parent.to_string_lossy())
         .expect_err("a path outside downloads/ is not a playable source");
     assert!(
         error.contains("папки загрузок"),

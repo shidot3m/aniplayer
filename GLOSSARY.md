@@ -103,7 +103,7 @@ The app's only playback path: a `<video>` element inside the main window, fed by
 _Avoid_: native playback, mpv, external player
 
 **Playable source**:
-The Rust verdict on an Episode source, and the only way a stored path reaches the media element: a re-parsed `http(s)` URL, or a canonical file inside the downloads folder turned into an asset URL.
+The URL Rust hands the media element for an Episode source, and the only way a stored path reaches it: a re-parsed `http(s)` URL, or the asset URL of a canonical file inside the downloads folder.
 _Avoid_: file path, source string
 
 **IPC command**:

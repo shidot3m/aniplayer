@@ -43,7 +43,6 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
   }, [exitFullscreenSideEffect]);
 
   const {
-    streamUrl,
     hasPrev,
     hasNext,
     handlePrev,
@@ -93,8 +92,6 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black select-none font-sans">
       <PlayerVideoViewport
-        isPlaying={playerStore.isPlaying}
-        streamUrl={streamUrl}
         playbackError={playerStore.playbackError}
         onTogglePlay={handleTogglePlay}
         onToggleFullscreen={toggleFullscreen}

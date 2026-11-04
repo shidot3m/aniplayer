@@ -3,7 +3,7 @@ import { useCatalogStore } from "@/features/catalog";
 import type { EpisodeItem, Release, VideoQuality } from "@/shared/types";
 import { usePlaybackEvents } from "../renderer/usePlaybackEvents";
 import { usePlayerStore } from "../state/playerStore";
-import { getAvailableQualities, pickEpisodeSource } from "../state/playerStoreDefaults";
+import { getAvailableQualities } from "../state/playerStoreDefaults";
 import { usePlayerHotkeys } from "./usePlayerHotkeys";
 
 interface UsePlayerControllersOptions {
@@ -77,11 +77,6 @@ export function usePlayerControllers({
   const handleNext = useCallback(() => {
     if (hasNext) playEpisode(release, release.episodes[currentIndex + 1]);
   }, [hasNext, playEpisode, release, currentIndex]);
-
-  const streamUrl = useMemo(
-    () => pickEpisodeSource(episode, activeQuality),
-    [activeQuality, episode],
-  );
 
   const lastSavedTimeRef = useRef<number>(0);
   const playbackPositionRef = useRef({ currentTime, duration });
@@ -230,7 +225,6 @@ export function usePlayerControllers({
   const isAutoplayCountdown = autoplayNext && hasNext && timeLeft <= 15 && timeLeft > 0;
 
   return {
-    streamUrl,
     availableQualities,
     hasPrev,
     hasNext,

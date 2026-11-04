@@ -5,9 +5,6 @@
 import { usePlaybackSurface } from "../renderer/usePlaybackSurface";
 
 interface PlayerVideoViewportProps {
-  /** Whether the session is running: decides what the loading hint shows while media arrives. */
-  isPlaying: boolean;
-  streamUrl: string;
   playbackError?: string | null;
   onTogglePlay: () => void;
   onToggleFullscreen: () => void;
@@ -18,13 +15,11 @@ interface PlayerVideoViewportProps {
  * Media Source Extensions, with the React controls laid over it in the same window.
  */
 export function PlayerVideoViewport({
-  isPlaying,
-  streamUrl,
   playbackError,
   onTogglePlay,
   onToggleFullscreen,
 }: PlayerVideoViewportProps) {
-  const videoRef = usePlaybackSurface();
+  const { videoRef, isBuffering } = usePlaybackSurface();
 
   return (
     <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
@@ -52,7 +47,7 @@ export function PlayerVideoViewport({
           <p className="mb-2 font-semibold">Не удалось воспроизвести эпизод</p>
           <p>{playbackError}</p>
         </div>
-      ) : !isPlaying && streamUrl ? (
+      ) : isBuffering ? (
         <div className="rounded-lg bg-black/70 px-4 py-2 text-slate-300 text-sm">
           Загрузка видеопотока...
         </div>
