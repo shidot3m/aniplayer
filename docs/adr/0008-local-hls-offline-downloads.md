@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md)
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md) and [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md)
 
 ## Context
 
@@ -38,3 +38,8 @@ The obvious alternatives conflict with earlier decisions: the native libmpv back
 - Offline playback no longer requires hls.js or Media Source Extensions. The stored playlist is handed to mpv (`player_open`), which demuxes the local TS segments itself; the asset protocol is disabled entirely.
 - `#EXT-X-MAP` and `#EXT-X-KEY` playlists are now storable: the downloader fetches the init segments and keys into the episode folder (`init-NNNNN.mp4`, `key-NNNNN.key`) and rewrites their URIs to the local names, because mpv replays exactly what a browser could not. `#EXT-X-STREAM-INF` (master) and `#EXT-X-BYTERANGE` remain rejected.
 - Torrent payloads are no longer classified by decodability: mpv plays any container ffmpeg reads, so the scanner indexes every video file and the Unsupported torrent file reporting is gone.
+
+## Amendment (2026-11-04, [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md))
+
+- BitTorrent left the product, so the offline layout above is the only download layout: no scanner indexes a release folder any more, `downloads/torrents/` is not created or read, and the `#EXT-X-MAP` / `#EXT-X-KEY` localization the last amendment added stays — the measured source uses neither, but it is tested and it protects offline playback if the scheme changes.
+- The rows the scanner wrote survive as data the app no longer understands, so startup drops them from `downloaded_episodes` by their `torrent-` id prefix and leaves the files on disk. The "current rows point at playlists" consequence above is now true without exception for anything the app lists.

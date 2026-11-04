@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md); build command updated per [ADR 0011](0011-bun-as-the-js-toolchain.md)
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md); build command updated per [ADR 0011](0011-bun-as-the-js-toolchain.md); runtime paths amended by [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md)
 
 ## Context
 
@@ -32,3 +32,8 @@ The app is Windows-only and must keep all of its state — database, downloads, 
 
 - The archive is **`aniplayer.exe` plus its media runtime plus an empty `data/` folder**: `mpv/mpv.exe` with its DLLs (pinned by version and SHA-256 in `scripts/get_mpv.py`) and `shaders/anime4k/*.glsl` sit beside the executable. The last consequences line above — no native media libraries — no longer holds.
 - The archive check asserts `aniplayer.exe`, `mpv/mpv.exe`, and the Anime4K shaders; a bundle without the runtime cannot play anything, so `scripts/package_portable.py` refuses to produce one.
+
+## Amendment (2026-11-04, [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md))
+
+- `downloads/torrents/<release_id>/` is no longer a runtime path. The app creates nothing there, reads nothing from it, and lists nothing it holds; the folder survives only as whatever an older build left behind, and reclaiming it is the user's business in Explorer. The runtime paths are now `data/aniplayer.db` and `downloads/<release_id>/<ordinal>/`.
+- Startup does touch that inheritance, but only in the index: `startup::purge_legacy_torrent_downloads` drops the Downloaded episode rows the retired scanner wrote under the `torrent-` id prefix. It deletes no file, which is the "user data is not removed by the app" consequence above holding exactly as written.
