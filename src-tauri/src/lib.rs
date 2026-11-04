@@ -19,9 +19,23 @@ pub fn run() -> Result<(), StartupError> {
 }
 
 fn run_with_state(state: AppState) -> Result<(), StartupError> {
+    let downloads = state.app_dir.join("downloads");
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(state)
+        // The page reads a downloaded Episode through the asset protocol, and the protocol
+        // serves only what its scope allows. The portable app lives wherever the user put it,
+        // and no `$EXE` variable exists to name that root in tauri.conf.json, so the folder is
+        // granted here — from the same `app_dir` `playback::resolve_source` canonicalizes
+        // against, which keeps the two gates on one path.
+        .setup(move |app| {
+            use tauri::Manager;
+
+            app.asset_protocol_scope()
+                .allow_directory(&downloads, true)
+                .map_err(|e| format!("could not open the downloads folder for playback: {e}"))?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::app::ping,
             commands::db::db_save_bookmark,

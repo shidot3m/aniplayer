@@ -197,28 +197,27 @@ fn development_and_production_policies_differ_only_where_the_dev_server_needs_it
 }
 
 /// A downloaded Episode is an Offline playlist on disk, and the WebView reads it through the
-/// asset protocol. The protocol is therefore on, and confined to the folder the downloader
-/// writes into: the executable's own `downloads/`, which is also where `resolve_source`
-/// canonicalizes before handing a path out.
+/// asset protocol. The protocol is therefore on. Its scope stays empty in the configuration:
+/// the portable app sits wherever the user put it, and `tauri.conf.json` has no variable that
+/// names the executable's own folder, so `run_with_state` grants `app_dir/downloads` at
+/// startup — the same root `playback::resolve_source` canonicalizes against. A pattern the
+/// runtime cannot resolve would be dropped in silence and leave the scope empty, which is what
+/// this assertion exists to catch: the page would then get 403 for every downloaded byte.
 #[test]
-fn asset_protocol_is_enabled_and_confined_to_the_downloads_folder() {
+fn asset_protocol_is_enabled_and_granted_from_the_app_folder_at_startup() {
     let config = app_config();
     let asset = &config.app.security.asset_protocol;
     assert!(
         asset.enable,
         "the webview can only play a downloaded episode through the asset protocol"
     );
-    let allowed: Vec<String> = match &asset.scope {
+    let declared: Vec<String> = match &asset.scope {
         FsScope::AllowedPaths(paths) => paths.iter().map(|p| p.display().to_string()).collect(),
-        FsScope::Scope { allow, deny, .. } => {
-            assert!(deny.is_empty(), "the downloads scope needs no deny list");
-            allow.iter().map(|p| p.display().to_string()).collect()
-        }
+        FsScope::Scope { allow, .. } => allow.iter().map(|p| p.display().to_string()).collect(),
     };
-    assert_eq!(
-        allowed,
-        vec![r"$EXE/downloads/**".to_string()],
-        "the asset protocol must serve the downloads folder and nothing else",
+    assert!(
+        declared.is_empty(),
+        "the downloads folder is granted at runtime from `app_dir`; a path spelled here,          such as `$EXE/downloads/**`, is not resolvable and would silently empty the scope: {declared:?}",
     );
     assert_contains(&production(), "connect-src", ASSET_SOURCES);
     assert_contains(&development(), "connect-src", ASSET_SOURCES);
@@ -229,7 +228,7 @@ fn asset_protocol_is_enabled_and_confined_to_the_downloads_folder() {
 /// trick to hold that hole open. Losing any of these three returns the [#49] and [#52] class
 /// of symptoms — a picture that falls under another window on Alt+Tab — to the tree.
 ///
-/// [ADR 0014](../../docs/adr/0014-webview-hls-playback.md) is why the WebView is the backend.
+/// [ADR 0014](../../docs/adr/0014-webview-is-the-only-playback-backend.md) is why the WebView is the backend.
 #[test]
 fn the_window_stack_is_a_single_opaque_window() {
     let config = app_config();
