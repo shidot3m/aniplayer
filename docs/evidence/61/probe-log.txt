@@ -1088,3 +1088,103 @@
   }
  ]
 }
+== D0-fresh-build-restored
+{
+ "pageNowMs": 26389,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/2530d4a3-914",
+  "readyState": 4,
+  "currentTime": 401.1,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 16150,
+   "durationMs": 2
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 16464,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 16466,
+   "durationMs": 9
+  }
+ ]
+}
+== D1-refused-then-retried
+page threw: Uncaught (in promise) TypeError: Illegal invocation
+E:\Coding\Aniplayer\docs\evidence\61\cdp.ps1:41 знак:37
++ ... onDetails) { throw "page threw: $($r.result.exceptionDetails.text)" }
++                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (page threw: Unc...egal invocation:String) [], RuntimeException
+    + FullyQualifiedErrorId : page threw: Uncaught (in promise) TypeError: Illegal invocation
+ 
+== D3-recovered-after-retry
+{
+ "pageNowMs": 169339,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/2530d4a3-914",
+  "readyState": 4,
+  "currentTime": 544.1,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 16150,
+   "durationMs": 2
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 16464,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 16466,
+   "durationMs": 9
+  }
+ ]
+}

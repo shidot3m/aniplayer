@@ -24,8 +24,10 @@ $js = switch ($Mode) {
 (() => {
   const real = window.__gpuRef || navigator.gpu;
   if (!window.__gpuRef) window.__gpuRef = real;
-  const stub = Object.create(real);
-  stub.requestAdapter = async () => null;
+  const stub = {
+    requestAdapter: async () => null,
+    getPreferredCanvasFormat: () => real.getPreferredCanvasFormat(),
+  };
   Object.defineProperty(navigator, "gpu", { value: stub, configurable: true });
   return JSON.stringify({ gpuNow: typeof navigator.gpu, adapterWillBe: "null" });
 })()
