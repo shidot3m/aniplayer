@@ -204,7 +204,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   setAnime4kEnabled: async (enabled: boolean) => {
-    set({ anime4kEnabled: enabled });
+    // Asking for the enhancement again is a fresh attempt: the renderer's last refusal is
+    // dropped, so a refused adapter can be retried without restarting the app.
+    set({ anime4kEnabled: enabled, enhancementFault: enabled ? null : get().enhancementFault });
     if (typeof window !== "undefined") {
       localStorage.setItem("aniplayer_anime4k_enabled", String(enabled));
     }

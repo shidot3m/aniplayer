@@ -292,3 +292,36 @@ describe("Applying the enhancement to a live Episode", () => {
     expect(screen.queryByText("4K Upscale")).toBeNull();
   });
 });
+
+describe("Retrying after the renderer refused", () => {
+  beforeEach(() => {
+    resetEnhancementWorld();
+    installWebGPU();
+  });
+
+  it("keeps the reason visible but lets the user ask for the enhancement again", async () => {
+    FakeAnime4kRenderer.failNextWith = "WebGPU-адаптер не отдан машине";
+    usePlayerStore.setState({ anime4kEnabled: true, anime4kPreset: "Mode A (HQ)" });
+
+    const { canvas } = await openPlayer();
+    await waitFor(() =>
+      expect(usePlayerStore.getState().enhancementFault).toBe("WebGPU-адаптер не отдан машине"),
+    );
+
+    fireEvent.click(screen.getByTitle("Настройки плеера"));
+    const upscaler = await screen.findByLabelText("Переключить апскейлер 4K");
+
+    expect(upscaler.getAttribute("aria-checked")).toBe("false");
+    expect(upscaler.hasAttribute("disabled")).toBe(false);
+    expect(canvas()).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(upscaler);
+    });
+    await waitFor(() => expect(canvas()).not.toBeNull());
+
+    expect(usePlayerStore.getState().enhancementFault).toBeNull();
+    expect(FakeAnime4kRenderer.instances).toHaveLength(2);
+    expect(activeRenderer()?.started).toBe(true);
+  });
+});

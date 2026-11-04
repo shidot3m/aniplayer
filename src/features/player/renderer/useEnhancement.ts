@@ -11,15 +11,20 @@ export function hasWebGPU(): boolean {
 
 /**
  * The one verdict the enhancement controls and the playback surface share: whether the frame
- * is filtered, and what stops it from being. A preference saved on a machine with WebGPU stays
- * a preference — a machine without it reports the reason instead of painting a black plate.
+ * is filtered, what stops it from being, and what the renderer itself said when it tried.
+ * A machine without WebGPU is out of order for the session; a renderer that refused once can
+ * be asked again, because a driver hiccup is not a missing feature.
  */
-export function useEnhancement(): { active: boolean; blocked: string | null } {
+export function useEnhancement(): {
+  active: boolean;
+  blocked: string | null;
+  fault: string | null;
+} {
   const enabled = usePlayerStore((state) => state.anime4kEnabled);
   const fault = usePlayerStore((state) => state.enhancementFault);
 
   return useMemo(() => {
-    const blocked = hasWebGPU() ? fault : WEBGPU_REQUIRED_REASON;
-    return { active: enabled && blocked === null, blocked };
+    const blocked = hasWebGPU() ? null : WEBGPU_REQUIRED_REASON;
+    return { active: enabled && blocked === null && fault === null, blocked, fault };
   }, [enabled, fault]);
 }

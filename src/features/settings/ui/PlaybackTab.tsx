@@ -25,7 +25,7 @@ export function PlaybackTab() {
     setAutoplayNext,
   } = usePlayerStore();
 
-  const { active, blocked } = useEnhancement();
+  const { active, blocked, fault } = useEnhancement();
 
   return (
     <div className="space-y-5 text-xs text-slate-300">
@@ -82,6 +82,7 @@ export function PlaybackTab() {
         </div>
         <div className="text-[11px] text-slate-400 mb-2.5">
           {blocked ??
+            fault ??
             (active
               ? "Включен (кадр идёт через WebGPU-рендерер)"
               : "Выключен (кадр идёт напрямую)")}

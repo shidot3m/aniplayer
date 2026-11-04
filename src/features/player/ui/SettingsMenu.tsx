@@ -27,8 +27,8 @@ export function SettingsMenu({
     setAutoplayNext,
   } = usePlayerStore();
 
-  const { active, blocked } = useEnhancement();
-  const upscalerHint = blocked ?? (active ? "Включен" : "Выключен");
+  const { active, blocked, fault } = useEnhancement();
+  const upscalerHint = blocked ?? fault ?? (active ? "Включен" : "Выключен");
 
   return (
     <DropdownMenu>

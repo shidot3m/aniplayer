@@ -1,0 +1,1090 @@
+== 10-enhancement-on-720p
+{
+ "pageNowMs": 335029,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 126.3,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 20-paused-with-enhancement
+{
+ "pageNowMs": 382253,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 172.2,
+  "paused": true,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 30-switched-off-from-menu
+{
+ "pageNowMs": 408510,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 172.2,
+  "paused": true,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 30-switched-off-from-menu
+{
+ "pageNowMs": 443565,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 172.2,
+  "paused": true,
+  "frame": "1280x720",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 40-switched-back-on
+{
+ "pageNowMs": 569804,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 172.2,
+  "paused": true,
+  "frame": "1280x720",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 50-on-menu-closed
+{
+ "pageNowMs": 641577,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 172.2,
+  "paused": true,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 51-off-menu-closed
+{
+ "pageNowMs": 657412,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 172.2,
+  "paused": true,
+  "frame": "1280x720",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 60-enhanced-playback-t0
+{
+ "pageNowMs": 704244,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 175.6,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 61-enhanced-playback-t8
+{
+ "pageNowMs": 712640,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 184,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 70-after-seek
+{
+ "pageNowMs": 730330,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/ad4ca67a-0b5",
+  "readyState": 4,
+  "currentTime": 206.4,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 71-after-quality-switch
+{
+ "pageNowMs": 739457,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/336b03c1-e1b",
+  "readyState": 4,
+  "currentTime": 214.1,
+  "paused": false,
+  "frame": "1920x1080",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1920x1080",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 80-fullscreen-720p-upscaled
+{
+ "pageNowMs": 766285,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/336b03c1-e1b",
+  "readyState": 4,
+  "currentTime": 240.9,
+  "paused": false,
+  "frame": "1920x1080",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "2560x1440",
+  "display": "2560x1440",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 81-fullscreen-enhancement-off
+{
+ "pageNowMs": 793860,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/336b03c1-e1b",
+  "readyState": 4,
+  "currentTime": 259,
+  "paused": true,
+  "frame": "1920x1080",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 90-check-paused
+{
+ "pageNowMs": 868237,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/336b03c1-e1b",
+  "readyState": 4,
+  "currentTime": 259,
+  "paused": true,
+  "frame": "1920x1080",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 91-aa-paused-259
+{
+ "pageNowMs": 895513,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/336b03c1-e1b",
+  "readyState": 4,
+  "currentTime": 259,
+  "paused": true,
+  "frame": "1920x1080",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1920x1080",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== 92-mode-b-paused-259
+{
+ "pageNowMs": 910680,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/336b03c1-e1b",
+  "readyState": 4,
+  "currentTime": 259,
+  "paused": true,
+  "frame": "1920x1080",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1920x1080",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 294943,
+   "durationMs": 25
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 295256,
+   "durationMs": 113
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 295258,
+   "durationMs": 55
+  }
+ ]
+}
+== B0-relaunch-restored
+{
+ "pageNowMs": 53737,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": null,
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": []
+}
+== B0-relaunch-restored
+{
+ "pageNowMs": 75922,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": null,
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": []
+}
+== B0-relaunch-restored
+{
+ "pageNowMs": 100403,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/192e18b0-669",
+  "readyState": 4,
+  "currentTime": 266.9,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 91003,
+   "durationMs": 1
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 91315,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 91317,
+   "durationMs": 10
+  }
+ ]
+}
+== B1-no-webgpu-api
+{
+ "pageNowMs": 126499,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/192e18b0-669",
+  "readyState": 4,
+  "currentTime": 293,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 91003,
+   "durationMs": 1
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 91315,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 91317,
+   "durationMs": 10
+  }
+ ]
+}
+== B2-no-webgpu-api
+{
+ "pageNowMs": 150949,
+ "webgpu": {
+  "api": false,
+  "adapter": null,
+  "preferredCanvasFormat": null
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/192e18b0-669",
+  "readyState": 4,
+  "currentTime": 317.5,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "0"
+ },
+ "canvas": {
+  "drawingBuffer": "1280x720",
+  "display": "1280x800",
+  "opacity": "1"
+ },
+ "badge": true,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 91003,
+   "durationMs": 1
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 91315,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 91317,
+   "durationMs": 10
+  }
+ ]
+}
+== B3-episode-opened-without-webgpu
+{
+ "pageNowMs": 179643,
+ "webgpu": {
+  "api": false,
+  "adapter": null,
+  "preferredCanvasFormat": null
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/c792e7e7-b53",
+  "readyState": 4,
+  "currentTime": 8.2,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 91003,
+   "durationMs": 1
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 91315,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 91317,
+   "durationMs": 10
+  }
+ ]
+}
+== B4-menu-without-webgpu
+{
+ "pageNowMs": 183339,
+ "webgpu": {
+  "api": false,
+  "adapter": null,
+  "preferredCanvasFormat": null
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/c792e7e7-b53",
+  "readyState": 4,
+  "currentTime": 11.9,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 91003,
+   "durationMs": 1
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 91315,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 91317,
+   "durationMs": 10
+  }
+ ]
+}
+== B6-menu-open-without-webgpu
+{
+ "pageNowMs": 235261,
+ "webgpu": {
+  "api": false,
+  "adapter": null,
+  "preferredCanvasFormat": null
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/c792e7e7-b53",
+  "readyState": 4,
+  "currentTime": 152.7,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": {
+  "checked": "false",
+  "disabled": true,
+  "hintMentionsWebGPU": true
+ },
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 91003,
+   "durationMs": 1
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 91315,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 91317,
+   "durationMs": 10
+  }
+ ]
+}
+== C1-recovered-with-aa
+{
+ "pageNowMs": 358104,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/c792e7e7-b53",
+  "readyState": 4,
+  "currentTime": 275.5,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": null,
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 91003,
+   "durationMs": 1
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 91315,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 91317,
+   "durationMs": 10
+  }
+ ]
+}
+== C2-enhancement-back-on-aa
+{
+ "pageNowMs": 375660,
+ "webgpu": {
+  "api": true,
+  "adapter": {
+   "vendor": "nvidia",
+   "architecture": "lovelace",
+   "device": "",
+   "backend": null
+  },
+  "preferredCanvasFormat": "bgra8unorm"
+ },
+ "video": {
+  "currentSrc": "blob:http://tauri.localhost/c792e7e7-b53",
+  "readyState": 4,
+  "currentTime": 293.1,
+  "paused": false,
+  "frame": "1280x720",
+  "opacity": "1"
+ },
+ "canvas": null,
+ "badge": false,
+ "upscalerSwitch": {
+  "checked": "false",
+  "disabled": true,
+  "hintMentionsWebGPU": true
+ },
+ "chunks": [
+  {
+   "chunk": "PlayerOverlay.js",
+   "startMs": 91003,
+   "durationMs": 1
+  },
+  {
+   "chunk": "anime4kRenderer.js",
+   "startMs": 91315,
+   "durationMs": 45
+  },
+  {
+   "chunk": "hls-CY-H2rCb.js",
+   "startMs": 91317,
+   "durationMs": 10
+  }
+ ]
+}
