@@ -2,6 +2,7 @@
 // Both caption gates are scoped to the media element below and lifted by
 // #64 if the player ever grows subtitles.
 // aislop-ignore-file jsx-a11y/media-has-caption -- no caption source exists in the catalog today.
+import { useCallback, useEffect, useState } from "react";
 import { usePlaybackSurface } from "../renderer/usePlaybackSurface";
 import { Anime4kCanvas } from "./Anime4kCanvas";
 
@@ -25,21 +26,33 @@ export function PlayerVideoViewport({
   onToggleFullscreen,
 }: PlayerVideoViewportProps) {
   const { videoRef, isBuffering } = usePlaybackSurface();
+  const [painted, setPainted] = useState(false);
+
+  // The element stays visible until the canvas has a filtered frame on it, so switching the
+  // enhancement on cannot show an empty canvas for a moment.
+  useEffect(() => {
+    setPainted(false);
+  }, [enhancementActive, anime4kPreset]);
+  const onPainted = useCallback(() => setPainted(true), []);
 
   return (
     <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
       {/* No native controls: the overlay draws them, and the element is never a tab stop. */}
-      {/* While the renderer is up the canvas paints over the element, which keeps decoding. */}
+      {/* Once the renderer paints, the element underneath keeps decoding and driving audio. */}
       {/* biome-ignore lint/a11y/useMediaCaption: the catalog ships no text track to caption with. */}
       <video
         ref={videoRef}
-        className={`h-full w-full bg-black object-contain ${enhancementActive ? "opacity-0" : ""}`}
+        className={`h-full w-full bg-black object-contain ${
+          enhancementActive && painted ? "opacity-0" : ""
+        }`}
         playsInline
         tabIndex={-1}
         aria-hidden="true"
       />
 
-      {enhancementActive && <Anime4kCanvas videoRef={videoRef} preset={anime4kPreset} />}
+      {enhancementActive && (
+        <Anime4kCanvas videoRef={videoRef} preset={anime4kPreset} onPainted={onPainted} />
+      )}
 
       <button
         type="button"

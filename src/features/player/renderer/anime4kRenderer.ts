@@ -8,6 +8,7 @@ import {
   ModeC,
   ModeCA,
 } from "anime4k-webgpu";
+import { ANIME4K_PRESETS, DEFAULT_ANIME4K_PRESET } from "../state/playerStoreDefaults";
 
 export type PipelineConstructor = new (
   descriptor: Anime4KPresetPipelineDescriptor,
@@ -24,7 +25,15 @@ const PRESET_MAP: Record<string, PipelineConstructor> = {
 };
 
 export function resolvePresetPipeline(preset: string): PipelineConstructor {
-  return PRESET_MAP[preset] ?? ModeAA;
+  return PRESET_MAP[preset] ?? PRESET_MAP[DEFAULT_ANIME4K_PRESET];
+}
+
+/** Every preset Settings offers has a pipeline here, and nothing here is offered without one. */
+export function pipelinesCoverPresets(): boolean {
+  return (
+    ANIME4K_PRESETS.every((preset) => preset.id in PRESET_MAP) &&
+    Object.keys(PRESET_MAP).every((id) => ANIME4K_PRESETS.some((preset) => preset.id === id))
+  );
 }
 
 const QUAD_WGSL = `
@@ -53,8 +62,9 @@ const QUAD_WGSL = `
  * Draws every frame the media element presents through an Anime4K pipeline and into the
  * overlay canvas. The element keeps decoding and playing sound; only its picture is replaced.
  *
- * `start` rejects with the reason the frame cannot be taken, so the surface falls back to the
- * element instead of holding a canvas that never paints.
+ * `start` resolves once the first filtered frame is on the canvas, so the surface can keep the
+ * element visible until there is something to paint over it, and rejects with the reason the
+ * frame cannot be taken, so it falls back rather than holding a canvas that never paints.
  */
 export class Anime4kRenderer {
   private readonly video: HTMLVideoElement;
@@ -73,6 +83,8 @@ export class Anime4kRenderer {
   private videoFrameCallbackId = 0;
   private destroyed = false;
   private forceRender = true;
+  private targetChanged = false;
+  private settleFirstFrame: () => void = () => {};
 
   constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement, preset: string) {
     this.video = video;
@@ -80,7 +92,14 @@ export class Anime4kRenderer {
     this.preset = preset;
   }
 
-  async start(): Promise<void> {
+  start(): Promise<void> {
+    const painted = new Promise<void>((resolve) => {
+      this.settleFirstFrame = resolve;
+    });
+    return this.connect().then(() => painted);
+  }
+
+  private async connect(): Promise<void> {
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) throw new Error("WebGPU-адаптер не отдан машине");
 
@@ -88,6 +107,7 @@ export class Anime4kRenderer {
     if (!context) throw new Error("Canvas не принимает WebGPU");
 
     const device = await adapter.requestDevice();
+    if (this.destroyed) throw new Error("Рендерер остановлен до запуска");
     this.device = device;
     this.context = context;
     this.format = navigator.gpu.getPreferredCanvasFormat();
@@ -111,9 +131,13 @@ export class Anime4kRenderer {
     this.pipeline = null;
     this.device?.destroy();
     this.device = null;
+    // A start() still waiting for its first frame must not stay waiting on a renderer
+    // that no longer exists.
+    this.settleFirstFrame();
   }
 
   private onResize = (): void => {
+    this.targetChanged = true;
     this.forceRender = true;
   };
 
@@ -159,7 +183,9 @@ export class Anime4kRenderer {
 
     const inputTexture = this.inputTexture;
     const pipeline = this.pipeline;
-    if (!inputTexture || !pipeline) return;
+    const renderPipeline = this.renderPipeline;
+    const bindGroup = this.bindGroup;
+    if (!inputTexture || !pipeline || !renderPipeline || !bindGroup) return;
 
     device.queue.copyExternalImageToTexture({ source: this.video }, { texture: inputTexture }, [
       this.video.videoWidth,
@@ -181,15 +207,15 @@ export class Anime4kRenderer {
       ],
     });
 
-    if (this.renderPipeline && this.bindGroup) {
-      pass.setPipeline(this.renderPipeline);
-      pass.setBindGroup(0, this.bindGroup);
-      pass.draw(6);
-    }
+    pass.setPipeline(renderPipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.draw(6);
     pass.end();
 
     device.queue.submit([encoder.finish()]);
     this.forceRender = false;
+    this.targetChanged = false;
+    this.settleFirstFrame();
   }
 
   private ensureResources(): boolean {
@@ -200,7 +226,7 @@ export class Anime4kRenderer {
       !this.inputTexture ||
       this.inputTexture.width !== this.video.videoWidth ||
       this.inputTexture.height !== this.video.videoHeight ||
-      (this.forceRender && this.pipeline !== null);
+      (this.targetChanged && this.pipeline !== null);
     if (needsRebuild) {
       this.createPipeline(device);
     }

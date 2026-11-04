@@ -5,6 +5,8 @@ import { usePlayerStore } from "../state/playerStore";
 interface Anime4kCanvasProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   preset: string;
+  /** Called when the canvas has a filtered frame on it — never before. */
+  onPainted: () => void;
 }
 
 /**
@@ -13,7 +15,7 @@ interface Anime4kCanvasProps {
  * The renderer arrives by dynamic import: `anime4k-webgpu` is ~3.4 MB of shader tables that a
  * user who never switched the enhancement on should not download ([ADR 0002]).
  */
-export function Anime4kCanvas({ videoRef, preset }: Anime4kCanvasProps) {
+export function Anime4kCanvas({ videoRef, preset, onPainted }: Anime4kCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const setFault = usePlayerStore((state) => state.setEnhancementFault);
 
@@ -31,7 +33,10 @@ export function Anime4kCanvas({ videoRef, preset }: Anime4kCanvasProps) {
         if (cancelled) return;
         renderer = new module.Anime4kRenderer(video, canvas, preset);
         await renderer.start();
-        if (!cancelled) setFault(null);
+        if (!cancelled) {
+          setFault(null);
+          onPainted();
+        }
       } catch (error) {
         // The surface falls back to the element: an empty canvas must not cover a live frame.
         if (!cancelled) setFault(error instanceof Error ? error.message : String(error));
@@ -43,7 +48,7 @@ export function Anime4kCanvas({ videoRef, preset }: Anime4kCanvasProps) {
       cancelled = true;
       renderer?.stop();
     };
-  }, [videoRef, preset, setFault]);
+  }, [videoRef, preset, setFault, onPainted]);
 
   return (
     <canvas

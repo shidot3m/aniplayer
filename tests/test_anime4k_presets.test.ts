@@ -9,6 +9,12 @@ async function loadRenderer() {
 }
 
 describe("Anime4K preset mapping", () => {
+  it("covers the preset list in both directions", async () => {
+    const { pipelinesCoverPresets } = await loadRenderer();
+
+    expect(pipelinesCoverPresets()).toBe(true);
+  });
+
   it("builds a distinct pipeline for every preset Settings offers", async () => {
     const { resolvePresetPipeline } = await loadRenderer();
 

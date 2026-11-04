@@ -8,8 +8,10 @@ import { PlaybackTab } from "@/features/settings/ui/PlaybackTab";
 import type { EpisodeItem, Release } from "@/shared/types";
 import {
   activeRenderer,
+  blockNextRendererPaint,
   FakeAnime4kRenderer,
   installWebGPU,
+  paintRendererFrame,
   resetEnhancementStub,
 } from "./helpers/enhancementStubs";
 import { installMediaElementStub, resetHlsStub, setMediaDuration } from "./helpers/playbackStubs";
@@ -323,5 +325,28 @@ describe("Retrying after the renderer refused", () => {
     expect(usePlayerStore.getState().enhancementFault).toBeNull();
     expect(FakeAnime4kRenderer.instances).toHaveLength(2);
     expect(activeRenderer()?.started).toBe(true);
+  });
+});
+
+describe("The frame the user sees while the renderer starts", () => {
+  beforeEach(() => {
+    resetEnhancementWorld();
+    installWebGPU();
+  });
+
+  it("keeps the element visible until the canvas has actually painted a frame", async () => {
+    blockNextRendererPaint();
+    usePlayerStore.setState({ anime4kEnabled: true, anime4kPreset: "Mode A (HQ)" });
+
+    const { canvas, video } = await openPlayer();
+    await waitFor(() => expect(canvas()).not.toBeNull());
+
+    expect(video().className).not.toContain("opacity-0");
+    expect(activeRenderer()?.started).toBe(false);
+
+    await act(async () => {
+      paintRendererFrame();
+    });
+    await waitFor(() => expect(video().className).toContain("opacity-0"));
   });
 });

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { PlayerHotkeysConfig } from "@/shared/types";
 import { usePlayerStore } from "../state/playerStore";
+import { ANIME4K_PRESETS } from "../state/playerStoreDefaults";
 
 export interface UsePlayerHotkeysProps {
   onUserActivity: () => void;
@@ -24,14 +25,10 @@ export interface UsePlayerHotkeysProps {
   setAnime4kEnabled: (enabled: boolean) => void;
 }
 
-const PRESET_HOTKEYS: Record<string, string> = {
-  Digit1: "Mode A (HQ)",
-  Digit2: "Mode A+A (HQ)",
-  Digit3: "Mode B (HQ)",
-  Digit4: "Mode B+B (HQ)",
-  Digit5: "Mode C (HQ)",
-  Digit6: "Mode C+A (HQ)",
-};
+/** Shift+1..6 select the presets in the order Settings shows them, so the two cannot drift. */
+const PRESET_HOTKEYS: Record<string, string> = Object.fromEntries(
+  ANIME4K_PRESETS.map((preset, index) => [`Digit${index + 1}`, preset.id]),
+);
 
 function handlePlayerKey(e: KeyboardEvent, p: UsePlayerHotkeysProps, hk: PlayerHotkeysConfig) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
