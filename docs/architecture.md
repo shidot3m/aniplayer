@@ -129,7 +129,7 @@ Backend events are one-way, Rust → WebView:
 1. A release or episode action sends one `DownloadEpisodeItem` per episode to `downloader_start_episode` or `downloader_start_release`.
 2. The command spawns a Tokio task; `HlsDownloader::download_episode` records a DOWNLOADING row with the Skip timecodes, then fetches the playlist.
 3. `prepare_local_playlist` resolves the segment URIs against the playlist URL and rewrites the URI lines to `segment-NNNNN.ts`, preserving `#EXTINF` and the other tags and closing the playlist with `#EXT-X-ENDLIST`. `#EXT-X-MAP` init segments and `#EXT-X-KEY` keys are downloaded beside the playlist and rewritten to local names, because mpv replays the folder from disk; only master (`#EXT-X-STREAM-INF`) and byte-range (`#EXT-X-BYTERANGE`) playlists are rejected.
-4. Segments are written to `downloads/<release_id>/<ordinal>/`, then the playlist is written as `index.m3u8`. The row is updated to COMPLETED with the size of segments plus playlist. Failures remove the folder and become FAILED; cancellation deletes the folder and the row.
+4. Segments are written to `downloads/<release_id>/<ordinal>/`, then the playlist is written as `index.m3u8`. The row is updated to COMPLETED with the size of segments plus playlist. Failures remove the folder and become FAILED; cancellation deletes the folder and the row. A whole-release action is one queue that walks its Episodes serially and checks its own cancel flag between them, so `downloader_cancel_all` stops the queue and not only the Episode running at that moment, while cancelling a single Episode leaves the rest queued. Starting the same Release again supersedes the older queue rather than racing it. `test_download_queue` holds that contract.
 5. Progress is emitted as `download-progress` per segment — bytes written so far, mean throughput, percentage from the segment count — and consumed by `downloadStore` and the floating widget; completion triggers a reload of the downloaded-episode index. This is the only way an Episode reaches the device ([ADR 0013](adr/0013-hls-only-delivery-drops-bittorrent.md)).
 
 ### Settings
@@ -175,7 +175,7 @@ All paths are relative to the executable's directory (`startup::app_dir`). `mpv/
 
 There is no migration framework: the initializer creates missing tables only. Changing an existing table requires an explicit migration and a test.
 
-One data cleanup runs outside the schema, in `startup::purge_legacy_torrent_downloads`: the Downloaded episodes an older build indexed from torrent payloads carry the `torrent-` id prefix, and they leave `downloaded_episodes` on every launch. It is one indexed `DELETE`, so it needs no version marker, and it never touches a file — the media an old build downloaded stays on disk and simply stops being listed.
+One data cleanup runs outside the schema, in `startup::purge_legacy_torrent_downloads`: the Downloaded episodes an older build indexed from torrent payloads carry the `torrent-` id prefix, and they leave `downloaded_episodes` on every launch. It is one `DELETE` over a table the size of the user's library, so it needs no version marker, and it never touches a file — the media an old build downloaded stays on disk and simply stops being listed.
 
 ## Security boundaries
 
@@ -194,6 +194,6 @@ One data cleanup runs outside the schema, in `startup::purge_legacy_torrent_down
 
 - Frontend: `bun run typecheck`, `bun run lint` (Biome), `bun run test` (Vitest), `bunx aislop ci`, `bun run build`.
 - JS toolchain: Bun only ([ADR 0011](adr/0011-bun-as-the-js-toolchain.md)) — a CI guard step fails when an npm/npx reference appears in `.github/workflows/` or `scripts/`.
-- Rust: `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo audit`, and the hermetic test suites listed in `.github/workflows/ci.yml` — including `test_player`, which exercises the mpv event translation and the Anime4K preset chains, `test_player_ipc`, which exercises the command queue, the stall judgement and the watchdog, and `test_startup`, which also proves the legacy purge drops torrent rows idempotently and leaves HLS rows and disk files alone.
+- Rust: `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo audit`, and the hermetic test suites listed in `.github/workflows/ci.yml` — including `test_player`, which exercises the mpv event translation and the Anime4K preset chains, `test_player_ipc`, which exercises the command queue, the stall judgement and the watchdog, `test_download_queue`, which holds the cancel-one-versus-cancel-all contract of the release queue, and `test_startup`, which also proves the legacy purge drops torrent rows idempotently and leaves HLS rows and disk files alone.
 - Packaging: the release workflow pins the mpv build by SHA-256 in `scripts/get_mpv.py`, and the archive check asserts `mpv/mpv.exe` and the Anime4K shaders are inside `Aniplayer-portable.zip`.
 - Feature boundaries, bundle budgets, CSP parity, the playback-source confinement, and the closed capability surface are enforced by tests, not by convention alone.

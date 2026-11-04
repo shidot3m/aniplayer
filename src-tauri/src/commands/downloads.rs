@@ -79,15 +79,20 @@ pub(crate) async fn downloader_start_release(
     let count = episodes.len();
     let downloader = state.downloader.clone();
     let app_dir = state.app_dir.clone();
+    let queue = downloader.begin_release(release_id);
 
     tokio::spawn(async move {
         for mut ep in episodes {
+            if queue.load(std::sync::atomic::Ordering::Relaxed) {
+                break;
+            }
             let quality = ep.quality.take().unwrap_or_else(|| "1080p".to_string());
             let spec = ep.as_spec(release_id, &quality);
             let _ = downloader
                 .download_episode(&app_dir, &spec, Some(app.clone()))
                 .await;
         }
+        downloader.end_release(release_id, &queue);
     });
 
     Ok(count)

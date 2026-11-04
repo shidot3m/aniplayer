@@ -181,6 +181,7 @@ pub struct HlsDownloader {
     client: Client,
     db: Arc<Database>,
     active_tasks: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    active_releases: Arc<Mutex<HashMap<i64, Arc<AtomicBool>>>>,
 }
 
 impl HlsDownloader {
@@ -199,6 +200,39 @@ impl HlsDownloader {
             client,
             db,
             active_tasks: Arc::new(Mutex::new(HashMap::new())),
+            active_releases: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+
+    /// Registers a whole-release download and hands back the flag its queue
+    /// checks between Episodes. Cancelling the queue is what `cancel_all` does;
+    /// cancelling one Episode leaves the flag alone. Starting a Release that is
+    /// already queued stops the older queue: one Release has one queue, and a
+    /// superseded one would otherwise keep downloading out of reach of cancel.
+    pub fn begin_release(&self, release_id: i64) -> Arc<AtomicBool> {
+        let flag = Arc::new(AtomicBool::new(false));
+        let mut releases = self
+            .active_releases
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if let Some(previous) = releases.insert(release_id, flag.clone()) {
+            previous.store(true, Ordering::Relaxed);
+        }
+        flag
+    }
+
+    /// Drops the registration once the queue has run out of Episodes or was
+    /// cancelled, so a later `cancel_all` cannot mark a finished release.
+    pub fn end_release(&self, release_id: i64, flag: &Arc<AtomicBool>) {
+        let mut releases = self
+            .active_releases
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if releases
+            .get(&release_id)
+            .is_some_and(|current| Arc::ptr_eq(current, flag))
+        {
+            releases.remove(&release_id);
         }
     }
 
@@ -231,6 +265,14 @@ impl HlsDownloader {
     }
 
     pub fn cancel_all(&self, app: Option<&tauri::AppHandle>) {
+        for flag in self
+            .active_releases
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .values()
+        {
+            flag.store(true, Ordering::Relaxed);
+        }
         let mut tasks = self.active_tasks.lock().unwrap_or_else(|e| e.into_inner());
         for (ep_id, flag) in tasks.drain() {
             flag.store(true, Ordering::Relaxed);
