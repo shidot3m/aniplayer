@@ -2,7 +2,7 @@
 // Both caption gates are scoped to the media element below and lifted by
 // #64 if the player ever grows subtitles.
 // aislop-ignore-file jsx-a11y/media-has-caption -- no caption source exists in the catalog today.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { usePlaybackSurface } from "../renderer/usePlaybackSurface";
 import { Anime4kCanvas } from "./Anime4kCanvas";
 
@@ -28,12 +28,10 @@ export function PlayerVideoViewport({
   const { videoRef, isBuffering } = usePlaybackSurface();
   const [painted, setPainted] = useState(false);
 
-  // The element stays visible until the canvas has a filtered frame on it, so switching the
-  // enhancement on cannot show an empty canvas for a moment.
-  useEffect(() => {
-    setPainted(false);
-  }, [enhancementActive, anime4kPreset]);
-  const onPainted = useCallback(() => setPainted(true), []);
+  // The element stays visible until the canvas has a filtered frame on it, and the canvas
+  // takes that promise back when its renderer stops, so switching the enhancement on cannot
+  // show an empty canvas for a moment.
+  const handlePainted = useCallback((framePainted: boolean) => setPainted(framePainted), []);
 
   return (
     <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
@@ -51,7 +49,7 @@ export function PlayerVideoViewport({
       />
 
       {enhancementActive && (
-        <Anime4kCanvas videoRef={videoRef} preset={anime4kPreset} onPainted={onPainted} />
+        <Anime4kCanvas videoRef={videoRef} preset={anime4kPreset} onPainted={handlePainted} />
       )}
 
       <button

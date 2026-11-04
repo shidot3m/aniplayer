@@ -84,7 +84,7 @@ export class Anime4kRenderer {
   private destroyed = false;
   private forceRender = true;
   private targetChanged = false;
-  private settleFirstFrame: () => void = () => {};
+  private firstFrameResolve: (() => void) | null = null;
 
   constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement, preset: string) {
     this.video = video;
@@ -94,7 +94,7 @@ export class Anime4kRenderer {
 
   start(): Promise<void> {
     const painted = new Promise<void>((resolve) => {
-      this.settleFirstFrame = resolve;
+      this.firstFrameResolve = resolve;
     });
     return this.connect().then(() => painted);
   }
@@ -134,6 +134,12 @@ export class Anime4kRenderer {
     // A start() still waiting for its first frame must not stay waiting on a renderer
     // that no longer exists.
     this.settleFirstFrame();
+  }
+
+  private settleFirstFrame(): void {
+    const resolve = this.firstFrameResolve;
+    this.firstFrameResolve = null;
+    resolve?.();
   }
 
   private onResize = (): void => {

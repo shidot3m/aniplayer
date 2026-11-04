@@ -5,8 +5,8 @@ import { usePlayerStore } from "../state/playerStore";
 interface Anime4kCanvasProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   preset: string;
-  /** Called when the canvas has a filtered frame on it — never before. */
-  onPainted: () => void;
+  /** True when the canvas holds a filtered frame, false when its renderer has stopped. */
+  onPainted: (painted: boolean) => void;
 }
 
 /**
@@ -35,7 +35,7 @@ export function Anime4kCanvas({ videoRef, preset, onPainted }: Anime4kCanvasProp
         await renderer.start();
         if (!cancelled) {
           setFault(null);
-          onPainted();
+          onPainted(true);
         }
       } catch (error) {
         // The surface falls back to the element: an empty canvas must not cover a live frame.
@@ -47,6 +47,7 @@ export function Anime4kCanvas({ videoRef, preset, onPainted }: Anime4kCanvasProp
     return () => {
       cancelled = true;
       renderer?.stop();
+      onPainted(false);
     };
   }, [videoRef, preset, setFault, onPainted]);
 
