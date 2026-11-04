@@ -8,21 +8,22 @@
 - Скачанный эпизод играется с диска без сети: playlist и сегменты отдаёт asset-протокол, ограниченный папкой `downloads/`
 - Переключение Quality (480p/720p/1080p) на живом воспроизведении — без перезапуска сессии и без потери позиции
 - Продолжение просмотра, автопропуск опенинга/эндинга, автопереход к следующей серии
-- Anime4K: пресеты и тумблер в настройках; в webview их прогоняет WebGPU-рендерер ([#61](https://github.com/shidot3m/aniplayer/issues/61))
+- Anime4K: апскейл и восстановление контуров прямо в webview — WebGPU-рендерер берёт кадр у `<video>` и рисует его поверх; шесть пресетов (Mode A, A+A, B, B+B, C, C+A), тумблер и выбор в настройках, применяются на живом воспроизведении. Без WebGPU контроль отключён с объяснением, плеер работает как обычно ([ADR 0015](docs/adr/0015-anime4k-as-a-webgpu-renderer.md))
 - Каталог, расписание, жанры, франшизы — API AniLiberty
 - Скачивание серий через HLS — единственный путь получения серии: одна серия или весь релиз, отслеживание активных загрузок с отменой, плавающий виджет прогресса
 - Закладки, «Продолжить просмотр», история — SQLite (`data/aniplayer.db` рядом с exe)
 
 ## Стек
 
-| Слой         | Технологии                                                                      |
-| ------------ | ------------------------------------------------------------------------------- |
-| UI           | React 19, TypeScript 7, Vite 8, Tailwind 4, Zustand, Radix UI, lucide-react     |
-| Плеер        | `<video>` + hls.js 1.7 (MSE) внутри webview Tauri                               |
-| JS-тулчейн   | Bun 1.4.4 (установщик, рантайм и запуск скриптов; ADR 0011)                     |
-| Оболочка     | Tauri 2.12 (Rust, edition 2021), asset-протокол на папку загрузок               |
-| Бэкенд       | Tauri IPC: `rusqlite` 0.41, `reqwest` 0.13, HLS-загрузчик, вердикт об источнике |
-| Тесты / линт | Vitest 5, Testing Library, Biome 2.6, aislop                                    |
+| Слой         | Технологии                                                                        |
+| ------------ | --------------------------------------------------------------------------------- |
+| UI           | React 19, TypeScript 7, Vite 8, Tailwind 4, Zustand, Radix UI, lucide-react       |
+| Плеер        | `<video>` + hls.js 1.7 (MSE) внутри webview Tauri                                 |
+| Апскейл      | Anime4K через WebGPU: `anime4k-webgpu` 1.0.0 (MIT), ленивый чанк поверх `<video>` |
+| JS-тулчейн   | Bun 1.4.4 (установщик, рантайм и запуск скриптов; ADR 0011)                       |
+| Оболочка     | Tauri 2.12 (Rust, edition 2021), asset-протокол на папку загрузок                 |
+| Бэкенд       | Tauri IPC: `rusqlite` 0.41, `reqwest` 0.13, HLS-загрузчик, вердикт об источнике   |
+| Тесты / линт | Vitest 5, Testing Library, Biome 2.6, aislop                                      |
 
 Медиа-рантайм в архиве не нужен: декодирует WebView2, а он есть в Windows 10/11 (в Windows 11 — из коробки).
 
@@ -32,7 +33,7 @@
 - [Bun](https://bun.sh/) 1.4.4 — единственный JS-тулчейн проекта; Node.js и npm не нужны
 - [Rust](https://rustup.rs/) (stable, `x86_64-pc-windows-msvc`)
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) с C++ (для `rusqlite`/Tauri)
-- WebView2 Runtime (в Windows 11 уже есть)
+- WebView2 Runtime (в Windows 11 уже есть) — и WebGPU в нём, если включён апскейл Anime4K; без WebGPU апскейл недоступен, остальное работает как обычно
 - Python 3 — только для portable-упаковки
 
 ## Установка (portable)
@@ -42,6 +43,10 @@
 1. Распакуйте архив в папку, доступную на запись (не `Program Files`).
 2. Запустите `aniplayer.exe`. Больше в архиве ничего нет: база создаётся в `data/aniplayer.db`, загрузки — в `downloads/`.
 3. Для обновления замените файлы программы, сохранив `data/` и `downloads/`.
+
+Внутри архива нет ни медиа-рантайма, ни папки шейдеров: hls.js, WebGPU-рендерер Anime4K и его
+WGSL-таблицы (`anime4k-webgpu` 1.0.0, MIT, версия закреплена в lockfile) — frontend-код,
+вшитый в `aniplayer.exe`; декодирует WebView2.
 
 Установщиков нет; база, загрузки и настройки остаются внутри папки. Служебный кэш
 WebView2 Tauri по умолчанию держит в `%LOCALAPPDATA%`. Подробности — в
@@ -117,7 +122,7 @@ cargo test --locked --test test_db --test test_download_queue --test test_hls_pl
 ```
 src/app/             Оболочка приложения: композиция фичер (App, Header)
 src/features/        Фичеры: catalog, release, continue-watching, player, downloads, bookmarks, settings
-  player/renderer/   HLS-сессия: `<video>` + hls.js, вердикт об источнике, поверхность оверлея
+  player/renderer/   Плеер: `<video>` + hls.js, вердикт об источнике, WebGPU-рендерер Anime4K
 src/shared/          Общие ui-компоненты, утилиты и доменные типы (ui/lib/types)
 src-tauri/           Rust-бэкенд: API-клиент, БД, HLS-загрузки, валидация источника, IPC-команды
 tests/               фронтенд-тесты (Vitest); границы фичер проверяет test_feature_boundaries.test.ts

@@ -2,7 +2,7 @@
 
 Date: 2026-10-27
 
-Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md), amended again by [ADR 0014](0014-webview-is-the-only-playback-backend.md)
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md), by [ADR 0014](0014-webview-is-the-only-playback-backend.md), and by [ADR 0015](0015-anime4k-as-a-webgpu-renderer.md)
 
 ## Context
 
@@ -39,3 +39,10 @@ Splitting these libraries further than "on demand" is not possible: each ships a
 - The split rule gains one level: `playbackSession` dynamic-imports `hls.js` when a session binds, so a static store import does not drag the loader into the entry chunk — the shape this ADR exists to prevent, now enforced inside the player feature rather than only at the barrel.
 - Current tiers, measured 2026-11-04 on the real production artifact: entry `index-*.js` 378 kB (budget ≤ 500 kB), on-demand `PlayerOverlay-*.js` 29 kB plus `hls-*.js` 579 kB (combined budget ≤ 1 MB). `build.chunkSizeWarningLimit` is set to that 1 MB on-demand ceiling.
 - `tests/test_bundle_split.test.ts` marks the loader by the `EXT-X-STREAM-INF` tag it parses: finding that tag in an entry chunk is the regression this amendment guards.
+
+## Amendment (2026-11-04, [ADR 0015](0015-anime4k-as-a-webgpu-renderer.md))
+
+- `anime4k-webgpu` is back, one level deeper than the player, exactly as this ADR first specified: `Anime4kCanvas` dynamic-imports `../renderer/anime4kRenderer` only when the enhancement is switched on, so opening the player without Anime4K still costs hls.js and not the shader tables.
+- The Anime4K tier returns at its vendor floor, measured 2026-11-04 on the real production artifact: `anime4kRenderer-*.js` 3374 kB (budget ≤ 3600 kB), 957 kB gzipped. `build.chunkSizeWarningLimit` moves to that ceiling, which is why Vite stays quiet about the two accepted on-demand tiers.
+- The on-demand player tier is unchanged (overlay 30 kB + `hls-*.js` 579 kB ≤ 1 MB) and is now measured with the renderer chunk excluded from the sum — the renderer is its own tier, not headroom.
+- The guard identifies the renderer by a WGSL declaration (`texture_storage_2d<rgba16float, write>`) that only the shader tables carry, so it follows the code wherever the bundler names it, and fails if the tables reach the initial graph or outgrow the tier.

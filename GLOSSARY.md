@@ -46,6 +46,10 @@ _Avoid_: resolution, bitrate
 One of the six named enhancement modes the WebGPU renderer ships: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), or Mode C+A (HQ); the enhancement can also be switched off. The choice is a persisted Setting and applies to a live frame without restarting the session.
 _Avoid_: filter, mode, shader, Mode Fast, APU
 
+**Enhancement**:
+The Anime4K processing of the frame the media element presents: the WebGPU renderer paints the filtered frame into a canvas over the element, which keeps decoding and keeps the audio clock. Whether the frame is enhanced is one verdict shared by the controls, the badge and the playback surface — never a second playback path.
+_Avoid_: upscaler (in new text), filter chain, shader pipeline, mpv
+
 ### User state
 
 **Bookmark**:

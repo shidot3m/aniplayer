@@ -13,6 +13,7 @@ flowchart LR
         Features["Feature slices"]
         Stores["Zustand stores"]
         Video["<video> + hls.js (MSE)"]
+        Renderer["Anime4K WebGPU canvas"]
     end
 
     subgraph Rust["Rust backend (Tauri 2)"]
@@ -32,6 +33,7 @@ flowchart LR
     Commands --> HlsDownloader --> Disk
     Video -->|"HLS playlist + segments"| AniLiberty
     Video -->|"Offline playlist"| Asset
+    Video -->|"кадр, когда апскейл включён"| Renderer
     Asset --> Disk
     Commands -.->|"download-progress"| Stores
 ```
@@ -48,7 +50,7 @@ Two facts that shape the rest of this document:
 - Entry point: `index.html` → `src/main.tsx`.
 - Application shell: `src/app/App.tsx` and `src/app/Header.tsx`. The shell only composes features: screen selection, store lifecycle effects, and shell chrome. Feature-specific markup lives inside the owning feature.
 - Feature slices under `src/features/`: `catalog`, `release`, `continue-watching`, `player`, `downloads`, `bookmarks`, `settings`. Each slice owns the UI, hooks, and state it needs, and exposes a public surface through its `index.ts`; not every slice has all three.
-- The player feature owns the renderer as well as the interface: `src/features/player/renderer/` holds the hls.js session (`playbackSession.ts`), the source adapter (`sourceUrl.ts`), and the two hooks that connect the store and the media element (`usePlaybackEvents`, `usePlaybackSurface`). Nothing outside the feature touches them.
+- The player feature owns the renderer as well as the interface: `src/features/player/renderer/` holds the hls.js session (`playbackSession.ts`), the source adapter (`sourceUrl.ts`), the Anime4K WebGPU renderer (`anime4kRenderer.ts`, the only module that reaches the GPU), the enhancement verdict (`useEnhancement.ts`) and the two hooks that connect the store and the media element (`usePlaybackEvents`, `usePlaybackSurface`). Nothing outside the feature touches them.
 - Shared layer: `src/shared/types` (API and domain types), `src/shared/ui` (Radix-based primitives), `src/shared/lib` (API base URLs, the Tauri-runtime check, release helpers).
 - State is client-side and optimistic: `catalogStore` holds catalog screens, cached Releases, bookmarks, and history; `playerStore` holds playback state and Settings and drives the media element through the session; `downloadStore` holds downloads and subscribes to backend events.
 - The UI also runs in a plain browser (`bun run dev` without Tauri) for catalog work. In that mode catalog calls fall back to direct `fetch`, bookmarks and settings fall back to browser storage, and downloads are unavailable.
@@ -120,7 +122,14 @@ Playback state needs no event channel: it is read off the media element the page
 
 ### Anime4K
 
-The mpv GLSL chain left the tree with the subprocess backend. The presets and the toggle stay where they are — Settings, `playerStore`, persisted through `db_save_setting` — and the WebGPU renderer that filters the element's frame is [#61](https://github.com/shidot3m/aniplayer/issues/61). Until it lands, choosing a preset changes a stored preference and not the picture.
+The enhancement is a WebGPU renderer drawn over the media element ([ADR 0015](adr/0015-anime4k-as-a-webgpu-renderer.md)); the mpv GLSL chain left the tree with the subprocess backend.
+
+1. Settings holds the two Preferences — `anime4k_enabled` and `anime4k_preset` — through `db_save_setting`, and the player menu holds the switch. Both apply to a live Episode: the choice is read by the surface, not by the session.
+2. `useEnhancement` is the one verdict shared by the menu, the Settings tab, the badge in the top bar and the playback surface: whether the frame is filtered, and what stops it from being. Without `navigator.gpu` the control is disabled with the reason shown in its place and the element stays untouched; a preference saved on another machine cannot make the UI promise a filtered frame.
+3. When the verdict is "on", `PlayerVideoViewport` mounts `Anime4kCanvas` over the element and puts the element at `opacity-0` — still decoding, still driving the audio clock — and the canvas dynamic-imports `renderer/anime4kRenderer`, so the shader tables are fetched only for a user who switched the enhancement on.
+4. The renderer asks for an adapter, copies each frame the element presents (`requestVideoFrameCallback`, with `seeked` forcing a redraw) into an input texture, runs the preset's pipeline from `anime4k-webgpu`, and blits the pipeline's output to the canvas. If the adapter or the canvas context is refused, the renderer reports the reason into `enhancementFault`, the verdict goes to "blocked", the canvas unmounts and the element is visible again: never a black plate over a live picture.
+5. Six presets, one per pipeline the package exports (Mode A, A+A, B, B+B, C, C+A). A stored name that is not one of them resolves to the default, so no Setting can address a filter that does not exist.
+6. Switching the enhancement off or changing the preset stops the renderer and rebuilds it on the same canvas; the session, the position and the audio are never interrupted.
 
 ### HLS download
 
@@ -154,8 +163,9 @@ Aniplayer/
 ```
 
 All paths are relative to the executable's directory (`startup::app_dir`). The archive carries no
-media runtime and no shader directory: hls.js is frontend code inside the bundle, and WebView2 is
-the decoder. `scripts/package_portable.py` stages the folder, and the release workflow fails a zip
+media runtime and no shader directory: hls.js is frontend code inside the bundle, WebView2 is
+the decoder, and the Anime4K WGSL tables are frontend code too — a chunk of the bundle that the
+guard test keeps off the startup path. `scripts/package_portable.py` stages the folder, and the release workflow fails a zip
 that still contains `mpv/` or `shaders/`.
 
 ## Persistence
@@ -183,7 +193,6 @@ One data cleanup runs outside the schema, in `startup::purge_legacy_torrent_down
 
 - **Quality switching reloads the tier's playlist.** `setQuality` keeps the session, the position and the paused state, but the switch is not gapless: the new source is fetched and transmuxed from the seek point.
 - **The retry policy is still hls.js's default.** AniLiberty redirects every segment to a rotating CDN host — the behaviour that wedged the mpv player in [#45](https://github.com/shidot3m/aniplayer/issues/45) — and the webview stack needs its own bounded answer. That is [#62](https://github.com/shidot3m/aniplayer/issues/62), which sets segment and manifest retry counts, backoff and fatal-error handling deliberately instead of inheriting the library's.
-- **Anime4K does not filter the frame yet.** The WebGPU renderer is [#61](https://github.com/shidot3m/aniplayer/issues/61); until it lands the preset is a stored preference.
 - **No subtitle track is exposed.** mpv selected embedded tracks with `--slang=en,ru`; the media element shows none, and the measured catalog carries no text tracks today. Tracked as [#64](https://github.com/shidot3m/aniplayer/issues/64).
 
 ## Verification gates
@@ -192,5 +201,6 @@ One data cleanup runs outside the schema, in `startup::purge_legacy_torrent_down
 - JS toolchain: Bun only ([ADR 0011](adr/0011-bun-as-the-js-toolchain.md)) — a CI guard step fails when an npm/npx reference appears in `.github/workflows/` or `scripts/`.
 - Rust: `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo audit`, and the hermetic test suites listed in `.github/workflows/ci.yml` — including `test_playback_source`, which holds the source verdict (a URL re-parsed, a path confined to the downloads folder, every other scheme refused), `test_download_queue`, which holds the cancel-one-versus-cancel-all contract of the release queue, and `test_startup`, which also proves the legacy purge drops torrent rows idempotently and leaves HLS rows and disk files alone.
 - Frontend playback: the player feature is rendered through React Testing Library with hls.js stubbed as a module boundary (`tests/setup.ts`), covering online, offline, Quality, resume and both error paths, and `tests/test_bundle_split.test.ts` keeps the loader out of the entry chunk.
+- Frontend enhancement: the WebGPU renderer is the other stubbed boundary (`tests/helpers/enhancementStubs.ts`), so `tests/test_anime4k_enhancement.test.tsx` covers switching on and off over a live Episode, a preset change that rebuilds the renderer, the disabled control without `navigator.gpu`, and the fallback when the renderer itself refuses — with no assertion about shader internals. `tests/test_anime4k_presets.test.ts` checks the preset list against the pipelines the package really exports, and the bundle guard holds the renderer chunk in its own tier and out of the eager graph.
 - Packaging: `scripts/package_portable.py` stages only the executable and an empty `data/`, and the release workflow asserts the archive carries neither `mpv/` nor `shaders/`.
 - Feature boundaries, bundle budgets, CSP parity, the playback-source confinement, the asset-protocol scope, the single-window stack and the closed capability surface are enforced by tests, not by convention alone.

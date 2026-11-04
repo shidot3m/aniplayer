@@ -3,7 +3,7 @@
 > Полное руководство по набору алгоритмов масштабирования и восстановления аниме в реальном времени **[Anime4K](https://github.com/bloc97/Anime4K)** (автор: Anthony Nguyen / bloc97), их математическим основам, устройству шейдеров GLSL и интеграции в видеоплеер **Aniplayer**.
 
 > [!NOTE]
-> **Статус в этом проекте (2026-11-04).** Бэкендом воспроизведения стал сам webview — `<video>` + hls.js ([ADR 0014](adr/0014-webview-is-the-only-playback-backend.md)), — поэтому подпроцесс mpv и каталог `shaders/anime4k/` выведены из дерева вместе с конвейером GLSL-цепочек. Разделы про формат шейдеров MPV/libplacebo, диагностику в mpv и `mpv.conf` остаются справочным материалом об upstream-формате Anime4K и больше не описывают код Aniplayer. Собственный WebGPU-рендерер поверх медиаэлемента — [#61](https://github.com/shidot3m/aniplayer/issues/61); до него пресеты Anime4K в настройках хранятся, но кадр не фильтруют.
+> **Статус в этом проекте (2026-11-04).** Бэкендом воспроизведения стал сам webview — `<video>` + hls.js ([ADR 0014](adr/0014-webview-is-the-only-playback-backend.md)), — поэтому подпроцесс mpv и каталог `shaders/anime4k/` выведены из дерева. Апскейл вернулся как собственный WebGPU-рендерер поверх медиаэлемента: кадр берётся `requestVideoFrameCallback`-ом, прогоняется через конвейер `anime4k-webgpu` и показывается canvas-оверлеем ([ADR 0015](adr/0015-anime4k-as-a-webgpu-renderer.md), [#61](https://github.com/shidot3m/aniplayer/issues/61)). Пресеты — ровно шесть конвейеров, которые пакет действительно экспортирует (Mode A, A+A, B, B+B, C, C+A); «Mode Fast (APU)» — имя, которого в пакете никогда не было, удалено из Settings и из GLOSSARY. Разделы про формат шейдеров MPV/libplacebo, диагностику в mpv и `mpv.conf` остаются справочным материалом об upstream-формате Anime4K и больше не описывают код Aniplayer.
 
 ---
 
@@ -394,7 +394,7 @@ CTRL+0 no-osd change-list glsl-shaders clr ""; show-text "Anime4K: Выключ�
 ### Интеграция в архитектуру Aniplayer
 
 > [!NOTE]
-> С [#60](https://github.com/shidot3m/aniplayer/issues/60) в Aniplayer нет ни mpv-процесса, ни каталога `shaders/`: играет сам webview ([ADR 0014](0014-webview-is-the-only-playback-backend.md)), поэтому **вариант 1** (GLSL-цепочка `change-list glsl-shaders`) больше не реализован — он описан здесь как история того, как апскейл работал. Живой путь — **вариант 3**, WebGPU-рендерер поверх `<video>`, который делает [#61](https://github.com/shidot3m/aniplayer/issues/61); до него пресеты Anime4K в настройках только сохраняются и кадр не фильтруют. Вариант 2 — разбор альтернативы, которую проект не выбирал.
+> С [#60](https://github.com/shidot3m/aniplayer/issues/60) в Aniplayer нет ни mpv-процесса, ни каталога `shaders/`: играет сам webview ([ADR 0014](0014-webview-is-the-only-playback-backend.md)), поэтому **вариант 1** (GLSL-цепочка `change-list glsl-shaders`) больше не реализован — он описан здесь как история того, как апскейл работал. Реализован **вариант 3** — WebGPU-рендерер поверх `<video>` ([#61](https://github.com/shidot3m/aniplayer/issues/61), [ADR 0015](0015-anime4k-as-a-webgpu-renderer.md)): он берёт конвейеры из пакета `anime4k-webgpu`, а не портует GLSL вручную, и управляет циклом кадра сам, потому что тумблер и смена пресета должны останавливать и пересобирать рендерер на живом воспроизведении. Вариант 2 — разбор альтернативы, которую проект не выбирал.
 
 Для проекта **Aniplayer** предусмотрено три стратегических пути внедрения Anime4K в зависимости от выбранного движка рендеринга:
 
