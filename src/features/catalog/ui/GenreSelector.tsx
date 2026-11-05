@@ -46,8 +46,8 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
               onClick={() => onSelectGenre(isSelected ? null : g)}
               className={
                 isSelected
-                  ? "group relative cursor-pointer overflow-hidden rounded-xl outline outline-2 -outline-offset-2 outline-accent"
-                  : "group relative cursor-pointer overflow-hidden rounded-xl outline outline-0 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-accent"
+                  ? "group relative cursor-pointer overflow-hidden rounded-xl outline-2 -outline-offset-2 outline-accent"
+                  : "group relative cursor-pointer overflow-hidden rounded-xl outline-2 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-accent"
               }
             >
               {imgUrl ? (

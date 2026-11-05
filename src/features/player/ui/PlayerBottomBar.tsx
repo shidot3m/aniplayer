@@ -84,6 +84,8 @@ export function PlayerBottomBar({
         onTogglePlay={onTogglePlay}
         onPrev={onPrev}
         onNext={onNext}
+        onSkipBack={() => onSeek(Math.max(0, currentTime - 10))}
+        onSkipForward={() => onSeek(Math.min(duration, currentTime + 10))}
         onVolumeChange={onVolumeChange}
         onToggleFullscreen={onToggleFullscreen}
         onOpenDrawer={onOpenDrawer}

@@ -5,6 +5,8 @@ import {
   Minimize2,
   Pause,
   Play,
+  RotateCcw,
+  RotateCw,
   SkipBack,
   SkipForward,
   Volume2,
@@ -33,6 +35,8 @@ interface ControlsBarProps {
   onTogglePlay: () => void;
   onPrev: () => void;
   onNext: () => void;
+  onSkipBack: () => void;
+  onSkipForward: () => void;
   onVolumeChange: (vol: number) => void;
   onToggleFullscreen: () => void;
   onOpenDrawer: () => void;
@@ -62,6 +66,8 @@ export function ControlsBar({
   onTogglePlay,
   onPrev,
   onNext,
+  onSkipBack,
+  onSkipForward,
   onVolumeChange,
   onToggleFullscreen,
   onOpenDrawer,
@@ -120,6 +126,16 @@ export function ControlsBar({
         </button>
         <button
           type="button"
+          onClick={onSkipBack}
+          aria-label="Назад на 10 секунд"
+          title="Назад 10 с"
+          className={`h-10 w-10 ${control}`}
+        >
+          <RotateCcw className="h-5 w-5" />
+          <span className="text-[10px] tabular-nums">10</span>
+        </button>
+        <button
+          type="button"
           data-testid="player-play-pause-btn"
           onClick={onTogglePlay}
           aria-label={isPlaying ? "Пауза" : "Воспроизведение"}
@@ -131,6 +147,16 @@ export function ControlsBar({
           ) : (
             <Play className="h-6 w-6 fill-current ml-0.5" />
           )}
+        </button>
+        <button
+          type="button"
+          onClick={onSkipForward}
+          aria-label="Вперёд на 10 секунд"
+          title="Вперёд 10 с"
+          className={`h-10 w-10 ${control}`}
+        >
+          <span className="text-[10px] tabular-nums">10</span>
+          <RotateCw className="h-5 w-5" />
         </button>
         <button
           type="button"

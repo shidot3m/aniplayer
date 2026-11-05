@@ -11,8 +11,8 @@ interface RailProps {
 
 /**
  * A horizontal rail in the Netflix sense: cards run past the right edge so the next one peeks,
- * and it scrolls. Arrow buttons appear only while hovering the rail and only on a pointer device
- * (`(hover: hover)`), matching the motion charter in ADR 0018.
+ * and it scrolls. Arrow buttons appear only while hovering the rail (Tailwind v4 gates `hover`
+ * behind `(hover: hover)`), and the scroll respects prefers-reduced-motion.
  */
 export function Rail({ children, scrollBy = 640, className }: RailProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -36,7 +36,11 @@ export function Rail({ children, scrollBy = 640, className }: RailProps) {
   }, [checkBounds]);
 
   const scroll = (direction: -1 | 1) => {
-    scrollerRef.current?.scrollBy({ left: direction * scrollBy, behavior: "smooth" });
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    scrollerRef.current?.scrollBy({
+      left: direction * scrollBy,
+      behavior: reduced ? "auto" : "smooth",
+    });
   };
 
   return (
@@ -44,10 +48,7 @@ export function Rail({ children, scrollBy = 640, className }: RailProps) {
       <div
         ref={scrollerRef}
         onScroll={checkBounds}
-        className={cn(
-          "no-scrollbar flex snap-x gap-3 overflow-x-auto scroll-smooth px-12 py-4",
-          className,
-        )}
+        className={cn("no-scrollbar flex snap-x gap-3 overflow-x-auto px-12 py-4", className)}
       >
         {children}
       </div>
@@ -58,7 +59,7 @@ export function Rail({ children, scrollBy = 640, className }: RailProps) {
         onClick={() => scroll(-1)}
         disabled={!canScrollLeft}
         className={cn(
-          "absolute top-1/2 left-1 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full glass text-ink shadow-float transition-opacity",
+          "absolute top-1/2 left-1 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-surface-2/90 text-ink shadow-float transition-opacity",
           canScrollLeft
             ? "cursor-pointer opacity-0 group-hover/rail:opacity-100"
             : "pointer-events-none opacity-0",
@@ -72,7 +73,7 @@ export function Rail({ children, scrollBy = 640, className }: RailProps) {
         onClick={() => scroll(1)}
         disabled={!canScrollRight}
         className={cn(
-          "absolute top-1/2 right-1 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full glass text-ink shadow-float transition-opacity",
+          "absolute top-1/2 right-1 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-surface-2/90 text-ink shadow-float transition-opacity",
           canScrollRight
             ? "cursor-pointer opacity-0 group-hover/rail:opacity-100"
             : "pointer-events-none opacity-0",

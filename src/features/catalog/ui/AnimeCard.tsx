@@ -56,7 +56,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
             src={posterUrl}
             alt={release.name.main}
             loading="lazy"
-            className="pointer-events-none aspect-[2/3] w-full rounded-xl bg-surface-1 object-cover outline outline-0 -outline-offset-2 outline-transparent transition-[transform,box-shadow,outline-color] group-hover:z-10 group-hover:scale-[1.06] group-hover:shadow-lift group-hover:outline-accent group-focus-within:scale-[1.06] group-focus-within:outline-accent"
+            className="pointer-events-none aspect-[2/3] w-full rounded-xl bg-surface-1 object-cover outline-2 -outline-offset-2 outline-transparent transition-[transform,box-shadow,outline-color] group-hover:z-10 group-hover:scale-[1.06] group-hover:shadow-lift group-hover:outline-accent group-focus-within:scale-[1.06] group-focus-within:outline-accent"
             onError={(e) => {
               (e.target as HTMLElement).style.visibility = "hidden";
             }}
@@ -102,7 +102,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
               className={
                 currentCategory
                   ? "flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-ink"
-                  : "glass flex h-8 w-8 items-center justify-center rounded-lg text-ink shadow-float"
+                  : "flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-scrim/70 text-ink shadow-float"
               }
             >
               <Bookmark className="h-4 w-4" />
