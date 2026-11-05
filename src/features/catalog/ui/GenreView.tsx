@@ -114,6 +114,7 @@ export function GenreView({ genre, onSelectRelease, onBack }: GenreViewProps) {
               key={release.id}
               release={release}
               onClick={() => onSelectRelease(release)}
+              viewTransitionName={`poster-${release.id}`}
             />
           ))}
         </div>

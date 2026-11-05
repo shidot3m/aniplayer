@@ -128,3 +128,19 @@ body {
     --ease-out: linear;
   }
 }
+
+/* The poster morph — #71, ADR 0018. The shared element (a catalog poster and the Release key art
+   carrying the same view-transition-name) travels between the two screens on the screen-in
+   duration and the charter curve. Only the group box moves; the page itself does not slide. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(*) {
+    animation-duration: var(--duration-screen-in);
+    animation-timing-function: var(--ease-out);
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+}

@@ -14,6 +14,7 @@ import { DownloadFloatingWidget, DownloadsView, useDownloadStore } from "@/featu
 import { LazyPlayerOverlay, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
 import { SettingsDialog } from "@/features/settings";
+import { useViewTransition } from "@/shared/lib/useViewTransition";
 import type { Release } from "@/shared/types";
 import { Header } from "./Header";
 
@@ -40,6 +41,7 @@ export default function App() {
     "home" | "bookmarks" | "genre" | "downloads"
   >("home");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const startViewTransition = useViewTransition();
 
   useEffect(() => {
     loadInitialData();
@@ -56,10 +58,15 @@ export default function App() {
   }, [loadInitialData, initSettings, listenToProgress, fetchDownloadedEpisodes]);
 
   const handleSelectRelease = (release: Release) => {
-    if (activeScreen !== "details") {
-      setPreviousScreen(activeScreen);
-    }
-    selectReleaseWithDetails(release);
+    const fromScreen = activeScreen !== "details" ? activeScreen : null;
+    startViewTransition(() => {
+      if (fromScreen) setPreviousScreen(fromScreen);
+      void selectReleaseWithDetails(release);
+    });
+  };
+
+  const handleBackToCatalog = () => {
+    startViewTransition(() => setActiveScreen(previousScreen));
   };
 
   const featured = latestReleases[0] ?? null;
@@ -151,10 +158,7 @@ export default function App() {
         {activeScreen === "downloads" && <DownloadsView />}
 
         {activeScreen === "details" && selectedRelease && (
-          <ReleaseDetails
-            release={selectedRelease}
-            onBack={() => setActiveScreen(previousScreen)}
-          />
+          <ReleaseDetails release={selectedRelease} onBack={handleBackToCatalog} />
         )}
       </main>
 
