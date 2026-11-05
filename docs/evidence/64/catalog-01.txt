@@ -1,0 +1,65 @@
+{
+  "releases": 25,
+  "release_ids": [
+    10338,
+    10312,
+    10345,
+    10354,
+    10141,
+    10318,
+    10085,
+    10349,
+    10029,
+    10335,
+    9973,
+    10364,
+    9917,
+    10305,
+    10337,
+    9805,
+    10303,
+    9749,
+    10321,
+    10329,
+    9637,
+    10365,
+    9581,
+    10172,
+    9525
+  ],
+  "releases_skipped": [
+    10309,
+    10253,
+    10197,
+    9861,
+    9693
+  ],
+  "playlists": 213,
+  "tiers_declared": 213,
+  "tiers_absent_from_the_episode": {},
+  "tiers": {
+    "480": 71,
+    "720": 71,
+    "1080": 71
+  },
+  "playlist_kind": {
+    "media": 213
+  },
+  "tags": {
+    "EXTINF": 30667,
+    "EXTM3U": 213,
+    "EXT-X-VERSION": 213,
+    "EXT-X-TARGETDURATION": 213,
+    "EXT-X-MEDIA-SEQUENCE": 213,
+    "EXT-X-PLAYLIST-TYPE": 213,
+    "EXT-X-ENDLIST": 213,
+    "EXT-X-INDEPENDENT-SEGMENTS": 156
+  },
+  "codecs_attribute": {},
+  "playlists_naming_a_text_track": [],
+  "playlists_unreachable": 0,
+  "torrent_hardsub_census": {
+    "is_hardsub=False": 31,
+    "is_hardsub=True": 18
+  }
+}

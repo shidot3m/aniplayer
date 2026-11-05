@@ -2,3 +2,11 @@
 # on any score below 100 instead of the default 70.
 ci:
   failBelow: 100
+
+# The player's media element renders no caption track because the catalog delivers no text track,
+# so jsx-a11y/media-has-caption has no markup it could accept here (docs/adr/0017). The exemption
+# is scoped to that one file — a media element added anywhere else is still checked.
+overrides:
+  - files: ["src/features/player/ui/PlayerVideoViewport.tsx"]
+    rules:
+      jsx-a11y/media-has-caption: off

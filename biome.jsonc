@@ -34,6 +34,21 @@
       }
     }
   },
+  // The catalog delivers no text track, so the player renders no caption track and
+  // lint/a11y/useMediaCaption has nothing it could accept instead (ADR 0017). The rule stays on
+  // for every other file: a media element added elsewhere is still gated.
+  "overrides": [
+    {
+      "includes": ["**/src/features/player/ui/PlayerVideoViewport.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useMediaCaption": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double"

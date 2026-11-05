@@ -1,7 +1,5 @@
-// The measured AniLiberty HLS tiers carry no text track, so there is nothing to caption here.
-// Both caption gates are scoped to the media element below and lifted by
-// #64 if the player ever grows subtitles.
-// aislop-ignore-file jsx-a11y/media-has-caption -- no caption source exists in the catalog today.
+// No caption track is rendered, because no catalog tier carries a text track to caption with:
+// the measured refusal and its revisit trigger are in docs/adr/0017.
 import { useCallback, useState } from "react";
 import { usePlaybackSurface } from "../renderer/usePlaybackSurface";
 import { Anime4kCanvas } from "./Anime4kCanvas";
@@ -37,7 +35,6 @@ export function PlayerVideoViewport({
     <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
       {/* No native controls: the overlay draws them, and the element is never a tab stop. */}
       {/* Once the renderer paints, the element underneath keeps decoding and driving audio. */}
-      {/* biome-ignore lint/a11y/useMediaCaption: the catalog ships no text track to caption with. */}
       <video
         ref={videoRef}
         className={`h-full w-full bg-black object-contain ${

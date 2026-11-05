@@ -1,0 +1,8 @@
+﻿17:03:42 opened release: Открыть Я перевоплотился в гоблина, вопросы есть?
+17:03:45 pressed play: Воспроизвести эпизод 1
+17:03:48 sample 1: {"currentSrc":"blob:http://tauri.localhost/f92493f7-2e00-46d6-87c9-3c3440f783b2","readyState":4,"currentTime":337.5,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":1,"segmentsFetched":5}
+17:04:19 sample 2: {"currentSrc":"blob:http://tauri.localhost/f92493f7-2e00-46d6-87c9-3c3440f783b2","readyState":4,"currentTime":367.5,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":1,"segmentsFetched":8}
+17:04:49 sample 3: {"currentSrc":"blob:http://tauri.localhost/f92493f7-2e00-46d6-87c9-3c3440f783b2","readyState":4,"currentTime":397.6,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":1,"segmentsFetched":11}
+17:05:19 sample 4: {"currentSrc":"blob:http://tauri.localhost/f92493f7-2e00-46d6-87c9-3c3440f783b2","readyState":4,"currentTime":427.6,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":1,"segmentsFetched":14}
+17:05:49 sample 5: {"currentSrc":"blob:http://tauri.localhost/f92493f7-2e00-46d6-87c9-3c3440f783b2","readyState":4,"currentTime":457.6,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":1,"segmentsFetched":17}
+17:06:19 sample 6: {"currentSrc":"blob:http://tauri.localhost/f92493f7-2e00-46d6-87c9-3c3440f783b2","readyState":4,"currentTime":487.6,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":1,"segmentsFetched":20}

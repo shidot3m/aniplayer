@@ -42,6 +42,14 @@ _Avoid_: video URL, link, stream
 One selectable HLS stream tier: 480p, 720p, or 1080p.
 _Avoid_: resolution, bitrate
 
+**Text track**:
+A timed-text rendition an Episode's stream carries beside picture and sound, which a viewer can switch on, off, or by language.
+_Avoid_: subtitle stream, caption file, softsubs
+
+**Hardsub**:
+Subtitles burned into the picture of an Episode: always visible, never selectable.
+_Avoid_: burned-in subs, softsub
+
 **Anime4K preset**:
 One of the six named enhancement modes the WebGPU renderer ships: Mode A (HQ), Mode A+A (HQ), Mode B (HQ), Mode B+B (HQ), Mode C (HQ), or Mode C+A (HQ); the enhancement can also be switched off. The choice is a persisted Setting and applies to a live frame without restarting the session.
 _Avoid_: filter, mode, shader, Mode Fast, APU
