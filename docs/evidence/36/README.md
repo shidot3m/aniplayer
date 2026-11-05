@@ -72,4 +72,6 @@ remote-debugging-port WebView2 (9224): `seek_focus.ps1` поверх `slider_cdp
 ## Гейты
 
 `bun run typecheck` · `bun run lint` · `bun run test` (24 файла, 106 тестов) · `bunx aislop scan` =
-**100/100** · `bun run build` — зелёные; Rust-код не менялся.
+**100/100** · `bun run build` — зелёные; Rust-код не менялся. На master прогон CI
+[42028394334](https://github.com/shidot3m/aniplayer/actions/runs/42028394334): Rust checks и
+Frontend checks — оба зелёные.
