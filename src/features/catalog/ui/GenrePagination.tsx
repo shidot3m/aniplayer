@@ -75,10 +75,10 @@ export function GenrePagination({
               disabled={item === currentPage || disabled}
               aria-label={`Страница ${item}`}
               aria-current={item === currentPage ? "page" : undefined}
-              className={`h-11 min-w-11 rounded-lg border px-2 text-xs font-semibold transition-colors ${
+              className={`h-11 min-w-11 rounded-lg border px-2 text-sm font-medium tabular-nums transition-colors ${
                 item === currentPage
-                  ? "border-accent bg-accent text-ink shadow-md shadow-scrim/40"
-                  : "cursor-pointer border-line bg-ink/[0.04] text-ink-2 hover:bg-ink/[0.08] hover:text-ink"
+                  ? "border-accent bg-accent text-ink"
+                  : "cursor-pointer border-line text-ink-2 hover:bg-ink/5 hover:text-ink"
               }`}
             >
               {item}

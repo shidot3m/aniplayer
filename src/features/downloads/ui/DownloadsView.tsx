@@ -1,11 +1,10 @@
-import { CheckCircle2, Film, FolderDown, FolderOpen, HardDrive, Play, Trash2 } from "lucide-react";
+import { FolderDown, FolderOpen, Play, Trash2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import { usePlayerStore } from "@/features/player";
 import { formatPosterUrl } from "@/shared/lib/releaseUtils";
 import { formatBytes } from "@/shared/lib/utils";
 import type { DownloadedEpisodeMeta, EpisodeItem, Release } from "@/shared/types";
-import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { useDownloadStore } from "../state/downloadStore";
 
@@ -25,60 +24,48 @@ function DownloadedEpisodeRow({
   const isCompleted = meta.download_status === "COMPLETED";
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-ink/5 bg-ink/[0.02] p-3 transition-colors hover:border-ink/15 hover:bg-ink/[0.05]">
-      <div className="flex items-center gap-3 min-w-0">
+    <div className="flex items-center justify-between gap-4 border-t border-line py-3 first:border-t-0">
+      <div className="flex min-w-0 items-center gap-3.5">
         <button
           type="button"
           aria-label={`Смотреть эпизод ${meta.episode_ordinal}`}
           onClick={() => isCompleted && onPlay(meta, release)}
           disabled={!isCompleted}
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
+          className={
             isCompleted
-              ? "border-accent/40 bg-accent/20 text-accent-ink hover:scale-105 hover:bg-accent hover:text-ink cursor-pointer"
-              : "border-line bg-ink/5 text-ink-3 cursor-not-allowed"
-          }`}
+              ? "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-ink transition-colors hover:border-accent/60 hover:text-accent-ink"
+              : "flex h-9 w-9 shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-line text-ink-3"
+          }
         >
-          <Play className="h-4 w-4 fill-current ml-0.5" />
+          <Play className="h-4 w-4 fill-current" />
         </button>
 
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-ink truncate">
-              Эпизод {meta.episode_ordinal}
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-semibold text-ink">
+              Эпизод <span className="tabular-nums">{meta.episode_ordinal}</span>
             </span>
-            <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
-              {meta.quality || "1080p"}
-            </Badge>
-            {isWatched && (
-              <Badge
-                variant="outline"
-                className="text-[10px] py-0 px-1.5 h-4 flex items-center gap-1"
-              >
-                <CheckCircle2 className="h-2.5 w-2.5" />
-                <span>Просмотрен</span>
-              </Badge>
-            )}
+            <span className="text-[12px] tabular-nums text-ink-2">{meta.quality || "1080p"}</span>
+            {isWatched && <span className="text-[12px] text-ink-3">Просмотрен</span>}
           </div>
-          <div className="mt-0.5 flex items-center gap-3 text-xs text-ink-2">
-            <span>Размер: {formatBytes(meta.file_size)}</span>
+          <div className="mt-0.5 flex items-center gap-3 text-[12px] text-ink-3">
+            <span className="tabular-nums">{formatBytes(meta.file_size)}</span>
             {meta.opening_start != null && meta.opening_stop != null && (
-              <span>• Таймкоды сохранены</span>
+              <span>Таймкоды сохранены</span>
             )}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        <button
-          type="button"
-          aria-label="Удалить файл эпизода"
-          onClick={() => onDelete(meta.episode_id)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-2 hover:text-accent-ink hover:bg-accent/10 transition-colors cursor-pointer"
-          title="Удалить эпизод с диска"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
+      <button
+        type="button"
+        aria-label="Удалить файл эпизода"
+        onClick={() => onDelete(meta.episode_id)}
+        title="Удалить эпизод с диска"
+        className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-3 transition-colors hover:bg-ink/5 hover:text-accent-ink"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   );
 }
@@ -111,30 +98,23 @@ function DownloadedReleaseCard({
   const totalSize = items.reduce((acc, curr) => acc + curr.file_size, 0);
 
   return (
-    <div className="rounded-2xl border border-line bg-surface-1 p-5 shadow-xl transition-all">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-line">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-scrim/40 border border-line">
+    <div className="rounded-2xl border border-line bg-surface-1 p-5">
+      <div className="flex flex-col justify-between gap-4 border-b border-line pb-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-3.5">
+          <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-surface-2">
             {poster ? (
               <img src={poster} alt={title} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-2">
+              <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-3">
                 N/A
               </div>
             )}
           </div>
           <div className="min-w-0">
-            <h3 className="text-base font-bold text-ink truncate">{title}</h3>
-            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-ink-2">
-              <span className="flex items-center gap-1">
-                <Film className="h-3.5 w-3.5 text-accent-ink" />
-                {items.length} эп.
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <HardDrive className="h-3.5 w-3.5 text-ink-2" />
-                {formatBytes(totalSize)}
-              </span>
+            <h3 className="truncate text-base font-semibold text-ink">{title}</h3>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-ink-3">
+              <span className="tabular-nums">{items.length} эп.</span>
+              <span className="tabular-nums">{formatBytes(totalSize)}</span>
             </div>
           </div>
         </div>
@@ -143,14 +123,14 @@ function DownloadedReleaseCard({
           variant="outline"
           size="sm"
           onClick={() => onOpenFolder(releaseId)}
-          className="gap-1.5 text-xs border-line hover:border-ink/20 text-ink-2 hover:text-ink"
+          className="gap-1.5 text-ink-2 hover:text-ink"
         >
           <FolderOpen className="h-3.5 w-3.5" />
-          <span>Папка аниме</span>
+          <span>Папка релиза</span>
         </Button>
       </div>
 
-      <div className="mt-3.5 space-y-2">
+      <div className="mt-1">
         {items.map((epMeta) => (
           <DownloadedEpisodeRow
             key={epMeta.episode_id}
@@ -250,46 +230,32 @@ export function DownloadsView() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8">
+    <div className="px-12 py-8">
       {/* Top Banner */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2.5">
-            <FolderDown className="h-6 w-6 text-accent-ink" />
-            <span>Скачанные аниме</span>
-          </h1>
-          <p className="mt-1 text-xs text-ink-2">
-            Офлайн-библиотека • {downloadedEpisodes.length} серий • {formatBytes(totalSize)} на
-            диске
+          <h1 className="text-2xl font-semibold tracking-[-0.02em] text-ink">Загрузки</h1>
+          <p className="mt-1 text-sm text-ink-2">
+            <span className="tabular-nums">{downloadedEpisodes.length}</span> серий ·{" "}
+            <span className="tabular-nums">{formatBytes(totalSize)}</span> на диске
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openDownloadsFolder()}
-            className="gap-2 border-line hover:border-ink/20 text-ink-2 hover:text-ink"
-          >
-            <FolderOpen className="h-4 w-4 text-accent-ink" />
-            <span>Открыть папку загрузок</span>
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={() => openDownloadsFolder()} className="gap-2">
+          <FolderOpen className="h-4 w-4" />
+          <span>Открыть папку загрузок</span>
+        </Button>
       </div>
 
       {/* Content / Groups */}
       {groupedByRelease.size === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center rounded-2xl border border-ink/5 bg-ink/[0.02]">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-ink/5 text-ink-3 mb-4">
-            <FolderDown className="h-8 w-8" />
-          </div>
-          <h3 className="text-base font-bold text-ink mb-1">Нет скачанных серий</h3>
-          <p className="text-xs text-ink-2 max-w-sm mb-6">
-            Вы можете скачивать серии для просмотра без подключения к интернету на странице аниме.
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <FolderDown className="mb-3 h-10 w-10 text-ink-3" />
+          <h3 className="text-base font-semibold text-ink">Нет скачанных серий</h3>
+          <p className="mb-6 mt-1 max-w-sm text-sm text-ink-2">
+            Скачивайте серии для просмотра без подключения на странице релиза.
           </p>
-          <Button onClick={() => setActiveScreen("home")} className="gap-2">
-            <span>Перейти в каталог</span>
-          </Button>
+          <Button onClick={() => setActiveScreen("home")}>Перейти в каталог</Button>
         </div>
       ) : (
         <div className="space-y-6">

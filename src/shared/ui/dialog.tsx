@@ -30,12 +30,12 @@ export function Dialog({
       <button
         type="button"
         aria-label="Закрыть"
-        className="fixed inset-0 bg-scrim/80 backdrop-blur-md transition-opacity cursor-default"
+        className="fixed inset-0 cursor-default bg-scrim/80"
         onClick={onClose}
       />
       <div
         className={cn(
-          "relative z-50 w-full max-w-lg rounded-2xl border border-ink/15 bg-ground/90 backdrop-blur-2xl p-6 shadow-2xl transition-all text-ink",
+          "relative z-50 w-full max-w-lg rounded-2xl border border-line bg-surface-1 p-6 text-ink shadow-float",
           className,
         )}
       >
@@ -43,7 +43,7 @@ export function Dialog({
           type="button"
           aria-label="Закрыть окно"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1 text-ink-2 hover:bg-ink/10 hover:text-ink transition-colors cursor-pointer"
+          className="absolute right-4 top-4 cursor-pointer rounded-lg p-1 text-ink-3 transition-colors hover:bg-ink/10 hover:text-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
         >
           <X className="h-5 w-5" />
         </button>
@@ -73,7 +73,7 @@ export function DialogTitle({
   className?: string;
 }) {
   return (
-    <h3 className={cn("text-lg font-bold leading-none tracking-tight text-ink", className)}>
+    <h3 className={cn("text-lg font-semibold leading-none tracking-[-0.01em] text-ink", className)}>
       {children}
     </h3>
   );

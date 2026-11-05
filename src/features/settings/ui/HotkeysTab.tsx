@@ -1,8 +1,6 @@
-import { RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePlayerStore } from "@/features/player";
 import type { PlayerHotkeysConfig } from "@/shared/types";
-import { Badge } from "@/shared/ui/badge";
 
 export function formatKeyName(code: string): string {
   if (!code) return "Не назначено";
@@ -25,15 +23,15 @@ const HOTKEY_ACTIONS: {
   description: string;
 }[] = [
   { id: "togglePlay", label: "Воспроизведение / Пауза", description: "Старт или пауза видео" },
-  { id: "seekBack", label: "Перемотка назад", description: "-5с (Shift: -30с)" },
-  { id: "seekForward", label: "Перемотка вперед", description: "+5с (Shift: +30с)" },
+  { id: "seekBack", label: "Перемотка назад", description: "−5 с (Shift: −30 с)" },
+  { id: "seekForward", label: "Перемотка вперёд", description: "+5 с (Shift: +30 с)" },
   { id: "volumeUp", label: "Увеличить громкость", description: "+5% громкости" },
-  { id: "volumeDown", label: "Уменьшить громкость", description: "-5% громкости" },
-  { id: "toggleMute", label: "Без звука (Mute)", description: "Вкл/выкл звук" },
-  { id: "toggleFullscreen", label: "Полный экран", description: "Полноэкранный режим" },
-  { id: "skipOpEd", label: "Пропуск OP / ED", description: "Пропуск заставки или титров" },
-  { id: "nextEpisode", label: "Следующий эпизод", description: "Переход к след. серии" },
-  { id: "prevEpisode", label: "Предыдущий эпизод", description: "Переход к пред. серии" },
+  { id: "volumeDown", label: "Уменьшить громкость", description: "−5% громкости" },
+  { id: "toggleMute", label: "Без звука", description: "включить или выключить звук" },
+  { id: "toggleFullscreen", label: "Во весь экран", description: "Полноэкранный режим" },
+  { id: "skipOpEd", label: "Пропуск OP / ED", description: "Пропустить заставку или титры" },
+  { id: "nextEpisode", label: "Следующий эпизод", description: "перейти к следующей серии" },
+  { id: "prevEpisode", label: "Предыдущий эпизод", description: "перейти к предыдущей серии" },
 ];
 
 export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
@@ -61,22 +59,19 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
   }, [recordingAction, isOpen, setHotkey]);
 
   return (
-    <div className="space-y-4 text-xs">
-      <div className="flex items-center justify-between border-b border-line pb-2">
-        <span className="text-[11px] text-ink-2">
-          Нажмите на клавишу для назначения нового бинда
-        </span>
+    <div className="space-y-4 text-sm">
+      <div className="flex items-center justify-between border-b border-line pb-2.5">
+        <span className="text-[12px] text-ink-3">Кликните по клавише, чтобы назначить новую</span>
         <button
           type="button"
           onClick={resetHotkeys}
-          className="flex items-center gap-1.5 text-[11px] text-accent-ink hover:text-ink transition-colors cursor-pointer"
+          className="cursor-pointer text-[12px] text-ink-2 transition-colors hover:text-ink"
         >
-          <RotateCcw className="h-3 w-3" />
-          <span>Сбросить</span>
+          Сбросить
         </button>
       </div>
 
-      <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1">
+      <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
         {HOTKEY_ACTIONS.map((action) => {
           const currentKey = hotkeys[action.id];
           const isRecording = recordingAction === action.id;
@@ -84,28 +79,26 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
           return (
             <div
               key={action.id}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 border transition-colors ${
+              className={
                 isRecording
-                  ? "border-accent bg-accent/10 ring-1 ring-accent-ink"
-                  : "border-ink/5 bg-ink/[0.02] hover:bg-ink/[0.04]"
-              }`}
+                  ? "flex items-center justify-between rounded-lg border border-accent bg-accent/10 px-3 py-2"
+                  : "flex items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-ink/5"
+              }
             >
               <div>
-                <div className="font-medium text-ink">{action.label}</div>
-                <div className="text-[10px] text-ink-2">{action.description}</div>
+                <div className="text-[13px] text-ink">{action.label}</div>
+                <div className="text-[11px] text-ink-3">{action.description}</div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setRecordingAction(isRecording ? null : action.id)}
-                className="cursor-pointer focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent-ink rounded-lg"
+                className="cursor-pointer rounded-md focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
               >
                 {isRecording ? (
-                  <Badge className="animate-pulse px-2.5 py-1 text-[11px] font-mono font-semibold cursor-pointer">
-                    Нажмите клавишу...
-                  </Badge>
+                  <span className="text-[12px] font-medium text-accent-ink">Нажмите клавишу</span>
                 ) : (
-                  <kbd className="inline-flex min-w-8 items-center justify-center rounded-lg border border-ink/20 bg-ink/10 px-2 py-1 font-mono text-[11px] font-semibold text-ink shadow-xs hover:bg-ink/20 hover:border-ink/30 transition-colors">
+                  <kbd className="inline-flex min-w-9 items-center justify-center rounded-md border border-line bg-surface-2 px-2 py-1 text-[12px] font-medium tabular-nums text-ink">
                     {formatKeyName(currentKey)}
                   </kbd>
                 )}
@@ -115,12 +108,10 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
         })}
       </div>
 
-      <div className="rounded-xl border border-line bg-ink/[0.02] p-2.5 text-[10px] text-ink-2 leading-relaxed">
-        <span className="font-semibold text-ink-2">Дополнительно: </span>
-        <span className="font-mono text-ink">Shift + 1..6</span> — выбор пресетов Anime4K,{" "}
-        <span className="font-mono text-ink">Shift + 0</span> — отключение фильтра,{" "}
-        <span className="font-mono text-ink">Esc</span> — отмена записи бинда.
-      </div>
+      <p className="text-[12px] leading-relaxed text-ink-3">
+        Дополнительно: Shift + 1…6 выбирает пресет Anime4K, Shift + 0 выключает фильтр, Esc отменяет
+        запись.
+      </p>
     </div>
   );
 }

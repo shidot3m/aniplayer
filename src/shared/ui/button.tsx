@@ -15,7 +15,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       // ADR 0018: the primary action is off-white with dark text; crimson is reserved for fills,
       // bars, outlines and the destructive action.
       default: "bg-ink text-ground hover:bg-ink-2 shadow-xs",
-      secondary: "bg-ink/10 text-ink hover:bg-ink/15 border border-ink/15 backdrop-blur-md",
+      secondary: "bg-ink/10 text-ink hover:bg-ink/15 border border-line",
       outline: "border border-line bg-transparent hover:bg-ink/5 text-ink",
       ghost: "hover:bg-ink/5 text-ink-2 hover:text-ink",
       destructive: "bg-accent text-ink hover:bg-accent-ink",

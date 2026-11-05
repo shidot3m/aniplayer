@@ -1,4 +1,3 @@
-import { Sparkles } from "lucide-react";
 import { CDN_BASE_URL } from "@/shared/lib/constants";
 import type { GenreItem } from "@/shared/types";
 import { useCatalogStore } from "../state/catalogStore";
@@ -18,28 +17,21 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
   const genres = useCatalogStore((state) => state.genres);
 
   return (
-    <section className="mb-12 pt-6 border-t border-ink/5">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-bold tracking-tight text-ink flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-accent-ink" />
-            <span>Жанры</span>
-          </h3>
-          <p className="text-xs text-ink-2 mt-0.5">Каталог категорий и тематических подборок</p>
-        </div>
-
+    <section>
+      <div className="mb-4 flex items-baseline justify-between">
+        <h3 className="text-lg font-semibold tracking-[-0.01em] text-ink">Жанры</h3>
         {selectedGenre && (
           <button
             type="button"
             onClick={() => onSelectGenre(null)}
-            className="rounded-lg bg-ink/5 px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-ink/10 hover:text-ink transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
+            className="cursor-pointer text-[13px] text-ink-2 transition-colors hover:text-ink"
           >
-            Сбросить фильтр ({selectedGenre.name})
+            Сбросить ({selectedGenre.name})
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
         {genres.map((g: GenreItem) => {
           const isSelected = selectedGenre?.id === g.id;
           const imgUrl = formatGenreImageUrl(
@@ -52,41 +44,33 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
               type="button"
               aria-label={`Жанр ${g.name}`}
               onClick={() => onSelectGenre(isSelected ? null : g)}
-              className={`group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink hover:-translate-y-1 hover:shadow-2xl ${
+              className={
                 isSelected
-                  ? "border-accent bg-accent/20 ring-2 ring-accent-ink/40"
-                  : "border-line bg-ink/[0.02] backdrop-blur-md hover:border-ink/25 hover:shadow-scrim/30"
-              }`}
+                  ? "group relative cursor-pointer overflow-hidden rounded-xl outline outline-2 -outline-offset-2 outline-accent"
+                  : "group relative cursor-pointer overflow-hidden rounded-xl outline outline-0 -outline-offset-2 outline-transparent transition-[outline-color] hover:outline-accent"
+              }
             >
-              {/* Genre Background Image with exact 2:3 vertical poster proportions */}
               {imgUrl ? (
                 <img
                   src={imgUrl}
-                  alt={g.name}
+                  alt=""
                   loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="aspect-[2/3] w-full object-cover transition-transform group-hover:scale-[1.03]"
                   onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
+                    (e.target as HTMLElement).style.visibility = "hidden";
                   }}
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br/srgb from-scrim to-surface-1" />
+                <div className="flex aspect-[2/3] w-full items-end bg-surface-1 p-3" />
               )}
 
-              {/* Dark subtle gradient overlay to keep text readable */}
-              <div className="absolute inset-0 bg-linear-to-t/srgb from-scrim/95 via-scrim/40 to-transparent" />
+              {/* A neutral scrim keeps the label readable over the poster — the one allowed gradient. */}
+              <div className="absolute inset-0 bg-linear-to-t from-scrim/90 via-scrim/30 to-transparent" />
 
-              {/* Genre info at bottom */}
-              <div className="relative z-10 flex h-full flex-col justify-end">
-                <span
-                  className={`block text-sm font-bold leading-tight truncate drop-shadow ${
-                    isSelected ? "text-accent-ink" : "text-ink group-hover:text-accent-ink"
-                  }`}
-                >
-                  {g.name}
-                </span>
+              <div className="absolute inset-x-0 bottom-0 z-10 p-3">
+                <span className="block truncate text-sm font-medium text-ink">{g.name}</span>
                 {g.total_releases != null && (
-                  <span className="block text-[11px] text-ink-2 mt-1 font-medium">
+                  <span className="mt-0.5 block text-[11px] tabular-nums text-ink-2">
                     {g.total_releases} {getReleasesDeclension(g.total_releases)}
                   </span>
                 )}

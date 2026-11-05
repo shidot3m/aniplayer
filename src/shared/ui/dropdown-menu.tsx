@@ -159,7 +159,7 @@ export function DropdownMenuContent({
         zIndex: 99999,
       }}
       className={cn(
-        "min-w-[12rem] rounded-xl border border-ink/15 bg-ground/95 p-1.5 shadow-2xl backdrop-blur-2xl transition-all text-ink",
+        "min-w-[12rem] rounded-xl border border-line bg-surface-2 p-1.5 text-ink shadow-float",
         className,
       )}
     >

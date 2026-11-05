@@ -29,7 +29,7 @@ export function EpisodeDrawer({
         type="button"
         aria-label="Закрыть список эпизодов"
         onClick={onClose}
-        className="fixed inset-0 bg-scrim/60 backdrop-blur-xs cursor-default"
+        className="fixed inset-0 cursor-default bg-scrim/60"
       />
 
       {/* Drawer Body */}

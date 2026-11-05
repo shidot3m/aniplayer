@@ -1,4 +1,3 @@
-import { Calendar } from "lucide-react";
 import { useState } from "react";
 import type { Release } from "@/shared/types";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
@@ -40,17 +39,14 @@ export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseSchedulePr
   const dayReleases = getReleasesForDay(selectedDay);
 
   return (
-    <section className="mb-10">
+    <section className="mb-4">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-base font-bold tracking-tight text-ink flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-accent-ink" />
-          Расписание релизов
-        </h2>
+        <h2 className="text-lg font-semibold tracking-[-0.01em] text-ink">Расписание</h2>
 
         <Tabs value={selectedDay} onValueChange={setSelectedDay} className="w-auto">
-          <TabsList className="h-9">
+          <TabsList className="h-10">
             {DAYS.map((d) => (
-              <TabsTrigger key={d.id} value={d.id} className="px-3 text-xs py-1">
+              <TabsTrigger key={d.id} value={d.id} className="px-3">
                 {d.label}
               </TabsTrigger>
             ))}
@@ -59,17 +55,18 @@ export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseSchedulePr
       </div>
 
       {dayReleases.length > 0 ? (
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-3 gap-x-5 gap-y-8 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {dayReleases.map((release) => (
             <AnimeCard
               key={release.id}
               release={release}
               onClick={() => onSelectRelease(release)}
+              viewTransitionName={`poster-${release.id}`}
             />
           ))}
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-line bg-ink/[0.02] backdrop-blur-md text-xs text-ink-2">
+        <div className="flex h-32 items-center justify-center text-sm text-ink-2">
           В этот день нет запланированных эпизодов
         </div>
       )}
