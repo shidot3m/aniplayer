@@ -102,12 +102,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         onToggleFullscreen={toggleFullscreen}
       />
 
-      <PlayerTopBar
-        isVisible={isVisible}
-        release={release}
-        enhancementActive={isEnhancementActive}
-        onBack={handleBack}
-      />
+      <PlayerTopBar isVisible={isVisible} release={release} onBack={handleBack} />
 
       <PlayerSkipToasts
         autoSkipOpEd={playerStore.autoSkipOpEd}

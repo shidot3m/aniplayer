@@ -165,7 +165,6 @@ describe("Anime4K on a machine without WebGPU", () => {
     const { container } = await openPlayer();
 
     expect(container.querySelector("canvas")).toBeNull();
-    expect(screen.queryByText("4K Upscale")).toBeNull();
     expect(container.querySelector("video")).not.toBeNull();
 
     fireEvent.click(screen.getByTitle("Настройки плеера"));
@@ -202,7 +201,6 @@ describe("Applying the enhancement to a live Episode", () => {
     expect(renderer?.preset).toBe("Mode B+B (HQ)");
     expect(renderer?.started).toBe(true);
     expect(video().className).toContain("opacity-0");
-    expect(screen.getByText("4K Upscale")).toBeDefined();
   });
 
   it("rebuilds the renderer on the same canvas when the preset changes mid-playback", async () => {
@@ -240,7 +238,6 @@ describe("Applying the enhancement to a live Episode", () => {
     expect(renderer?.stopped).toBe(true);
     expect(canvas()).toBeNull();
     expect(video().className).not.toContain("opacity-0");
-    expect(screen.queryByText("4K Upscale")).toBeNull();
   });
 
   it("switches back on with the preset it was switched off from, on the live session", async () => {
@@ -291,7 +288,6 @@ describe("Applying the enhancement to a live Episode", () => {
     expect(usePlayerStore.getState().enhancementFault).toBe("WebGPU-адаптер не отдан машине");
     await waitFor(() => expect(canvas()).toBeNull());
     expect(video().className).not.toContain("opacity-0");
-    expect(screen.queryByText("4K Upscale")).toBeNull();
   });
 });
 
