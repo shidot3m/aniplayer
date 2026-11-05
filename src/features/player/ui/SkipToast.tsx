@@ -26,16 +26,16 @@ export function SkipToast({ type, countdownSeconds, onSkip }: SkipToastProps) {
 
   if (type === "next_episode") {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-rose-500/40 bg-black/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
-        <span className="text-xs font-semibold text-slate-200">
+      <div className="flex items-center gap-3 rounded-2xl border border-accent/40 bg-scrim/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <span className="text-xs font-semibold text-ink">
           Следующий эпизод через{" "}
-          <span className="text-rose-400 font-bold">{countdownSeconds ?? 0}</span> с
+          <span className="text-accent-ink font-bold">{countdownSeconds ?? 0}</span> с
         </span>
         <Button
           variant="default"
           size="sm"
           onClick={onSkip}
-          className="h-8 gap-1.5 px-3 text-xs bg-rose-600 hover:bg-rose-700 font-bold"
+          className="h-8 gap-1.5 px-3 text-xs font-bold"
         >
           <Play className="h-3.5 w-3.5 fill-current" />
           <span>Включить сейчас (S)</span>
@@ -47,14 +47,14 @@ export function SkipToast({ type, countdownSeconds, onSkip }: SkipToastProps) {
   const label = type === "opening" ? "опенинг" : "эндинг";
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-black/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
+    <div className="flex items-center gap-3 rounded-2xl border border-ink/20 bg-scrim/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
       <Button
         variant="secondary"
         size="sm"
         onClick={onSkip}
-        className="h-8 gap-2 px-3 text-xs bg-white/15 hover:bg-white/25 text-white font-bold cursor-pointer"
+        className="h-8 gap-2 px-3 text-xs bg-ink/15 hover:bg-ink/25 text-ink font-bold cursor-pointer"
       >
-        <FastForward className="h-4 w-4 text-rose-400" />
+        <FastForward className="h-4 w-4 text-accent-ink" />
         <span>Пропустить {label} (S)</span>
       </Button>
     </div>

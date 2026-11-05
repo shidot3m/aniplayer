@@ -29,9 +29,9 @@ export const Slider: React.FC<SliderProps> = ({
         className,
       )}
     >
-      <div className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-white/20 group-hover:h-2 transition-all">
+      <div className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-ink/20 group-hover:h-2 transition-all">
         <div
-          className="h-full bg-rose-500 rounded-full transition-all"
+          className="h-full bg-accent rounded-full transition-all"
           style={{ width: `${percentage}%` }}
         />
       </div>

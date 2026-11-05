@@ -32,12 +32,12 @@ export function PlayerVideoViewport({
   const handlePainted = useCallback((framePainted: boolean) => setPainted(framePainted), []);
 
   return (
-    <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
+    <div className="absolute inset-0 z-0 flex items-center justify-center bg-scrim">
       {/* No native controls: the overlay draws them, and the element is never a tab stop. */}
       {/* Once the renderer paints, the element underneath keeps decoding and driving audio. */}
       <video
         ref={videoRef}
-        className={`h-full w-full bg-black object-contain ${
+        className={`h-full w-full bg-scrim object-contain ${
           enhancementActive && painted ? "opacity-0" : ""
         }`}
         playsInline
@@ -59,12 +59,12 @@ export function PlayerVideoViewport({
       />
 
       {playbackError ? (
-        <div className="absolute max-w-lg rounded-lg bg-black/85 px-6 py-4 text-center text-sm text-rose-300">
+        <div className="absolute max-w-lg rounded-lg bg-scrim/85 px-6 py-4 text-center text-sm text-accent-ink">
           <p className="mb-2 font-semibold">Не удалось воспроизвести эпизод</p>
           <p>{playbackError}</p>
         </div>
       ) : isBuffering ? (
-        <div className="rounded-lg bg-black/70 px-4 py-2 text-slate-300 text-sm">
+        <div className="rounded-lg bg-scrim/70 px-4 py-2 text-ink-2 text-sm">
           Загрузка видеопотока...
         </div>
       ) : null}

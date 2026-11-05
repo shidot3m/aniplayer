@@ -68,7 +68,7 @@ export function ControlsBar({
           type="button"
           data-testid="player-to-anime-btn"
           onClick={onGoToRelease}
-          className="flex items-center gap-1.5 rounded-xl bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
+          className="flex items-center gap-1.5 rounded-xl bg-ink/5 px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-ink/15 hover:text-ink transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span>К аниме</span>
@@ -78,7 +78,7 @@ export function ControlsBar({
           type="button"
           data-testid="player-episode-drawer-btn"
           onClick={onOpenDrawer}
-          className="flex items-center gap-1.5 rounded-xl bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
+          className="flex items-center gap-1.5 rounded-xl bg-ink/5 px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-ink/15 hover:text-ink transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
         >
           <ListVideo className="h-3.5 w-3.5" />
           <span>Список эпизодов</span>
@@ -93,7 +93,7 @@ export function ControlsBar({
           disabled={!hasPrev}
           onClick={onPrev}
           title="Предыдущий эпизод"
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink/5 text-ink-2 hover:bg-ink/15 hover:text-ink disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
         >
           <SkipBack className="h-4 w-4 fill-current" />
         </button>
@@ -103,7 +103,7 @@ export function ControlsBar({
           data-testid="player-play-pause-btn"
           onClick={onTogglePlay}
           title={isPlaying ? "Пауза (Space)" : "Воспроизведение (Space)"}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-600 text-white hover:bg-rose-500 hover:scale-105 active:scale-95 transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-ink hover:bg-accent-ink hover:scale-105 active:scale-95 transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink focus-visible:ring-offset-2 focus-visible:ring-offset-scrim"
         >
           {isPlaying ? (
             <Pause className="h-5 w-5 fill-current" />
@@ -118,7 +118,7 @@ export function ControlsBar({
           disabled={!hasNext}
           onClick={onNext}
           title="Следующий эпизод"
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink/5 text-ink-2 hover:bg-ink/15 hover:text-ink disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
         >
           <SkipForward className="h-4 w-4 fill-current" />
         </button>
@@ -131,11 +131,11 @@ export function ControlsBar({
           <button
             type="button"
             onClick={toggleMute}
-            className="text-slate-300 hover:text-white transition-colors cursor-pointer rounded-lg p-1 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
+            className="text-ink-2 hover:text-ink transition-colors cursor-pointer rounded-lg p-1 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
             title={volume === 0 ? "Включить звук" : "Без звука"}
           >
             {volume === 0 ? (
-              <VolumeX className="h-4 w-4 text-rose-400" />
+              <VolumeX className="h-4 w-4 text-accent-ink" />
             ) : (
               <Volume2 className="h-4 w-4" />
             )}
@@ -164,7 +164,7 @@ export function ControlsBar({
           type="button"
           onClick={onToggleFullscreen}
           title={isFullscreen ? "Выйти из полноэкранного режима (F)" : "Во весь экран (F)"}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink/5 text-ink-2 hover:bg-ink/15 hover:text-ink transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
         >
           {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </button>

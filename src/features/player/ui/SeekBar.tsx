@@ -70,27 +70,27 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
       {/* Tooltip on Hover */}
       {hoverPosition !== null && duration > 0 && (
         <div
-          className="absolute -top-7 -translate-x-1/2 rounded bg-black/90 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm backdrop-blur-sm pointer-events-none whitespace-nowrap z-30 flex items-center gap-1.5"
+          className="absolute -top-7 -translate-x-1/2 rounded bg-scrim/90 px-2 py-0.5 text-[11px] font-medium text-ink shadow-sm backdrop-blur-sm pointer-events-none whitespace-nowrap z-30 flex items-center gap-1.5"
           style={{ left: `${Math.min(95, Math.max(5, hoverPercent))}%` }}
         >
           <span>{formatTime(hoverPosition)}</span>
           {isHoverInOpening && (
-            <span className="text-amber-400 font-semibold text-[10px]">· Опенинг</span>
+            <span className="text-ink-2 font-semibold text-[10px]">· Опенинг</span>
           )}
           {isHoverInEnding && (
-            <span className="text-indigo-400 font-semibold text-[10px]">· Эндинг</span>
+            <span className="text-ink-2 font-semibold text-[10px]">· Эндинг</span>
           )}
         </div>
       )}
 
       {/* Track Base */}
-      <div className="relative h-1.5 w-full rounded-full bg-white/20 transition-all group-hover:h-2 pointer-events-none overflow-hidden">
+      <div className="relative h-1.5 w-full rounded-full bg-ink/20 transition-all group-hover:h-2 pointer-events-none overflow-hidden">
         {/* Opening Marker Segment */}
         {opStartPercent != null && opWidthPercent > 0 && (
           <div
             data-testid="seekbar-opening-marker"
             title="Опенинг"
-            className="absolute top-0 h-full bg-amber-400/80 shadow-xs pointer-events-none"
+            className="absolute top-0 h-full bg-ink/60 shadow-xs pointer-events-none"
             style={{ left: `${opStartPercent}%`, width: `${opWidthPercent}%` }}
           />
         )}
@@ -100,7 +100,7 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
           <div
             data-testid="seekbar-ending-marker"
             title="Эндинг"
-            className="absolute top-0 h-full bg-indigo-400/80 shadow-xs pointer-events-none"
+            className="absolute top-0 h-full bg-ink/60 shadow-xs pointer-events-none"
             style={{ left: `${edStartPercent}%`, width: `${edWidthPercent}%` }}
           />
         )}
@@ -108,20 +108,20 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
         {/* Hover Highlight */}
         {hoverPosition !== null && (
           <div
-            className="absolute left-0 top-0 h-full rounded-full bg-white/10"
+            className="absolute left-0 top-0 h-full rounded-full bg-ink/10"
             style={{ width: `${hoverPercent}%` }}
           />
         )}
 
         {/* Played Progress */}
         <div
-          className="absolute left-0 top-0 h-full rounded-full bg-rose-600 shadow-xs transition-all"
+          className="absolute left-0 top-0 h-full rounded-full bg-accent shadow-xs transition-all"
           style={{ width: `${progressPercent}%` }}
         />
 
         {/* Thumb */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-white shadow-lg transition-transform scale-0 group-hover:scale-100 group-focus-within:scale-100"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-ink shadow-lg transition-transform scale-0 group-hover:scale-100 group-focus-within:scale-100"
           style={{ left: `${progressPercent}%` }}
         />
       </div>
@@ -137,7 +137,7 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
         onChange={(e) => onSeek(Number(e.target.value))}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoverPosition(null)}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 focus-visible:opacity-20 focus-visible:ring-2 focus-visible:ring-rose-500 rounded-full"
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 focus-visible:opacity-20 focus-visible:ring-2 focus-visible:ring-accent-ink rounded-full"
       />
     </div>
   );

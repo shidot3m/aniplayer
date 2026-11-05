@@ -56,19 +56,13 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       : "Онгоинг";
 
   return (
-    <div
-      className={`group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border ${
-        isWatched
-          ? "border-emerald-500/30 hover:border-emerald-500/60 shadow-emerald-950/20"
-          : "border-white/10 hover:border-white/25"
-      } bg-white/[0.02] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl`}
-    >
+    <div className="group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border border-line hover:border-ink/25 bg-ink/[0.02] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
       {/* Clickable Card Action */}
       <button
         type="button"
         aria-label={`Открыть ${release.name.main}`}
         onClick={onClick}
-        className="absolute inset-0 z-10 h-full w-full cursor-pointer rounded-2xl border-0 bg-transparent p-0 text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+        className="absolute inset-0 z-10 h-full w-full cursor-pointer rounded-2xl border-0 bg-transparent p-0 text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink focus-visible:ring-offset-2 focus-visible:ring-offset-ground"
       />
 
       {/* Poster Image */}
@@ -84,14 +78,14 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
           }}
         />
       ) : (
-        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-linear-to-br/srgb from-black to-[#121318] p-4 text-center">
-          <span className="text-xs text-slate-400 line-clamp-3">{release.name.main}</span>
+        <div className="pointer-events-none flex h-full w-full items-center justify-center bg-linear-to-br/srgb from-scrim to-surface-1 p-4 text-center">
+          <span className="text-xs text-ink-2 line-clamp-3">{release.name.main}</span>
         </div>
       )}
 
       {/* Persistent Watched Visual Indicator (Always visible) */}
       {isWatched && (
-        <div className="absolute left-2.5 top-2.5 z-20 flex items-center gap-1 rounded-md border border-emerald-500/50 bg-emerald-950/85 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 backdrop-blur-xl shadow-lg shadow-black/40">
+        <div className="absolute left-2.5 top-2.5 z-20 flex items-center gap-1 rounded-md border border-line bg-scrim/80 px-2 py-0.5 text-[10px] font-semibold text-ink backdrop-blur-xl shadow-lg shadow-scrim/40">
           <CheckCircle2 className="h-3 w-3 shrink-0" />
           <span>Просмотрено</span>
         </div>
@@ -99,7 +93,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
 
       {/* Watched Bottom Accent Bar */}
       {isWatched && (
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1 bg-emerald-500/80 z-20" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1 bg-accent z-20" />
       )}
 
       {/* Top Badges - Only visible on hover */}
@@ -107,7 +101,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
         {!isWatched && release.type?.description ? (
           <Badge
             variant="secondary"
-            className="backdrop-blur-xl bg-black/70 text-[10px] py-0.5 px-2 border-white/15 text-white"
+            className="backdrop-blur-xl bg-scrim/70 text-[10px] py-0.5 px-2 border-ink/15 text-ink"
           >
             {release.type.description}
           </Badge>
@@ -116,7 +110,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
         )}
         <Badge
           variant="outline"
-          className="backdrop-blur-xl bg-black/70 text-[10px] py-0.5 px-2 border-white/15 text-slate-200"
+          className="backdrop-blur-xl bg-scrim/70 text-[10px] py-0.5 px-2 border-ink/15 text-ink"
         >
           {totalEps}
         </Badge>
@@ -125,12 +119,12 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       {/* Quick Bookmark Action Menu - Only visible on hover */}
       <div className="absolute right-2.5 top-10 z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300">
         <DropdownMenu>
-          <DropdownMenuTrigger className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg">
+          <DropdownMenuTrigger className="focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink rounded-lg">
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-lg backdrop-blur-xl transition-colors ${
                 currentCategory
-                  ? "bg-rose-600 text-white"
-                  : "bg-black/70 text-slate-300 hover:bg-white/20 hover:text-white border border-white/10"
+                  ? "bg-accent text-ink"
+                  : "bg-scrim/70 text-ink-2 hover:bg-ink/20 hover:text-ink border border-line"
               }`}
               title="Добавить в закладки"
             >
@@ -139,7 +133,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="right"
-            className="w-40 backdrop-blur-2xl bg-black/85 border-white/15"
+            className="w-40 backdrop-blur-2xl bg-scrim/85 border-ink/15"
           >
             {Object.entries(CATEGORY_NAMES).map(([cat, label]) => (
               <DropdownMenuItem
@@ -151,7 +145,7 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
                     setBookmark(release.id, cat as BookmarkCategory, release);
                   }
                 }}
-                className={currentCategory === cat ? "text-rose-400 font-semibold" : ""}
+                className={currentCategory === cat ? "text-accent-ink font-semibold" : ""}
               >
                 <span className="truncate">{label}</span>
                 {currentCategory === cat && <span className="ml-auto text-xs">✓</span>}
@@ -162,23 +156,23 @@ export function AnimeCard({ release, onClick }: AnimeCardProps) {
       </div>
 
       {/* Hover Glass Darkening Overlay with Details - Only visible on hover */}
-      <div className="absolute inset-0 z-10 flex flex-col justify-end bg-linear-to-t/srgb from-black/95 via-black/75 to-transparent p-3.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none">
-        <h4 className="text-xs font-bold text-white line-clamp-2 leading-tight">
+      <div className="absolute inset-0 z-10 flex flex-col justify-end bg-linear-to-t/srgb from-scrim/95 via-scrim/75 to-transparent p-3.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none">
+        <h4 className="text-xs font-bold text-ink line-clamp-2 leading-tight">
           {release.name.main}
         </h4>
         {(release.name.english || release.name.alternative) && (
-          <p className="mt-0.5 text-[10px] text-slate-300 line-clamp-1">
+          <p className="mt-0.5 text-[10px] text-ink-2 line-clamp-1">
             {release.name.english || release.name.alternative}
           </p>
         )}
 
-        <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-300 pt-2 border-t border-white/15">
+        <div className="mt-2.5 flex items-center justify-between text-[11px] text-ink-2 pt-2 border-t border-ink/15">
           <span>{release.year || "—"}</span>
-          <span className="flex items-center gap-1.5 text-rose-400 group-hover:text-rose-300 font-medium">
+          <span className="flex items-center gap-1.5 text-accent-ink group-hover:text-ink font-medium">
             {isWatched ? (
               <>
-                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                <span className="text-emerald-300">Пересмотреть</span>
+                <CheckCircle2 className="h-3 w-3" />
+                <span>Пересмотреть</span>
               </>
             ) : (
               <>

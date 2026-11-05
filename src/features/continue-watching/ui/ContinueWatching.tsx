@@ -75,13 +75,11 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
     <section className="mb-10">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-500">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/15 border border-accent/30 text-accent-ink">
             <Play className="h-3.5 w-3.5 fill-current" />
           </div>
-          <h2 className="text-base font-bold tracking-tight text-white">Продолжить просмотр</h2>
-          <Badge variant="rose" className="h-5 px-1.5 text-[10px]">
-            {carouselItems.length}
-          </Badge>
+          <h2 className="text-base font-bold tracking-tight text-ink">Продолжить просмотр</h2>
+          <Badge className="h-5 px-1.5 text-[10px]">{carouselItems.length}</Badge>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -90,7 +88,7 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
             onClick={() => scroll("left")}
             disabled={!canScrollLeft}
             aria-label="Прокрутить назад"
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#12131A] border border-white/10 text-slate-300 hover:text-white hover:border-white/25 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+            className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-1 border border-line text-ink-2 hover:text-ink hover:border-ink/25 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -99,7 +97,7 @@ export function ContinueWatching({ onSelectRelease }: ContinueWatchingProps) {
             onClick={() => scroll("right")}
             disabled={!canScrollRight}
             aria-label="Прокрутить вперед"
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#12131A] border border-white/10 text-slate-300 hover:text-white hover:border-white/25 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+            className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-1 border border-line text-ink-2 hover:text-ink hover:border-ink/25 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

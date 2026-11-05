@@ -12,7 +12,7 @@ interface HeaderProps {
 
 function AniplayerLogoMark() {
   return (
-    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br/srgb from-rose-600 to-rose-700 shadow-md shadow-rose-900/30 border border-white/20 transition-transform group-hover:scale-105">
+    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-accent transition-transform group-hover:scale-105">
       <svg
         viewBox="0 0 32 32"
         fill="none"
@@ -20,8 +20,8 @@ function AniplayerLogoMark() {
         className="h-5 w-5"
         aria-hidden="true"
       >
-        <path d="M16 4L27.5 27H21.5L16 15.5L10.5 27H4.5L16 4Z" fill="white" />
-        <path d="M13.5 18L19.5 21.5L13.5 25V18Z" fill="#E11D48" />
+        <path d="M16 4L27.5 27H21.5L16 15.5L10.5 27H4.5L16 4Z" className="fill-ink" />
+        <path d="M13.5 18L19.5 21.5L13.5 25V18Z" className="fill-accent" />
       </svg>
     </div>
   );
@@ -51,20 +51,20 @@ export function Header({ onOpenSettings }: HeaderProps) {
   ).length;
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 w-full shrink-0 items-center justify-between border-b border-white/10 bg-[#090A0F]/80 px-6 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 flex h-16 w-full shrink-0 items-center justify-between border-b border-line bg-ground/80 px-6 backdrop-blur-xl">
       {/* Left: Logo & Nav */}
       <div className="flex items-center gap-6">
         <button
           type="button"
           onClick={() => setActiveScreen("home")}
-          className="flex items-center gap-2.5 text-left group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 rounded-xl cursor-pointer"
+          className="flex items-center gap-2.5 text-left group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink rounded-xl cursor-pointer"
         >
           <AniplayerLogoMark />
           <div>
-            <span className="text-base font-bold tracking-tight text-white">
-              Ani<span className="text-rose-500">player</span>
+            <span className="text-base font-bold tracking-tight text-ink">
+              Ani<span className="text-accent-ink">player</span>
             </span>
-            <span className="block text-[10px] text-slate-400 -mt-0.5">4K Anime Player</span>
+            <span className="block text-[10px] text-ink-2 -mt-0.5">4K Anime Player</span>
           </div>
         </button>
 
@@ -85,12 +85,10 @@ export function Header({ onOpenSettings }: HeaderProps) {
             onClick={() => setActiveScreen("bookmarks")}
             className="gap-2 relative"
           >
-            <Bookmark className="h-4 w-4 text-rose-400" />
+            <Bookmark className="h-4 w-4 text-accent-ink" />
             <span>Закладки</span>
             {totalBookmarks > 0 && (
-              <Badge variant="rose" className="h-5 px-1.5 text-[10px]">
-                {totalBookmarks}
-              </Badge>
+              <Badge className="h-5 px-1.5 text-[10px]">{totalBookmarks}</Badge>
             )}
           </Button>
 
@@ -100,20 +98,17 @@ export function Header({ onOpenSettings }: HeaderProps) {
             onClick={() => setActiveScreen("downloads")}
             className="gap-2 relative"
           >
-            <FolderDown className="h-4 w-4 text-rose-400" />
+            <FolderDown className="h-4 w-4 text-accent-ink" />
             <span>Скачанные</span>
             {downloadedEpisodes.length > 0 && (
-              <Badge
-                variant="secondary"
-                className="h-5 px-1.5 text-[10px] bg-white/10 text-slate-300"
-              >
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-ink/10 text-ink-2">
                 {downloadedEpisodes.length}
               </Badge>
             )}
             {activeDownloadsCount > 0 && (
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
               </span>
             )}
           </Button>
@@ -123,7 +118,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
       {/* Center: Search Bar */}
       <div className="flex-1 max-w-md mx-6">
         <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-2 pointer-events-none" />
           <Input
             value={localQuery}
             onChange={(e) => {
@@ -133,7 +128,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
               }
             }}
             placeholder="Поиск аниме по названию..."
-            className="pl-9 pr-8 bg-white/5 border-white/10 text-xs h-9 focus:border-rose-500 rounded-xl backdrop-blur-md"
+            className="pl-9 pr-8 bg-ink/5 border-line text-xs h-9 focus:border-accent rounded-xl backdrop-blur-md"
           />
           {localQuery && (
             <button
@@ -143,7 +138,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
                 setLocalQuery("");
                 setSearchQuery("");
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 rounded"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink text-xs cursor-pointer focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-accent-ink rounded"
             >
               ✕
             </button>
@@ -158,9 +153,9 @@ export function Header({ onOpenSettings }: HeaderProps) {
           size="icon"
           onClick={onOpenSettings}
           title="Настройки"
-          className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 backdrop-blur-md"
+          className="rounded-xl border-line bg-ink/5 hover:bg-ink/10 backdrop-blur-md"
         >
-          <Settings className="h-4 w-4 text-slate-300" />
+          <Settings className="h-4 w-4 text-ink-2" />
         </Button>
       </div>
     </header>

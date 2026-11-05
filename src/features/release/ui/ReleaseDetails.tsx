@@ -53,13 +53,13 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-6 text-slate-100">
+    <div className="mx-auto max-w-7xl px-6 py-6 text-ink">
       <div className="mb-6 flex items-center justify-between">
         <Button
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="gap-2 text-slate-400 hover:text-white"
+          className="gap-2 text-ink-2 hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Назад в каталог</span>

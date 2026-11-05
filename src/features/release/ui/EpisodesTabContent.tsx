@@ -30,7 +30,7 @@ export function EpisodesTabContent({
 }: EpisodesTabContentProps) {
   if (!episodes || episodes.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/50 text-xs text-slate-400">
+      <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-line bg-surface-1/50 text-xs text-ink-2">
         Список эпизодов пуст или еще загружается
       </div>
     );
@@ -46,12 +46,12 @@ export function EpisodesTabContent({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-ink-2">
           <span>Всего эпизодов: {episodes.length}</span>
           {watchedCount > 0 && (
             <>
               <span>•</span>
-              <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+              <span className="flex items-center gap-1 text-ink font-semibold">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span>
                   Просмотрено: {watchedCount} из {episodes.length}
@@ -65,7 +65,7 @@ export function EpisodesTabContent({
           size="sm"
           disabled={isDownloadingAll}
           onClick={onDownloadAll}
-          className="gap-2 text-xs text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 cursor-pointer"
+          className="gap-2 text-xs"
         >
           <Download className="h-3.5 w-3.5" />
           <span>{isDownloadingAll ? "Загрузка..." : "Скачать все"}</span>

@@ -25,7 +25,7 @@ function DownloadedEpisodeRow({
   const isCompleted = meta.download_status === "COMPLETED";
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 transition-colors hover:border-white/15 hover:bg-white/[0.05]">
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-ink/5 bg-ink/[0.02] p-3 transition-colors hover:border-ink/15 hover:bg-ink/[0.05]">
       <div className="flex items-center gap-3 min-w-0">
         <button
           type="button"
@@ -34,8 +34,8 @@ function DownloadedEpisodeRow({
           disabled={!isCompleted}
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
             isCompleted
-              ? "border-rose-500/40 bg-rose-600/20 text-rose-400 hover:scale-105 hover:bg-rose-600 hover:text-white cursor-pointer"
-              : "border-white/10 bg-white/5 text-slate-500 cursor-not-allowed"
+              ? "border-accent/40 bg-accent/20 text-accent-ink hover:scale-105 hover:bg-accent hover:text-ink cursor-pointer"
+              : "border-line bg-ink/5 text-ink-3 cursor-not-allowed"
           }`}
         >
           <Play className="h-4 w-4 fill-current ml-0.5" />
@@ -43,7 +43,7 @@ function DownloadedEpisodeRow({
 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-white truncate">
+            <span className="text-sm font-semibold text-ink truncate">
               Эпизод {meta.episode_ordinal}
             </span>
             <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
@@ -52,14 +52,14 @@ function DownloadedEpisodeRow({
             {isWatched && (
               <Badge
                 variant="outline"
-                className="border-emerald-500/30 text-emerald-400 text-[10px] py-0 px-1.5 h-4 flex items-center gap-1"
+                className="text-[10px] py-0 px-1.5 h-4 flex items-center gap-1"
               >
                 <CheckCircle2 className="h-2.5 w-2.5" />
                 <span>Просмотрен</span>
               </Badge>
             )}
           </div>
-          <div className="mt-0.5 flex items-center gap-3 text-xs text-slate-400">
+          <div className="mt-0.5 flex items-center gap-3 text-xs text-ink-2">
             <span>Размер: {formatBytes(meta.file_size)}</span>
             {meta.opening_start != null && meta.opening_stop != null && (
               <span>• Таймкоды сохранены</span>
@@ -73,7 +73,7 @@ function DownloadedEpisodeRow({
           type="button"
           aria-label="Удалить файл эпизода"
           onClick={() => onDelete(meta.episode_id)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-2 hover:text-accent-ink hover:bg-accent/10 transition-colors cursor-pointer"
           title="Удалить эпизод с диска"
         >
           <Trash2 className="h-4 w-4" />
@@ -111,28 +111,28 @@ function DownloadedReleaseCard({
   const totalSize = items.reduce((acc, curr) => acc + curr.file_size, 0);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#12131A] p-5 shadow-xl transition-all">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+    <div className="rounded-2xl border border-line bg-surface-1 p-5 shadow-xl transition-all">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-line">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-black/40 border border-white/10">
+          <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-scrim/40 border border-line">
             {poster ? (
               <img src={poster} alt={title} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-[10px] text-slate-500">
+              <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-3">
                 N/A
               </div>
             )}
           </div>
           <div className="min-w-0">
-            <h3 className="text-base font-bold text-white truncate">{title}</h3>
-            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+            <h3 className="text-base font-bold text-ink truncate">{title}</h3>
+            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-ink-2">
               <span className="flex items-center gap-1">
-                <Film className="h-3.5 w-3.5 text-rose-400" />
+                <Film className="h-3.5 w-3.5 text-accent-ink" />
                 {items.length} эп.
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
-                <HardDrive className="h-3.5 w-3.5 text-slate-400" />
+                <HardDrive className="h-3.5 w-3.5 text-ink-2" />
                 {formatBytes(totalSize)}
               </span>
             </div>
@@ -143,7 +143,7 @@ function DownloadedReleaseCard({
           variant="outline"
           size="sm"
           onClick={() => onOpenFolder(releaseId)}
-          className="gap-1.5 text-xs border-white/10 hover:border-white/20 text-slate-300 hover:text-white"
+          className="gap-1.5 text-xs border-line hover:border-ink/20 text-ink-2 hover:text-ink"
         >
           <FolderOpen className="h-3.5 w-3.5" />
           <span>Папка аниме</span>
@@ -254,11 +254,11 @@ export function DownloadsView() {
       {/* Top Banner */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <FolderDown className="h-6 w-6 text-rose-500" />
+          <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2.5">
+            <FolderDown className="h-6 w-6 text-accent-ink" />
             <span>Скачанные аниме</span>
           </h1>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-ink-2">
             Офлайн-библиотека • {downloadedEpisodes.length} серий • {formatBytes(totalSize)} на
             диске
           </p>
@@ -269,9 +269,9 @@ export function DownloadsView() {
             variant="outline"
             size="sm"
             onClick={() => openDownloadsFolder()}
-            className="gap-2 border-white/10 hover:border-white/20 text-slate-300 hover:text-white"
+            className="gap-2 border-line hover:border-ink/20 text-ink-2 hover:text-ink"
           >
-            <FolderOpen className="h-4 w-4 text-rose-400" />
+            <FolderOpen className="h-4 w-4 text-accent-ink" />
             <span>Открыть папку загрузок</span>
           </Button>
         </div>
@@ -279,12 +279,12 @@ export function DownloadsView() {
 
       {/* Content / Groups */}
       {groupedByRelease.size === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center rounded-2xl border border-white/5 bg-white/[0.02]">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 text-slate-500 mb-4">
+        <div className="flex flex-col items-center justify-center py-24 text-center rounded-2xl border border-ink/5 bg-ink/[0.02]">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-ink/5 text-ink-3 mb-4">
             <FolderDown className="h-8 w-8" />
           </div>
-          <h3 className="text-base font-bold text-white mb-1">Нет скачанных серий</h3>
-          <p className="text-xs text-slate-400 max-w-sm mb-6">
+          <h3 className="text-base font-bold text-ink mb-1">Нет скачанных серий</h3>
+          <p className="text-xs text-ink-2 max-w-sm mb-6">
             Вы можете скачивать серии для просмотра без подключения к интернету на странице аниме.
           </p>
           <Button onClick={() => setActiveScreen("home")} className="gap-2">

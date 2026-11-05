@@ -62,14 +62,14 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
 
   return (
     <div className="space-y-4 text-xs">
-      <div className="flex items-center justify-between border-b border-white/10 pb-2">
-        <span className="text-[11px] text-slate-400">
+      <div className="flex items-center justify-between border-b border-line pb-2">
+        <span className="text-[11px] text-ink-2">
           Нажмите на клавишу для назначения нового бинда
         </span>
         <button
           type="button"
           onClick={resetHotkeys}
-          className="flex items-center gap-1.5 text-[11px] text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-[11px] text-accent-ink hover:text-ink transition-colors cursor-pointer"
         >
           <RotateCcw className="h-3 w-3" />
           <span>Сбросить</span>
@@ -86,29 +86,26 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
               key={action.id}
               className={`flex items-center justify-between rounded-xl px-3 py-2 border transition-colors ${
                 isRecording
-                  ? "border-rose-500 bg-rose-500/10 ring-1 ring-rose-500"
-                  : "border-white/5 bg-white/[0.02] hover:bg-white/[0.04]"
+                  ? "border-accent bg-accent/10 ring-1 ring-accent-ink"
+                  : "border-ink/5 bg-ink/[0.02] hover:bg-ink/[0.04]"
               }`}
             >
               <div>
-                <div className="font-medium text-white">{action.label}</div>
-                <div className="text-[10px] text-slate-400">{action.description}</div>
+                <div className="font-medium text-ink">{action.label}</div>
+                <div className="text-[10px] text-ink-2">{action.description}</div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setRecordingAction(isRecording ? null : action.id)}
-                className="cursor-pointer focus:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 rounded-lg"
+                className="cursor-pointer focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent-ink rounded-lg"
               >
                 {isRecording ? (
-                  <Badge
-                    variant="rose"
-                    className="animate-pulse px-2.5 py-1 text-[11px] font-mono font-semibold cursor-pointer"
-                  >
+                  <Badge className="animate-pulse px-2.5 py-1 text-[11px] font-mono font-semibold cursor-pointer">
                     Нажмите клавишу...
                   </Badge>
                 ) : (
-                  <kbd className="inline-flex min-w-8 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-2 py-1 font-mono text-[11px] font-semibold text-white shadow-xs hover:bg-white/20 hover:border-white/30 transition-colors">
+                  <kbd className="inline-flex min-w-8 items-center justify-center rounded-lg border border-ink/20 bg-ink/10 px-2 py-1 font-mono text-[11px] font-semibold text-ink shadow-xs hover:bg-ink/20 hover:border-ink/30 transition-colors">
                     {formatKeyName(currentKey)}
                   </kbd>
                 )}
@@ -118,11 +115,11 @@ export function HotkeysTab({ isOpen }: { isOpen: boolean }) {
         })}
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-2.5 text-[10px] text-slate-400 leading-relaxed">
-        <span className="font-semibold text-slate-300">Дополнительно: </span>
-        <span className="font-mono text-slate-200">Shift + 1..6</span> — выбор пресетов Anime4K,{" "}
-        <span className="font-mono text-slate-200">Shift + 0</span> — отключение фильтра,{" "}
-        <span className="font-mono text-slate-200">Esc</span> — отмена записи бинда.
+      <div className="rounded-xl border border-line bg-ink/[0.02] p-2.5 text-[10px] text-ink-2 leading-relaxed">
+        <span className="font-semibold text-ink-2">Дополнительно: </span>
+        <span className="font-mono text-ink">Shift + 1..6</span> — выбор пресетов Anime4K,{" "}
+        <span className="font-mono text-ink">Shift + 0</span> — отключение фильтра,{" "}
+        <span className="font-mono text-ink">Esc</span> — отмена записи бинда.
       </div>
     </div>
   );

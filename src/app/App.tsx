@@ -64,9 +64,9 @@ export default function App() {
     return (
       <Suspense
         fallback={
-          <div className="flex h-screen w-full flex-col bg-[#090A0F] text-slate-100 font-sans selection:bg-rose-600 selection:text-white overflow-hidden">
+          <div className="flex h-screen w-full flex-col bg-ground text-ink font-sans selection:bg-accent selection:text-ink overflow-hidden">
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
-            <div className="flex flex-1 items-center justify-center text-slate-400">
+            <div className="flex flex-1 items-center justify-center text-ink-2">
               Загрузка плеера…
             </div>
           </div>
@@ -94,7 +94,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-[#090A0F] text-slate-100 font-sans selection:bg-rose-600 selection:text-white overflow-hidden">
+    <div className="flex h-screen w-full flex-col bg-ground text-ink font-sans selection:bg-accent selection:text-ink overflow-hidden">
       {/* Header */}
       <Header onOpenSettings={() => setIsSettingsOpen(true)} />
 

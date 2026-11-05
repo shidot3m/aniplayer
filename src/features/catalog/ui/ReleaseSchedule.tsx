@@ -42,8 +42,8 @@ export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseSchedulePr
   return (
     <section className="mb-10">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-rose-500" />
+        <h2 className="text-base font-bold tracking-tight text-ink flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-accent-ink" />
           Расписание релизов
         </h2>
 
@@ -69,7 +69,7 @@ export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseSchedulePr
           ))}
         </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-md text-xs text-slate-400">
+        <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-line bg-ink/[0.02] backdrop-blur-md text-xs text-ink-2">
           В этот день нет запланированных эпизодов
         </div>
       )}

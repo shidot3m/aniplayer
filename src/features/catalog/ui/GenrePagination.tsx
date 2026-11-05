@@ -61,7 +61,7 @@ export function GenrePagination({
               <span
                 key={`ellipsis-before-${pageItems[index + 1]}`}
                 aria-hidden="true"
-                className="px-1 text-sm text-slate-400"
+                className="px-1 text-sm text-ink-2"
               >
                 …
               </span>
@@ -77,8 +77,8 @@ export function GenrePagination({
               aria-current={item === currentPage ? "page" : undefined}
               className={`h-11 min-w-11 rounded-lg border px-2 text-xs font-semibold transition-colors ${
                 item === currentPage
-                  ? "border-rose-500 bg-rose-600 text-white shadow-md shadow-rose-950/40"
-                  : "cursor-pointer border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                  ? "border-accent bg-accent text-ink shadow-md shadow-scrim/40"
+                  : "cursor-pointer border-line bg-ink/[0.04] text-ink-2 hover:bg-ink/[0.08] hover:text-ink"
               }`}
             >
               {item}
@@ -98,7 +98,7 @@ export function GenrePagination({
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-ink-2">
         Страница {currentPage} из {totalPages}
       </p>
     </nav>

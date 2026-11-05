@@ -38,9 +38,11 @@ describe("Tailwind 4 migration", () => {
     }
   });
 
-  it("keeps the v3 palette and line-heights for visual parity", () => {
+  it("keeps the v3 absolute line-heights for visual parity", () => {
+    // The v3 palette this test used to pin is gone by decision — ADR 0018 replaced it with the
+    // night cinema roles, which tests/test_night_cinema_tokens.test.ts holds in place. The
+    // line-heights still need pinning: named text utilities in v4 default to relative values.
     const css = read("src/index.css");
-    expect(css).toContain("--color-rose-600: #e11d48;");
     expect(css).toContain("--text-xs--line-height: 1rem;");
   });
 });

@@ -13,6 +13,10 @@
       "!**/dist",
       "!**/target",
       "!**/src-tauri/target",
+      // The approved art-direction sheets (ADR 0018) are drawings of screens, not the interface
+      // code: their placeholder anchors, icon svgs and buttons are never shipped, and marking them
+      // up as production a11y would edit an artifact the user signed off on.
+      "!**/docs/design",
       "!**/.agents",
       "!**/.qoder",
       "!**/src-tauri/gen",

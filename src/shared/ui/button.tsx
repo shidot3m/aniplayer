@@ -9,14 +9,16 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const base =
-      "inline-flex items-center justify-center rounded-xl font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer";
+      "inline-flex items-center justify-center rounded-xl font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer";
 
     const variants = {
-      default: "bg-rose-600 text-white hover:bg-rose-700 shadow-xs",
-      secondary: "bg-white/10 text-white hover:bg-white/15 border border-white/15 backdrop-blur-md",
-      outline: "border border-white/10 bg-transparent hover:bg-white/5 text-slate-200",
-      ghost: "hover:bg-white/5 text-slate-300 hover:text-white",
-      destructive: "bg-red-600 text-white hover:red-700",
+      // ADR 0018: the primary action is off-white with dark text; crimson is reserved for fills,
+      // bars, outlines and the destructive action.
+      default: "bg-ink text-ground hover:bg-ink-2 shadow-xs",
+      secondary: "bg-ink/10 text-ink hover:bg-ink/15 border border-ink/15 backdrop-blur-md",
+      outline: "border border-line bg-transparent hover:bg-ink/5 text-ink",
+      ghost: "hover:bg-ink/5 text-ink-2 hover:text-ink",
+      destructive: "bg-accent text-ink hover:bg-accent-ink",
     };
 
     const sizes = {

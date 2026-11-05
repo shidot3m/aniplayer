@@ -34,7 +34,7 @@ export function SettingsMenu({
     <DropdownMenu>
       <DropdownMenuTrigger>
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink/5 text-ink-2 hover:bg-ink/15 hover:text-ink transition-colors cursor-pointer"
           title="Настройки плеера"
         >
           <Settings className="h-4 w-4" />
@@ -45,11 +45,11 @@ export function SettingsMenu({
         {/* Upscaler Toggle Only (No presets dropdown in player, preset chosen in App Settings) */}
         <div className="flex items-center justify-between py-1">
           <div>
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-rose-400">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-accent-ink">
               <Sparkles className="h-3.5 w-3.5" />
               Апскейлер 4K
             </span>
-            <span className="block text-[10px] text-slate-400 mt-0.5">{upscalerHint}</span>
+            <span className="block text-[10px] text-ink-2 mt-0.5">{upscalerHint}</span>
           </div>
           <Switch
             checked={active}
@@ -59,12 +59,12 @@ export function SettingsMenu({
           />
         </div>
 
-        <div className="h-[1px] bg-white/10" />
+        <div className="h-[1px] bg-ink/10" />
 
         {/* Playback Speed */}
         <div>
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-200 mb-1.5">
-            <Zap className="h-3.5 w-3.5 text-amber-400" />
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-ink mb-1.5">
+            <Zap className="h-3.5 w-3.5" />
             Скорость
           </span>
           <div className="flex gap-1">
@@ -74,9 +74,7 @@ export function SettingsMenu({
                 type="button"
                 onClick={() => setSpeed(s)}
                 className={`flex-1 rounded-md py-1 text-center text-[11px] font-medium transition-colors cursor-pointer ${
-                  speed === s
-                    ? "bg-rose-600 text-white"
-                    : "bg-white/5 text-slate-300 hover:bg-white/10"
+                  speed === s ? "bg-accent text-ink" : "bg-ink/5 text-ink-2 hover:bg-ink/10"
                 }`}
               >
                 {s}x
@@ -85,11 +83,11 @@ export function SettingsMenu({
           </div>
         </div>
 
-        <div className="h-[1px] bg-white/10" />
+        <div className="h-[1px] bg-ink/10" />
 
         {/* Quality */}
         <div>
-          <span className="block text-xs font-semibold text-slate-200 mb-1.5">Качество видео</span>
+          <span className="block text-xs font-semibold text-ink mb-1.5">Качество видео</span>
           <div className="flex gap-1">
             {(availableQualities || ["1080p", "720p", "480p"]).map((q) => (
               <button
@@ -98,8 +96,8 @@ export function SettingsMenu({
                 onClick={() => onSelectQuality(q)}
                 className={`flex-1 rounded-md py-1 text-center text-[11px] font-medium transition-colors cursor-pointer ${
                   currentQuality === q
-                    ? "bg-rose-600 text-white"
-                    : "bg-white/5 text-slate-300 hover:bg-white/10"
+                    ? "bg-accent text-ink"
+                    : "bg-ink/5 text-ink-2 hover:bg-ink/10"
                 }`}
               >
                 {q}
@@ -108,11 +106,11 @@ export function SettingsMenu({
           </div>
         </div>
 
-        <div className="h-[1px] bg-white/10" />
+        <div className="h-[1px] bg-ink/10" />
 
         {/* Toggles */}
         <div className="space-y-2 pt-1 text-[11px]">
-          <div className="flex items-center justify-between text-slate-300 hover:text-white">
+          <div className="flex items-center justify-between text-ink-2 hover:text-ink">
             <span>Пропуск OP / ED</span>
             <Switch
               checked={autoSkipOpEd}
@@ -121,7 +119,7 @@ export function SettingsMenu({
             />
           </div>
 
-          <div className="flex items-center justify-between text-slate-300 hover:text-white">
+          <div className="flex items-center justify-between text-ink-2 hover:text-ink">
             <span>Автопереход к след. серии</span>
             <Switch
               checked={autoplayNext}

@@ -18,21 +18,21 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
   const genres = useCatalogStore((state) => state.genres);
 
   return (
-    <section className="mb-12 pt-6 border-t border-white/5">
+    <section className="mb-12 pt-6 border-t border-ink/5">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-rose-500" />
+          <h3 className="text-base font-bold tracking-tight text-ink flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-accent-ink" />
             <span>Жанры</span>
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">Каталог категорий и тематических подборок</p>
+          <p className="text-xs text-ink-2 mt-0.5">Каталог категорий и тематических подборок</p>
         </div>
 
         {selectedGenre && (
           <button
             type="button"
             onClick={() => onSelectGenre(null)}
-            className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500"
+            className="rounded-lg bg-ink/5 px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-ink/10 hover:text-ink transition-colors cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
           >
             Сбросить фильтр ({selectedGenre.name})
           </button>
@@ -52,10 +52,10 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
               type="button"
               aria-label={`Жанр ${g.name}`}
               onClick={() => onSelectGenre(isSelected ? null : g)}
-              className={`group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 hover:-translate-y-1 hover:shadow-2xl ${
+              className={`group relative aspect-[2/3] w-full overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink hover:-translate-y-1 hover:shadow-2xl ${
                 isSelected
-                  ? "border-rose-500 bg-rose-500/20 ring-2 ring-rose-500/40"
-                  : "border-white/10 bg-white/[0.02] backdrop-blur-md hover:border-white/25 hover:shadow-rose-950/30"
+                  ? "border-accent bg-accent/20 ring-2 ring-accent-ink/40"
+                  : "border-line bg-ink/[0.02] backdrop-blur-md hover:border-ink/25 hover:shadow-scrim/30"
               }`}
             >
               {/* Genre Background Image with exact 2:3 vertical poster proportions */}
@@ -70,23 +70,23 @@ export function GenreSelector({ selectedGenre, onSelectGenre }: GenreSelectorPro
                   }}
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br/srgb from-black to-[#121318]" />
+                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br/srgb from-scrim to-surface-1" />
               )}
 
               {/* Dark subtle gradient overlay to keep text readable */}
-              <div className="absolute inset-0 bg-linear-to-t/srgb from-black/95 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t/srgb from-scrim/95 via-scrim/40 to-transparent" />
 
               {/* Genre info at bottom */}
               <div className="relative z-10 flex h-full flex-col justify-end">
                 <span
                   className={`block text-sm font-bold leading-tight truncate drop-shadow ${
-                    isSelected ? "text-rose-400" : "text-white group-hover:text-rose-300"
+                    isSelected ? "text-accent-ink" : "text-ink group-hover:text-accent-ink"
                   }`}
                 >
                   {g.name}
                 </span>
                 {g.total_releases != null && (
-                  <span className="block text-[11px] text-slate-300 mt-1 font-medium">
+                  <span className="block text-[11px] text-ink-2 mt-1 font-medium">
                     {g.total_releases} {getReleasesDeclension(g.total_releases)}
                   </span>
                 )}

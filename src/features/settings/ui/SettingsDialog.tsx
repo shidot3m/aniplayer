@@ -21,14 +21,14 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
       </DialogHeader>
 
       {/* Tabs Switcher */}
-      <div className="flex rounded-xl bg-white/[0.04] p-1 border border-white/10 mb-5">
+      <div className="flex rounded-xl bg-ink/[0.04] p-1 border border-line mb-5">
         <button
           type="button"
           onClick={() => setActiveTab("playback")}
           className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-medium transition-all cursor-pointer ${
             activeTab === "playback"
-              ? "bg-rose-600 text-white shadow-xs font-semibold"
-              : "text-slate-400 hover:text-white"
+              ? "bg-accent text-ink shadow-xs font-semibold"
+              : "text-ink-2 hover:text-ink"
           }`}
         >
           <Sliders className="h-3.5 w-3.5" />
@@ -40,8 +40,8 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           onClick={() => setActiveTab("hotkeys")}
           className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-medium transition-all cursor-pointer ${
             activeTab === "hotkeys"
-              ? "bg-rose-600 text-white shadow-xs font-semibold"
-              : "text-slate-400 hover:text-white"
+              ? "bg-accent text-ink shadow-xs font-semibold"
+              : "text-ink-2 hover:text-ink"
           }`}
         >
           <Keyboard className="h-3.5 w-3.5" />

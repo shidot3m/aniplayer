@@ -35,8 +35,8 @@ export function ContinueWatchingCard({
   };
 
   return (
-    <div className="group relative flex w-[310px] sm:w-[330px] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/10 bg-[#12131A] p-3 transition-all duration-300 hover:border-rose-500/40 hover:bg-[#161824] hover:shadow-xl hover:shadow-rose-950/20">
-      <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl bg-black/50 border border-white/10">
+    <div className="group relative flex w-[310px] sm:w-[330px] shrink-0 snap-start overflow-hidden rounded-2xl border border-line bg-surface-1 p-3 transition-all duration-300 hover:border-accent/40 hover:bg-surface-2 hover:shadow-xl hover:shadow-scrim/20">
+      <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl bg-scrim/50 border border-line">
         {formattedPoster ? (
           <img
             src={formattedPoster}
@@ -46,7 +46,7 @@ export function ContinueWatchingCard({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-slate-900 text-[10px] text-slate-500">
+          <div className="flex h-full w-full items-center justify-center bg-surface-1 text-[10px] text-ink-3">
             N/A
           </div>
         )}
@@ -54,10 +54,10 @@ export function ContinueWatchingCard({
           type="button"
           aria-label="Воспроизвести эпизод"
           onClick={handlePlay}
-          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
+          className="absolute inset-0 flex items-center justify-center bg-scrim/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-ink"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-600 text-white shadow-lg shadow-rose-600/40 transform transition-transform group-hover:scale-105">
-            <Play className="h-4 w-4 fill-white ml-0.5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-ink shadow-lg shadow-scrim/40 transform transition-transform group-hover:scale-105">
+            <Play className="h-4 w-4 fill-ink ml-0.5" />
           </div>
         </button>
       </div>
@@ -67,41 +67,31 @@ export function ContinueWatchingCard({
           <button
             type="button"
             onClick={() => release && onSelectRelease(release)}
-            className="text-left text-xs font-bold text-white truncate block w-full hover:text-rose-400 transition-colors cursor-pointer"
+            className="text-left text-xs font-bold text-ink truncate block w-full hover:text-accent-ink transition-colors cursor-pointer"
             title={title}
           >
             {title}
           </button>
           <div className="mt-1 flex items-center gap-2">
-            <span
-              className={`text-[11px] font-semibold ${
-                item.isNextEpisode ? "text-emerald-400" : "text-rose-400"
-              }`}
-            >
+            <span className="text-[11px] font-semibold text-accent-ink">
               Серия {item.episodeOrdinal}
             </span>
             {item.isNextEpisode ? (
-              <span className="text-[10px] text-emerald-500/80 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                Следующая
-              </span>
+              <span className="text-[10px] text-ink-2">Следующая</span>
             ) : (
-              <span className="text-[10px] text-slate-400">{item.progressPercent}%</span>
+              <span className="text-[10px] text-ink-2">{item.progressPercent}%</span>
             )}
           </div>
         </div>
 
         <div className="mt-2">
-          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
+          <div className="flex items-center justify-between text-[10px] text-ink-2 mb-1.5">
             <span>{item.isNextEpisode ? "Готово к просмотру" : formatTime(item.lastPosition)}</span>
             {!item.isNextEpisode && item.duration > 0 && <span>{formatTime(item.duration)}</span>}
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                item.isNextEpisode
-                  ? "bg-emerald-500"
-                  : "bg-linear-to-r/srgb from-rose-600 to-rose-400"
-              }`}
+              className="h-full rounded-full bg-accent transition-all duration-300"
               style={{
                 width: item.isNextEpisode ? "100%" : `${item.progressPercent}%`,
               }}
@@ -111,9 +101,9 @@ export function ContinueWatchingCard({
           <button
             type="button"
             onClick={handlePlay}
-            className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-ink-2 hover:text-ink transition-colors cursor-pointer"
           >
-            <Play className="h-3 w-3 fill-rose-500 text-rose-500" />
+            <Play className="h-3 w-3 fill-accent text-accent-ink" />
             <span>{item.isNextEpisode ? "Начать серию" : "Продолжить"}</span>
           </button>
         </div>

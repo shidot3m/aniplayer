@@ -28,11 +28,11 @@ export function PlaybackTab() {
   const { active, blocked, fault } = useEnhancement();
 
   return (
-    <div className="space-y-5 text-xs text-slate-300">
+    <div className="space-y-5 text-xs text-ink-2">
       {/* Preferred Quality Fixing */}
       <div>
-        <div className="flex items-center gap-1.5 font-medium text-slate-200 mb-2">
-          <Tv className="h-3.5 w-3.5 text-rose-500" />
+        <div className="flex items-center gap-1.5 font-medium text-ink mb-2">
+          <Tv className="h-3.5 w-3.5 text-accent-ink" />
           <span>Качество видео по умолчанию (Фиксирование качества)</span>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -43,12 +43,12 @@ export function PlaybackTab() {
               onClick={() => setPreferredQuality(opt.id)}
               className={`rounded-xl p-2.5 text-left border transition-all cursor-pointer ${
                 preferredQuality === opt.id
-                  ? "border-rose-500 bg-rose-500/15 text-white font-semibold"
-                  : "border-white/10 bg-white/[0.02] backdrop-blur-md text-slate-300 hover:text-white hover:bg-white/[0.06]"
+                  ? "border-accent bg-accent/15 text-ink font-semibold"
+                  : "border-line bg-ink/[0.02] backdrop-blur-md text-ink-2 hover:text-ink hover:bg-ink/[0.06]"
               }`}
             >
-              <div className="font-bold text-[11px] text-white">{opt.title}</div>
-              <div className="text-[10px] text-slate-400 mt-0.5">{opt.desc}</div>
+              <div className="font-bold text-[11px] text-ink">{opt.title}</div>
+              <div className="text-[10px] text-ink-2 mt-0.5">{opt.desc}</div>
             </button>
           ))}
         </div>
@@ -56,12 +56,12 @@ export function PlaybackTab() {
 
       {/* Volume */}
       <div>
-        <div className="flex items-center justify-between mb-2 font-medium text-slate-200">
+        <div className="flex items-center justify-between mb-2 font-medium text-ink">
           <span className="flex items-center gap-1.5">
-            <Volume2 className="h-3.5 w-3.5 text-rose-500" />
+            <Volume2 className="h-3.5 w-3.5 text-accent-ink" />
             Громкость по умолчанию
           </span>
-          <span className="text-rose-400 font-bold">{volume}%</span>
+          <span className="text-accent-ink font-bold">{volume}%</span>
         </div>
         <Slider
           value={volume}
@@ -76,8 +76,8 @@ export function PlaybackTab() {
       {/* Anime4K Upscaler */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="flex items-center gap-1.5 font-medium text-slate-200">
-            <Sparkles className="h-3.5 w-3.5 text-rose-500" />
+          <span className="flex items-center gap-1.5 font-medium text-ink">
+            <Sparkles className="h-3.5 w-3.5 text-accent-ink" />
             Апскейлер Anime4K
           </span>
           <Switch
@@ -87,7 +87,7 @@ export function PlaybackTab() {
             aria-label="Переключить апскейлер Anime4K"
           />
         </div>
-        <div className="text-[11px] text-slate-400 mb-2.5">
+        <div className="text-[11px] text-ink-2 mb-2.5">
           {blocked ??
             fault ??
             (active
@@ -103,21 +103,21 @@ export function PlaybackTab() {
               onClick={() => setAnime4kPreset(p.id)}
               className={`rounded-xl p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                 anime4kPreset === p.id
-                  ? "border-rose-500 bg-rose-500/15 text-white shadow-xs ring-1 ring-rose-500/30"
-                  : "border-white/10 bg-white/[0.02] backdrop-blur-md text-slate-300 hover:text-white hover:bg-white/[0.06]"
+                  ? "border-accent bg-accent/15 text-ink shadow-xs ring-1 ring-accent-ink/30"
+                  : "border-line bg-ink/[0.02] backdrop-blur-md text-ink-2 hover:text-ink hover:bg-ink/[0.06]"
               }`}
             >
-              <span className="font-bold text-[11px] text-white leading-tight mb-1">{p.label}</span>
-              <p className="text-[10px] text-slate-400 leading-snug">{p.description}</p>
+              <span className="font-bold text-[11px] text-ink leading-tight mb-1">{p.label}</span>
+              <p className="text-[10px] text-ink-2 leading-snug">{p.description}</p>
             </button>
           ))}
         </div>
       </div>
 
       {/* Automation Toggles */}
-      <div className="space-y-3 pt-3 border-t border-white/10">
+      <div className="space-y-3 pt-3 border-t border-line">
         <div className="flex items-center justify-between">
-          <span className="text-slate-300">Автопропуск опенингов и эндингов</span>
+          <span className="text-ink-2">Автопропуск опенингов и эндингов</span>
           <Switch
             checked={autoSkipOpEd}
             onCheckedChange={setAutoSkipOpEd}
@@ -126,7 +126,7 @@ export function PlaybackTab() {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-slate-300">Автопереход к следующему эпизоду</span>
+          <span className="text-ink-2">Автопереход к следующему эпизоду</span>
           <Switch
             checked={autoplayNext}
             onCheckedChange={setAutoplayNext}
