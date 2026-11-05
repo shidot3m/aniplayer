@@ -97,7 +97,19 @@ fn the_version_is_the_same_in_every_manifest() {
 /// The `version` of the `[package]` section, read without pulling a TOML parser into the
 /// test graph for two lines.
 fn cargo_manifest_version() -> String {
-    declared_version("Cargo.toml", "[package]")
+    let raw = std::fs::read_to_string("Cargo.toml").expect("Cargo.toml must be readable");
+    let mut inside_package = false;
+    for line in raw.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            inside_package = line == "[package]";
+        } else if inside_package && line.starts_with("version") {
+            if let Some((_, value)) = line.split_once('=') {
+                return value.trim().trim_matches('"').to_string();
+            }
+        }
+    }
+    panic!("`[package]` in Cargo.toml must declare a version");
 }
 
 fn package_json_version() -> String {
@@ -110,23 +122,4 @@ fn package_json_version() -> String {
         .and_then(|v| v.as_str())
         .expect("package.json must declare a version")
         .to_string()
-}
-
-fn declared_version(path: &str, section: &str) -> String {
-    let raw = std::fs::read_to_string(path)
-        .unwrap_or_else(|error| panic!("{path} must be readable: {error}"));
-    let mut inside = false;
-    for line in raw.lines() {
-        let line = line.trim();
-        if line.starts_with('[') {
-            inside = line == section;
-        } else if inside {
-            if let Some((key, value)) = line.split_once('=') {
-                if key.trim() == "version" {
-                    return value.trim().trim_matches('"').to_string();
-                }
-            }
-        }
-    }
-    panic!("`{section}` in {path} must declare a version");
 }

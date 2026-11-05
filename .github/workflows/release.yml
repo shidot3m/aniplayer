@@ -58,6 +58,7 @@ jobs:
         run: |
           # One build produces both artifacts: the bare executable the portable archive is
           # packed from, and the per-user NSIS installer the bundler writes next to it.
+          $version = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
           bunx tauri build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python scripts/package_portable.py
@@ -67,12 +68,11 @@ jobs:
           $zipped = $LASTEXITCODE
           Pop-Location
           if ($zipped) { exit $zipped }
-          $installer = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe |
-            Select-Object -First 1
-          if (-not $installer) {
-            throw "tauri build produced no NSIS installer"
+          $installer = "src-tauri/target/release/bundle/nsis/Aniplayer_${version}_x64-setup.exe"
+          if (-not (Test-Path $installer)) {
+            throw "tauri build did not produce $installer for the configured version $version"
           }
-          Copy-Item $installer.FullName $env:INSTALLER_ASSET
+          Copy-Item $installer $env:INSTALLER_ASSET
 
       - name: Checksum the artifact set
         shell: pwsh
@@ -162,3 +162,26 @@ jobs:
             gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" \
               --title "$title" --notes-file release-notes.md --latest=false
           fi
+
+          # The next step reads the bytes back from the release, not from this workspace.
+          echo "release_tag=$release_tag" >> "$GITHUB_ENV"
+
+      # A sums file that was never checked against the published bytes proves nothing: an
+      # upload that replaced one asset, or left an older one beside the set, would still
+      # verify locally. This is the same `sha256sum -c` a user can run after downloading.
+      - name: Verify the published assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/published"
+          rm -rf "$dir" && mkdir -p "$dir"
+          gh release download "$release_tag" --repo "$GITHUB_REPOSITORY" --dir "$dir"
+          count=$(find "$dir" -maxdepth 1 -type f | wc -l)
+          if [[ "$count" -ne 3 ]]; then
+            echo "::error::$release_tag carries $count assets; the set is exactly three files"
+            find "$dir" -maxdepth 1 -type f
+            exit 1
+          fi
+          (cd "$dir" && sha256sum -c "$SUMS_ASSET")

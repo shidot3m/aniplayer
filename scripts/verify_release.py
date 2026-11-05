@@ -38,6 +38,8 @@ def report(problems):
 
 
 def check_files_exist(problems):
+    """The artifacts actually on disk; every later check needs its own file present to say anything."""
+    present = set()
     for name in (PORTABLE_ASSET, INSTALLER_ASSET, SUMS_ASSET):
         path = os.path.join(ROOT_DIR, name)
         if not os.path.isfile(path):
@@ -45,13 +47,13 @@ def check_files_exist(problems):
                 f"{name} is missing; run the build and checksum steps first"
             )
             continue
+        present.add(name)
         print(f"[OK] {name} = {os.path.getsize(path):,} bytes")
+    return present
 
 
 def check_archive(problems):
     path = os.path.join(ROOT_DIR, PORTABLE_ASSET)
-    if not os.path.isfile(path):
-        return
     with zipfile.ZipFile(path) as archive:
         entries = [info.filename.replace("\\", "/") for info in archive.infolist()]
     if "aniplayer.exe" not in entries:
@@ -74,8 +76,6 @@ def check_archive(problems):
 
 def check_installer(problems):
     path = os.path.join(ROOT_DIR, INSTALLER_ASSET)
-    if not os.path.isfile(path):
-        return
     size = os.path.getsize(path)
     if size < MINIMUM_INSTALLER_BYTES:
         problems.append(
@@ -88,8 +88,6 @@ def check_installer(problems):
 
 def check_sums(problems):
     path = os.path.join(ROOT_DIR, SUMS_ASSET)
-    if not os.path.isfile(path):
-        return
     with open(path, encoding="ascii") as handle:
         lines = [line for line in handle.read().splitlines() if line.strip()]
 
@@ -130,10 +128,13 @@ def sha256(path):
 def verify_release():
     print("=== Verifying the Aniplayer release artifact set ===")
     problems = []
-    check_files_exist(problems)
-    check_archive(problems)
-    check_installer(problems)
-    check_sums(problems)
+    present = check_files_exist(problems)
+    if PORTABLE_ASSET in present:
+        check_archive(problems)
+    if INSTALLER_ASSET in present:
+        check_installer(problems)
+    if SUMS_ASSET in present:
+        check_sums(problems)
     return report(problems)
 
 

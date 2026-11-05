@@ -164,9 +164,23 @@ uninstall entry:     False
 входят в комплект установщика, как и записано в
 [ADR 0016](../../adr/0016-portable-archive-and-per-user-nsis-installer.md).
 
+## 9. Мутации guard-теста
+
+`src-tauri/tests/test_distribution_config.rs` зелёный на настоящем конфиге, поэтому каждая
+проверка отдельно подделана и откатана (после всех четырёх — снова `4 passed`):
+
+| Подделка в конфиге                        | Ответ теста                                                                                                                          |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `installMode: "perMachine"`               | `the installer may not offer a per-machine install: \`installMode\` must be \`currentUser\``                                         |
+| `fileAssociations: [{ ext: ["ani"] … }]`  | `the app owns no document type, so the installer must register no association: [FileAssociation { ext: [AssociationExt("ani")] … }]` |
+| `minimumWebview2Version: "109.0.1518.78"` | `installation must not depend on a WebView2 version; an older runtime degrades Anime4K, not the app`                                 |
+| `package.json` → `1.0.1`                  | `\`package.json\` and \`tauri.conf.json\` must carry the same version`                                                               |
+
 ## Что осталось непроверенным
 
 - Подпись кода: установщик не подписан, поэтому первая загрузка встретит предупреждение
-  SmartScreen. Сертификата у проекта нет — это принятые последствия ADR 0016, а не найденный дефект.
+  SmartScreen. Сертификата у проекта нет — это принятые последствия ADR 0016, вынесенные в
+  отдельный тикет [#66](https://github.com/shidot3m/aniplayer/issues/66).
 - Публикация тега `v1.0.0` в реальном релизе: конвейер проверен по этапам (сборка, упаковка,
-  дампы, верификация, ветка `latest` в YAML), сам тег будет поставлен при приземлении ветки.
+  дампы, верификация набора, чтение опубликованных байтов обратно), сам тег ставится при
+  приземлении ветки, и его результат дописывается сюда.

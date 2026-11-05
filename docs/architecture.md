@@ -172,11 +172,12 @@ All paths are relative to the executable's directory (`startup::app_dir`), which
 1. **Refuse a mismatched tag.** On a `v*` push the tag must equal `v` plus the version in `tauri.conf.json`; `src-tauri/tests/test_distribution_config.rs` already holds `package.json`, `Cargo.toml`, and `tauri.conf.json` to one version.
 2. **Build both channels once.** `bunx tauri build` emits the executable and, from the same compilation, the NSIS installer under `target/release/bundle/nsis/`.
 3. **Stage the portable folder.** `scripts/package_portable.py` rebuilds `dist_portable/` from scratch as `aniplayer.exe` plus an empty `data/`, and the workflow packs it into `Aniplayer-portable.zip`.
-4. **Name and digest.** The installer is copied to the published name `Aniplayer-setup.exe`, and `SHA256SUMS.txt` records the SHA-256 of both files in the `sha256sum` text format.
-5. **Verify the set.** `scripts/verify_release.py` requires all three files, `aniplayer.exe` and `data/` inside the archive, no `mpv/` or `shaders/`, an installer above the size floor a real NSIS build clears, and a sums file that names exactly those two artifacts with digests that match.
+4. **Name and digest.** The installer is taken by the exact filename the bundler writes for the configured version (`Aniplayer_<version>_x64-setup.exe`) and published as `Aniplayer-setup.exe`; `SHA256SUMS.txt` records the SHA-256 of both files in the `sha256sum` text format.
+5. **Verify the set.** `scripts/verify_release.py` requires all three files, `aniplayer.exe` and `data/` inside the archive, no `mpv/` or `shaders/`, no `downloads/`, an installer above the size floor a real NSIS build clears, and a sums file that names exactly those two artifacts with digests that match.
 6. **Publish.** A nightly or manual run refreshes the rolling `latest` release with all three files — deleting any asset outside the set — and moves the `latest` ref. A `v*` tag publishes its own release, marked not-latest, with the same three files, and leaves the tag where it was cut.
+7. **Read the set back.** The published assets are downloaded again and `sha256sum -c` is run on them, so the pipeline checks the bytes a user gets rather than only the files it still holds.
 
-The dev flow sits outside these stages: `bun run tauri dev` needs no fetching step, and its data folder is `src-tauri/target/debug/`, the executable's own directory like every other channel.
+The dev flow sits outside these stages: `bun run tauri dev` needs no fetching step, and its data lives in the dev executable's own directory (`src-tauri/target/debug/`) for exactly the reason the two channels do.
 
 ## Persistence
 

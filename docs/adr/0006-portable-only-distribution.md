@@ -2,7 +2,7 @@
 
 Date: 2026-11-02
 
-Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md); build command updated per [ADR 0011](0011-bun-as-the-js-toolchain.md); runtime paths amended by [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md); archive contents restored to this ADR's form by [ADR 0014](0014-webview-is-the-only-playback-backend.md); the portable-only rule in Decision is superseded by [ADR 0016](0016-portable-archive-and-per-user-nsis-installer.md)
+Status: accepted, amended by [ADR 0010](0010-mpv-subprocess-as-the-only-playback-backend.md); build command updated per [ADR 0011](0011-bun-as-the-js-toolchain.md); runtime paths amended by [ADR 0013](0013-hls-only-delivery-drops-bittorrent.md); archive contents restored to this ADR's form by [ADR 0014](0014-webview-is-the-only-playback-backend.md); the portable-only rule and the `bunx tauri build --no-bundle` command in Decision are superseded by [ADR 0016](0016-portable-archive-and-per-user-nsis-installer.md)
 
 ## Context
 
