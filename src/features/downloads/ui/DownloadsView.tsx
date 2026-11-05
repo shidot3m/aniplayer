@@ -118,7 +118,7 @@ function DownloadedReleaseCard({
             {poster ? (
               <img src={poster} alt={title} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-3">
+              <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-2">
                 N/A
               </div>
             )}

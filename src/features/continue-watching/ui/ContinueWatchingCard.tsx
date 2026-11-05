@@ -46,7 +46,7 @@ export function ContinueWatchingCard({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-surface-1 text-[10px] text-ink-3">
+          <div className="flex h-full w-full items-center justify-center bg-surface-1 text-[10px] text-ink-2">
             N/A
           </div>
         )}

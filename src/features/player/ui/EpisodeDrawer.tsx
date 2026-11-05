@@ -94,7 +94,7 @@ export function EpisodeDrawer({
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-3">
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-ink-2">
                       #{ep.ordinal}
                     </div>
                   )}

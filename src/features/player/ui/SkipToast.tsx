@@ -26,7 +26,7 @@ export function SkipToast({ type, countdownSeconds, onSkip }: SkipToastProps) {
 
   if (type === "next_episode") {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-accent/40 bg-scrim/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
+      <div className="flex items-center gap-3 rounded-2xl border border-accent/40 bg-scrim/85 px-4 py-2.5 shadow-2xl backdrop-blur-md">
         <span className="text-xs font-semibold text-ink">
           Следующий эпизод через{" "}
           <span className="text-accent-ink font-bold">{countdownSeconds ?? 0}</span> с
@@ -47,7 +47,7 @@ export function SkipToast({ type, countdownSeconds, onSkip }: SkipToastProps) {
   const label = type === "opening" ? "опенинг" : "эндинг";
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-ink/20 bg-scrim/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
+    <div className="flex items-center gap-3 rounded-2xl border border-ink/20 bg-scrim/85 px-4 py-2.5 shadow-2xl backdrop-blur-md">
       <Button
         variant="secondary"
         size="sm"

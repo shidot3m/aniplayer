@@ -75,7 +75,7 @@ export function ReleaseHero({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-ink-3">
+          <div className="flex h-full w-full items-center justify-center text-ink-2">
             Нет постера
           </div>
         )}

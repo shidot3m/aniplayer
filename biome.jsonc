@@ -13,10 +13,11 @@
       "!**/dist",
       "!**/target",
       "!**/src-tauri/target",
-      // The approved art-direction sheets (ADR 0018) are drawings of screens, not the interface
-      // code: their placeholder anchors, icon svgs and buttons are never shipped, and marking them
-      // up as production a11y would edit an artifact the user signed off on.
-      "!**/docs/design",
+      // The approved art-direction sheet of ADR 0018 is a drawing of screens, not interface code:
+      // its placeholder anchors, icon svgs and buttons are never shipped, and marking them up as
+      // production a11y would edit an artifact the user signed off on. Pinned to the one file, the
+      // way the caption exemption of ADR 0017 is pinned.
+      "!**/docs/design/night-cinema-mockup.html",
       "!**/.agents",
       "!**/.qoder",
       "!**/src-tauri/gen",

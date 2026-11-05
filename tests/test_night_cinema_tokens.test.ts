@@ -7,16 +7,20 @@ import { describe, expect, it } from "vitest";
  * wave of [ADR 0018](../docs/adr/0018-night-cinema-design-system.md): `src/index.css` is the single
  * source of the night cinema design decisions, and every screen reads them and nothing else.
  *
- * Seam: the stylesheet's `@theme` block read as text, the way `tests/test_bundle_split.test.ts`
- * reads build output. The values below are copied from the ticket and from the approved mockup
- * (`docs/design/night-cinema-mockup.html`), not from the file under test, so the assertion is
- * independent of the implementation it checks.
+ * Two seams, both read as text the way `tests/test_bundle_split.test.ts` reads build output:
  *
- * It catches a token value drifting away from the approved palette, the stock rose palette
- * (Tailwind's own `rose`/`slate` ramp) being reintroduced as a theme variable, glass or motion
- * values being written into a component instead of the theme. It misses whether the palette looks
- * right: the mockup, the screenshots in `docs/evidence/68/` and the `review-animations` pass are
- * the checks for that.
+ * 1. the `@theme` block, pinned to the values the ticket and the approved mockup
+ *    (`docs/design/night-cinema-mockup.html`) name — copied here, not read from the file under
+ *    test, so the assertion is independent of the implementation it checks;
+ * 2. the interface sources, which may not name a colour the theme does not define.
+ *
+ * It catches a token value drifting away from the approved palette, the stock ramps being
+ * reintroduced as theme variables or as classes, glass or motion values written into a component
+ * instead of the theme, and a colour literal painted into markup. It misses taste: whether the
+ * palette looks right is the mockup, the screenshots in `docs/evidence/68/` and the
+ * `review-animations` pass. It also misses a colour that reaches the screen through a variable of
+ * its own making (`border-ink/15` is token-based and hand-tuned), which is a composition question
+ * for the later waves of #67, not a token question.
  */
 const REPO_ROOT = resolve(import.meta.dirname, "..");
 const CSS_PATH = "src/index.css";
@@ -161,7 +165,7 @@ function sourceFiles(dir: string): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) found.push(...sourceFiles(full));
-    else if (/\.(ts|tsx)$/.test(entry)) found.push(full);
+    else if (/\.(ts|tsx|css|html)$/.test(entry)) found.push(full);
   }
   return found;
 }

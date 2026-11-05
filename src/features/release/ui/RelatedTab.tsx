@@ -31,7 +31,7 @@ export function RelatedTab({
       <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-line bg-surface-1/40 p-6 text-center text-ink-2">
         <Film className="mb-2 h-10 w-10 text-ink-3" />
         <h4 className="text-sm font-semibold text-ink-2">Нет связанных сезонов</h4>
-        <p className="mt-1 text-xs text-ink-3">
+        <p className="mt-1 text-xs text-ink-2">
           Для этого аниме нет других частей или фильмов в базе
         </p>
       </div>
