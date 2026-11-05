@@ -70,27 +70,27 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
       {/* Tooltip on Hover */}
       {hoverPosition !== null && duration > 0 && (
         <div
-          className="absolute -top-7 -translate-x-1/2 rounded bg-scrim/90 px-2 py-0.5 text-[11px] font-medium text-ink shadow-sm backdrop-blur-sm pointer-events-none whitespace-nowrap z-30 flex items-center gap-1.5"
+          className="glass pointer-events-none absolute -top-8 z-30 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-0.5 text-[11px] font-medium text-ink shadow-float"
           style={{ left: `${Math.min(95, Math.max(5, hoverPercent))}%` }}
         >
-          <span>{formatTime(hoverPosition)}</span>
+          <span className="tabular-nums">{formatTime(hoverPosition)}</span>
           {isHoverInOpening && (
-            <span className="text-ink-2 font-semibold text-[10px]">· Опенинг</span>
+            <span className="text-[10px] font-semibold text-ink-2">· Опенинг</span>
           )}
           {isHoverInEnding && (
-            <span className="text-ink-2 font-semibold text-[10px]">· Эндинг</span>
+            <span className="text-[10px] font-semibold text-ink-2">· Эндинг</span>
           )}
         </div>
       )}
 
       {/* Track Base */}
-      <div className="relative h-1.5 w-full rounded-full bg-ink/20 transition-all group-hover:h-2 pointer-events-none overflow-hidden">
+      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-ink/20 pointer-events-none">
         {/* Opening Marker Segment */}
         {opStartPercent != null && opWidthPercent > 0 && (
           <div
             data-testid="seekbar-opening-marker"
             title="Опенинг"
-            className="absolute top-0 h-full bg-ink/60 shadow-xs pointer-events-none"
+            className="pointer-events-none absolute top-0 h-full bg-ink/40"
             style={{ left: `${opStartPercent}%`, width: `${opWidthPercent}%` }}
           />
         )}
@@ -100,7 +100,7 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
           <div
             data-testid="seekbar-ending-marker"
             title="Эндинг"
-            className="absolute top-0 h-full bg-ink/60 shadow-xs pointer-events-none"
+            className="pointer-events-none absolute top-0 h-full bg-ink/40"
             style={{ left: `${edStartPercent}%`, width: `${edWidthPercent}%` }}
           />
         )}
@@ -108,20 +108,20 @@ export function SeekBar({ currentTime, duration, opening, ending, onSeek }: Seek
         {/* Hover Highlight */}
         {hoverPosition !== null && (
           <div
-            className="absolute left-0 top-0 h-full rounded-full bg-ink/10"
+            className="pointer-events-none absolute left-0 top-0 h-full rounded-full bg-ink/10"
             style={{ width: `${hoverPercent}%` }}
           />
         )}
 
         {/* Played Progress */}
         <div
-          className="absolute left-0 top-0 h-full rounded-full bg-accent shadow-xs transition-all"
+          className="pointer-events-none absolute left-0 top-0 h-full rounded-full bg-accent"
           style={{ width: `${progressPercent}%` }}
         />
 
         {/* Thumb */}
         <div
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-ink shadow-lg transition-transform scale-0 group-hover:scale-100 group-focus-within:scale-100"
+          className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink shadow-float transition-transform group-hover:scale-100 group-focus-within:scale-100 scale-0"
           style={{ left: `${progressPercent}%` }}
         />
       </div>

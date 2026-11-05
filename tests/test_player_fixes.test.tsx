@@ -140,7 +140,7 @@ describe("User Bug Fixes Verification", () => {
   });
 
   it("settings menu in player only has upscale on/off toggle and no preset list", () => {
-    render(<SettingsMenu currentQuality="1080p" onSelectQuality={() => {}} />);
+    render(<SettingsMenu />);
 
     // Open the dropdown menu
     fireEvent.click(screen.getByTitle("Настройки плеера"));
