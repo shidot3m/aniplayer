@@ -1,20 +1,14 @@
-import { Check, FastForward, Play } from "lucide-react";
+import { FastForward, Play } from "lucide-react";
 import { useEffect } from "react";
-import { formatTime } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/button";
 
 interface SkipToastProps {
   type: "opening" | "ending" | "next_episode";
-  /** Where the skip lands, shown as the trailing timecode. */
-  targetSeconds?: number | null;
   countdownSeconds?: number;
   onSkip: () => void;
 }
 
-/**
- * A floating player prompt (#72, ADR 0018): glass is the only ornament over the frame, and it
- * appears instantly — these show dozens of times a session, so there is no entrance animation.
- */
-export function SkipToast({ type, targetSeconds, countdownSeconds, onSkip }: SkipToastProps) {
+export function SkipToast({ type, countdownSeconds, onSkip }: SkipToastProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (
@@ -32,40 +26,37 @@ export function SkipToast({ type, targetSeconds, countdownSeconds, onSkip }: Ski
 
   if (type === "next_episode") {
     return (
-      <button
-        type="button"
-        onClick={onSkip}
-        className="glass flex cursor-pointer items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-ink shadow-float focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
-      >
-        <span className="text-ink-2">
+      <div className="flex items-center gap-3 rounded-2xl border border-rose-500/40 bg-black/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <span className="text-xs font-semibold text-slate-200">
           Следующий эпизод через{" "}
-          <span className="tabular-nums text-accent-ink">{countdownSeconds ?? 0}</span> с
+          <span className="text-rose-400 font-bold">{countdownSeconds ?? 0}</span> с
         </span>
-        <span className="flex items-center gap-1.5 font-medium">
-          <Play className="h-4 w-4 fill-current" />
-          <span>Сейчас (S)</span>
-        </span>
-      </button>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={onSkip}
+          className="h-8 gap-1.5 px-3 text-xs bg-rose-600 hover:bg-rose-700 font-bold"
+        >
+          <Play className="h-3.5 w-3.5 fill-current" />
+          <span>Включить сейчас (S)</span>
+        </Button>
+      </div>
     );
   }
 
   const label = type === "opening" ? "опенинг" : "эндинг";
 
   return (
-    <button
-      type="button"
-      onClick={onSkip}
-      className="glass flex cursor-pointer items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-medium text-ink shadow-float focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
-    >
-      {type === "opening" ? (
-        <FastForward className="h-4 w-4 text-accent-ink" />
-      ) : (
-        <Check className="h-4 w-4 text-accent-ink" />
-      )}
-      <span>Пропустить {label} (S)</span>
-      {targetSeconds != null && (
-        <span className="tabular-nums text-ink-2">→ {formatTime(targetSeconds)}</span>
-      )}
-    </button>
+    <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-black/85 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={onSkip}
+        className="h-8 gap-2 px-3 text-xs bg-white/15 hover:bg-white/25 text-white font-bold cursor-pointer"
+      >
+        <FastForward className="h-4 w-4 text-rose-400" />
+        <span>Пропустить {label} (S)</span>
+      </Button>
+    </div>
   );
 }

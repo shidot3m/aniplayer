@@ -57,14 +57,10 @@ export function DropdownMenu({ children }: { children: React.ReactNode }) {
 export function DropdownMenuTrigger({
   children,
   className,
-  ariaLabel,
-  title,
 }: {
   children: React.ReactNode;
   asChild?: boolean;
   className?: string;
-  ariaLabel?: string;
-  title?: string;
 }) {
   const context = React.useContext(DropdownContext);
   if (!context) throw new Error("DropdownMenuTrigger must be used within DropdownMenu");
@@ -72,14 +68,12 @@ export function DropdownMenuTrigger({
   return (
     <button
       type="button"
-      aria-label={ariaLabel}
-      title={title}
       onClick={(e) => {
         e.stopPropagation();
         context.setIsOpen((prev) => !prev);
       }}
       className={cn(
-        "inline-block cursor-pointer bg-transparent border-0 p-0 text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink rounded-lg",
+        "inline-block cursor-pointer bg-transparent border-0 p-0 text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 rounded-lg",
         className,
       )}
     >
@@ -159,7 +153,7 @@ export function DropdownMenuContent({
         zIndex: 99999,
       }}
       className={cn(
-        "min-w-[12rem] rounded-xl border border-line bg-surface-2 p-1.5 text-ink shadow-float",
+        "min-w-[12rem] rounded-xl border border-white/15 bg-[#090A0F]/95 p-1.5 shadow-2xl backdrop-blur-2xl transition-all text-slate-200",
         className,
       )}
     >
@@ -194,7 +188,7 @@ export function DropdownMenuItem({
       role="menuitem"
       onClick={handleSelect}
       className={cn(
-        "flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-left text-ink hover:bg-ink/10 transition-colors bg-transparent border-0 focus:outline-hidden focus-visible:bg-ink/10",
+        "flex w-full cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-left text-slate-200 hover:bg-white/10 hover:text-white transition-colors bg-transparent border-0 focus:outline-hidden focus-visible:bg-white/10",
         className,
       )}
     >

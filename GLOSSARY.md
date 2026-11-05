@@ -110,10 +110,6 @@ _Avoid_: dark theme, new design, redesign style, mode
 The single accent of the interface — a deep red used for fills, bars and outlines (played progress, hover outline, current states). Small accent text on dark uses a lightened shade to keep contrast. There are no badges, chips or tinted labels; the only ornament allowed on the player is glass — translucent blurred floating overlays (skip prompt, quality and speed pickers).
 _Avoid_: brand color, orange, highlight color, badge
 
-**Design token**:
-One named visual decision held in `src/index.css` and read by every screen: the colour roles (ground, surface-1, surface-2, ink, ink-2, ink-3, line, accent, accent-ink, glass, glass-line, scrim), the glass blur, and the motion curve and durations. Interface code names a role and never restates a colour or a duration; the theme switches Tailwind's own ramps off, so a name outside the roles compiles to nothing.
-_Avoid_: theme variable, palette entry, hardcoded color, magic number
-
 **Timecode**:
 The signature typographic treatment of the interface: every duration, playback position and Episode Ordinal is set in one consistent tabular-numeral style, borrowed from the player's own readouts. In the player the running position takes the accent color.
 _Avoid_: mono labels, code font, counters

@@ -70,7 +70,7 @@ describe("ReleaseDetails resume position", () => {
     usePlayerStore.setState({ playEpisode });
 
     renderDetails();
-    fireEvent.click(screen.getByRole("button", { name: "Смотреть с 01:16" }));
+    fireEvent.click(screen.getByRole("button", { name: "Продолжить с 2 эпизода" }));
 
     expect(playEpisode).toHaveBeenCalledWith(mockRelease, episode2, 76);
   });

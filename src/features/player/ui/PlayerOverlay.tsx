@@ -93,7 +93,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
   );
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-scrim select-none font-sans">
+    <div className="relative h-screen w-screen overflow-hidden bg-black select-none font-sans">
       <PlayerVideoViewport
         playbackError={playerStore.playbackError}
         enhancementActive={isEnhancementActive}
@@ -105,9 +105,7 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
       <PlayerTopBar
         isVisible={isVisible}
         release={release}
-        episode={episode}
-        currentTime={playerStore.currentTime}
-        duration={playerStore.duration}
+        enhancementActive={isEnhancementActive}
         onBack={handleBack}
       />
 

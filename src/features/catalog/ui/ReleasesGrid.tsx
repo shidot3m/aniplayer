@@ -1,6 +1,5 @@
-import { Loader2 } from "lucide-react";
+import { Film, Loader2 } from "lucide-react";
 import type { Release } from "@/shared/types";
-import { SectionHead } from "@/shared/ui/section-head";
 import { useCatalogStore } from "../state/catalogStore";
 import { AnimeCard } from "./AnimeCard";
 
@@ -8,36 +7,38 @@ interface ReleasesGridProps {
   onSelectRelease: (release: Release) => void;
 }
 
-/** The search result surface: a quiet grid of poster cards, titled by how many matched. */
 export function ReleasesGrid({ onSelectRelease }: ReleasesGridProps) {
-  const { searchResults, isSearching, searchQuery } = useCatalogStore();
-
-  const title = searchQuery.trim() ? `Результаты поиска` : "Новые релизы";
+  const { latestReleases, searchResults, isSearching, searchQuery } = useCatalogStore();
+  const displayedReleases = searchQuery.trim() ? searchResults : latestReleases;
 
   return (
-    <div className="px-12 py-8">
+    <>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
+          <Film className="h-4 w-4 text-rose-500" />
+          {searchQuery ? `Результаты поиска (${searchResults.length})` : "Свежие релизы"}
+        </h2>
+      </div>
+
       {isSearching ? (
         <div className="flex h-64 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-accent-ink" />
+          <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
         </div>
-      ) : searchResults.length > 0 ? (
-        <>
-          <SectionHead title={title} trailing={searchResults.length} className="mb-5 px-0" />
-          <div className="grid grid-cols-3 gap-x-5 gap-y-8 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {searchResults.map((release: Release) => (
-              <AnimeCard
-                key={release.id}
-                release={release}
-                onClick={() => onSelectRelease(release)}
-              />
-            ))}
-          </div>
-        </>
+      ) : displayedReleases.length > 0 ? (
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 mb-12">
+          {displayedReleases.map((release) => (
+            <AnimeCard
+              key={release.id}
+              release={release}
+              onClick={() => onSelectRelease(release)}
+            />
+          ))}
+        </div>
       ) : (
-        <div className="flex h-48 items-center justify-center text-sm text-ink-2">
-          <p>Ничего не найдено</p>
+        <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-md text-center mb-12">
+          <p className="text-sm text-slate-400">Релизы не найдены</p>
         </div>
       )}
-    </div>
+    </>
   );
 }

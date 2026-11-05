@@ -1,5 +1,6 @@
+import { CheckCircle2, Download } from "lucide-react";
 import type { EpisodeItem, HistoryItem } from "@/shared/types";
-import { SectionHead } from "@/shared/ui/section-head";
+import { Button } from "@/shared/ui/button";
 import { EpisodeCard } from "./EpisodeCard";
 
 interface EpisodesTabContentProps {
@@ -7,7 +8,6 @@ interface EpisodesTabContentProps {
   releaseId: number;
   fallbackPoster?: string;
   history: HistoryItem[];
-  currentEpisodeId?: string | null;
   downloadingEpIds: Record<string, boolean>;
   isDownloadingAll: boolean;
   onPlay: (ep: EpisodeItem) => void;
@@ -21,7 +21,6 @@ export function EpisodesTabContent({
   releaseId,
   fallbackPoster,
   history,
-  currentEpisodeId,
   downloadingEpIds,
   isDownloadingAll,
   onPlay,
@@ -31,32 +30,50 @@ export function EpisodesTabContent({
 }: EpisodesTabContentProps) {
   if (!episodes || episodes.length === 0) {
     return (
-      <p className="px-12 py-10 text-sm text-ink-2">Список эпизодов пуст или ещё загружается</p>
+      <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#12131A]/50 text-xs text-slate-400">
+        Список эпизодов пуст или еще загружается
+      </div>
     );
   }
 
-  const sorted = [...episodes].sort((a, b) => a.ordinal - b.ordinal);
+  const watchedCount = episodes.filter((episode) =>
+    history.some(
+      (item) =>
+        item.release_id === releaseId && item.episode_id === episode.id && item.is_completed,
+    ),
+  ).length;
 
   return (
-    <div className="px-12">
-      <SectionHead
-        title="Эпизоды"
-        trailing={episodes.length}
-        className="px-0"
-        action={
-          <button
-            type="button"
-            disabled={isDownloadingAll}
-            onClick={onDownloadAll}
-            className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-medium text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-50"
-          >
-            {isDownloadingAll ? "Загрузка…" : "Скачать все"}
-          </button>
-        }
-      />
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
+          <span>Всего эпизодов: {episodes.length}</span>
+          {watchedCount > 0 && (
+            <>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>
+                  Просмотрено: {watchedCount} из {episodes.length}
+                </span>
+              </span>
+            </>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isDownloadingAll}
+          onClick={onDownloadAll}
+          className="gap-2 text-xs text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 cursor-pointer"
+        >
+          <Download className="h-3.5 w-3.5" />
+          <span>{isDownloadingAll ? "Загрузка..." : "Скачать все"}</span>
+        </Button>
+      </div>
 
-      <div className="mt-2">
-        {sorted.map((episode) => {
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {episodes.map((episode) => {
           const episodeHistory = history.find(
             (item) => item.release_id === releaseId && item.episode_id === episode.id,
           );
@@ -66,7 +83,6 @@ export function EpisodesTabContent({
               ep={episode}
               fallbackPoster={fallbackPoster}
               isWatched={!!episodeHistory?.is_completed}
-              isCurrent={episode.id === currentEpisodeId}
               isDownloading={!!downloadingEpIds[episode.id]}
               onPlay={() => onPlay(episode)}
               onToggleWatched={() =>

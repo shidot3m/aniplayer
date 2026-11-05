@@ -1,8 +1,11 @@
-import { ChevronLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import { usePlayerStore } from "@/features/player";
-import { findBookmarkCategory, formatPosterUrl } from "@/shared/lib/releaseUtils";
+import { findBookmarkCategory, formatPosterUrl, isReleaseWatched } from "@/shared/lib/releaseUtils";
 import type { EpisodeItem, Release } from "@/shared/types";
+import { Button } from "@/shared/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { useFranchises } from "../hooks/useFranchises";
 import { useReleaseDownloader } from "../hooks/useReleaseDownloader";
 import { useStartEpisode } from "../hooks/useStartEpisode";
@@ -18,13 +21,14 @@ interface ReleaseDetailsProps {
 export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
   const {
     bookmarks,
-    history,
     setBookmark,
     removeBookmark,
+    history,
     setEpisodeWatched,
     selectReleaseWithDetails,
   } = useCatalogStore();
   const { playEpisode } = usePlayerStore();
+  const [activeTab, setActiveTab] = useState<string>("episodes");
   const { downloadingEpIds, isDownloadingAll, handleDownload, handleDownloadAll } =
     useReleaseDownloader(release);
   const { franchises, isLoading: isLoadingFranchises } = useFranchises(release.id);
@@ -42,22 +46,29 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
     release.poster?.preview || release.poster?.src || release.poster?.thumbnail,
   );
   const currentCategory = findBookmarkCategory(bookmarks, release.id);
+  const isWatched = isReleaseWatched(release, history, currentCategory);
+  const totalRelatedCount = franchises.reduce(
+    (acc, franchise) => acc + (franchise.franchise_releases?.length || 0),
+    0,
+  );
 
   return (
-    <div className="text-ink">
-      <div className="px-12 pt-6 pb-1">
-        <button
-          type="button"
+    <div className="mx-auto max-w-7xl px-6 py-6 text-slate-100">
+      <div className="mb-6 flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onBack}
-          className="flex cursor-pointer items-center gap-1 rounded-md text-sm font-medium text-ink-2 transition-colors hover:text-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
+          className="gap-2 text-slate-400 hover:text-white"
         >
-          <ChevronLeft className="h-4 w-4" />
-          <span>Назад</span>
-        </button>
+          <ArrowLeft className="h-4 w-4" />
+          <span>Назад в каталог</span>
+        </Button>
       </div>
 
       <ReleaseHero
         release={release}
+        isWatched={isWatched}
         currentCategory={currentCategory}
         startEpisode={startEpisode}
         playButtonText={playButtonText}
@@ -66,30 +77,42 @@ export function ReleaseDetails({ release, onBack }: ReleaseDetailsProps) {
         onRemoveBookmark={() => removeBookmark(release.id)}
       />
 
-      <div className="py-8">
-        <EpisodesTabContent
-          episodes={release.episodes}
-          releaseId={release.id}
-          fallbackPoster={fallbackPoster}
-          history={history}
-          currentEpisodeId={startEpisode?.id ?? null}
-          downloadingEpIds={downloadingEpIds}
-          isDownloadingAll={isDownloadingAll}
-          onPlay={handlePlay}
-          onToggleWatched={(episodeId, ordinal, completed) =>
-            setEpisodeWatched(release.id, episodeId, ordinal, completed)
-          }
-          onDownload={handleDownload}
-          onDownloadAll={handleDownloadAll}
-        />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="episodes" className="px-5">
+            Эпизоды ({release.episodes?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="related" className="px-5">
+            Связанное {totalRelatedCount > 0 ? `(${totalRelatedCount})` : ""}
+          </TabsTrigger>
+        </TabsList>
 
-        <RelatedTab
-          isLoading={isLoadingFranchises}
-          franchises={franchises}
-          currentReleaseId={release.id}
-          onSelectRelease={selectReleaseWithDetails}
-        />
-      </div>
+        <TabsContent value="episodes">
+          <EpisodesTabContent
+            episodes={release.episodes}
+            releaseId={release.id}
+            fallbackPoster={fallbackPoster}
+            history={history}
+            downloadingEpIds={downloadingEpIds}
+            isDownloadingAll={isDownloadingAll}
+            onPlay={handlePlay}
+            onToggleWatched={(episodeId, ordinal, completed) =>
+              setEpisodeWatched(release.id, episodeId, ordinal, completed)
+            }
+            onDownload={handleDownload}
+            onDownloadAll={handleDownloadAll}
+          />
+        </TabsContent>
+
+        <TabsContent value="related">
+          <RelatedTab
+            isLoading={isLoadingFranchises}
+            franchises={franchises}
+            currentReleaseId={release.id}
+            onSelectRelease={selectReleaseWithDetails}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

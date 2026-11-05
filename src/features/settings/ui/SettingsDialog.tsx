@@ -1,3 +1,4 @@
+import { Keyboard, Sliders } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { HotkeysTab } from "./HotkeysTab";
@@ -14,28 +15,38 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
   return (
     <Dialog isOpen={isOpen} onClose={onClose} className="max-w-xl">
       <DialogHeader>
-        <DialogTitle>Настройки</DialogTitle>
+        <DialogTitle className="flex items-center gap-2">
+          <span>Настройки</span>
+        </DialogTitle>
       </DialogHeader>
 
       {/* Tabs Switcher */}
-      <div className="mb-5 flex gap-6 border-b border-line">
-        {(["playback", "hotkeys"] as const).map((tab) => {
-          const selected = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={
-                selected
-                  ? "-mb-px cursor-pointer border-b-2 border-accent pb-2.5 text-sm font-medium text-ink"
-                  : "-mb-px cursor-pointer border-b-2 border-transparent pb-2.5 text-sm text-ink-2 transition-colors hover:text-ink"
-              }
-            >
-              {tab === "playback" ? "Воспроизведение" : "Горячие клавиши"}
-            </button>
-          );
-        })}
+      <div className="flex rounded-xl bg-white/[0.04] p-1 border border-white/10 mb-5">
+        <button
+          type="button"
+          onClick={() => setActiveTab("playback")}
+          className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-medium transition-all cursor-pointer ${
+            activeTab === "playback"
+              ? "bg-rose-600 text-white shadow-xs font-semibold"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <Sliders className="h-3.5 w-3.5" />
+          <span>Воспроизведение</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("hotkeys")}
+          className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-medium transition-all cursor-pointer ${
+            activeTab === "hotkeys"
+              ? "bg-rose-600 text-white shadow-xs font-semibold"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <Keyboard className="h-3.5 w-3.5" />
+          <span>Горячие клавиши</span>
+        </button>
       </div>
 
       {activeTab === "playback" ? <PlaybackTab /> : <HotkeysTab isOpen={isOpen} />}

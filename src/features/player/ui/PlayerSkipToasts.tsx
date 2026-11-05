@@ -26,10 +26,10 @@ export function PlayerSkipToasts({
   return (
     <div className="absolute bottom-28 right-8 z-40 flex flex-col gap-2 pointer-events-auto">
       {!autoSkipOpEd && isInsideOpening && openingStop != null && (
-        <SkipToast type="opening" targetSeconds={openingStop} onSkip={() => onSeek(openingStop)} />
+        <SkipToast type="opening" onSkip={() => onSeek(openingStop)} />
       )}
       {!autoSkipOpEd && isInsideEnding && endingStop != null && (
-        <SkipToast type="ending" targetSeconds={endingStop} onSkip={() => onSeek(endingStop)} />
+        <SkipToast type="ending" onSkip={() => onSeek(endingStop)} />
       )}
       {isAutoplayCountdown && (
         <SkipToast type="next_episode" countdownSeconds={Math.ceil(timeLeft)} onSkip={onNext} />

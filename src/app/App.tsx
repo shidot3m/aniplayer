@@ -1,12 +1,10 @@
 import { Suspense, useEffect, useState } from "react";
 import { BookmarksView } from "@/features/bookmarks";
 import {
-  CatalogHero,
   GenreSelector,
   GenreView,
   ReleaseSchedule,
   ReleasesGrid,
-  ReleasesRail,
   useCatalogStore,
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
@@ -14,7 +12,6 @@ import { DownloadFloatingWidget, DownloadsView, useDownloadStore } from "@/featu
 import { LazyPlayerOverlay, usePlayerStore } from "@/features/player";
 import { ReleaseDetails } from "@/features/release";
 import { SettingsDialog } from "@/features/settings";
-import { useViewTransition } from "@/shared/lib/useViewTransition";
 import type { Release } from "@/shared/types";
 import { Header } from "./Header";
 
@@ -41,7 +38,6 @@ export default function App() {
     "home" | "bookmarks" | "genre" | "downloads"
   >("home");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const startViewTransition = useViewTransition();
 
   useEffect(() => {
     loadInitialData();
@@ -58,27 +54,19 @@ export default function App() {
   }, [loadInitialData, initSettings, listenToProgress, fetchDownloadedEpisodes]);
 
   const handleSelectRelease = (release: Release) => {
-    const fromScreen = activeScreen !== "details" ? activeScreen : null;
-    startViewTransition(() => {
-      if (fromScreen) setPreviousScreen(fromScreen);
-      void selectReleaseWithDetails(release);
-    });
+    if (activeScreen !== "details") {
+      setPreviousScreen(activeScreen);
+    }
+    selectReleaseWithDetails(release);
   };
-
-  const handleBackToCatalog = () => {
-    startViewTransition(() => setActiveScreen(previousScreen));
-  };
-
-  const featured = latestReleases[0] ?? null;
-  const isSearching = searchQuery.trim().length > 0;
 
   if (isPlayerOpen && currentRelease && currentEpisode) {
     return (
       <Suspense
         fallback={
-          <div className="flex h-screen w-full flex-col bg-ground text-ink font-sans selection:bg-accent selection:text-ink overflow-hidden">
+          <div className="flex h-screen w-full flex-col bg-[#090A0F] text-slate-100 font-sans selection:bg-rose-600 selection:text-white overflow-hidden">
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
-            <div className="flex flex-1 items-center justify-center text-ink-2">
+            <div className="flex flex-1 items-center justify-center text-slate-400">
               Загрузка плеера…
             </div>
           </div>
@@ -106,41 +94,30 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-ground text-ink font-sans selection:bg-accent selection:text-ink overflow-hidden">
+    <div className="flex h-screen w-full flex-col bg-[#090A0F] text-slate-100 font-sans selection:bg-rose-600 selection:text-white overflow-hidden">
       {/* Header */}
       <Header onOpenSettings={() => setIsSettingsOpen(true)} />
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden">
-        {activeScreen === "home" &&
-          (isSearching ? (
+        {activeScreen === "home" && (
+          <div className="mx-auto max-w-7xl px-6 py-6">
+            {/* Continue Watching Section */}
+            {!searchQuery && <ContinueWatching onSelectRelease={handleSelectRelease} />}
+
             <ReleasesGrid onSelectRelease={handleSelectRelease} />
-          ) : (
-            <>
-              {featured && (
-                <CatalogHero release={featured} onOpen={() => handleSelectRelease(featured)} />
-              )}
-              <div className="py-8">
-                <ContinueWatching />
-                <ReleasesRail
-                  title="Новые релизы"
-                  releases={latestReleases}
-                  onSelectRelease={handleSelectRelease}
-                />
-                {latestReleases.length > 0 && (
-                  <div className="px-12 pt-8">
-                    <ReleaseSchedule
-                      releases={latestReleases}
-                      onSelectRelease={handleSelectRelease}
-                    />
-                  </div>
-                )}
-                <div className="px-12 pb-16 pt-8">
-                  <GenreSelector selectedGenre={selectedGenre} onSelectGenre={selectGenre} />
-                </div>
-              </div>
-            </>
-          ))}
+
+            {/* Release Schedule Section (Section 5.3 of spec) */}
+            {!searchQuery && latestReleases.length > 0 && (
+              <ReleaseSchedule releases={latestReleases} onSelectRelease={handleSelectRelease} />
+            )}
+
+            {/* Genres Section at the End */}
+            {!searchQuery && (
+              <GenreSelector selectedGenre={selectedGenre} onSelectGenre={selectGenre} />
+            )}
+          </div>
+        )}
 
         {activeScreen === "genre" && selectedGenre && (
           <GenreView
@@ -158,7 +135,10 @@ export default function App() {
         {activeScreen === "downloads" && <DownloadsView />}
 
         {activeScreen === "details" && selectedRelease && (
-          <ReleaseDetails release={selectedRelease} onBack={handleBackToCatalog} />
+          <ReleaseDetails
+            release={selectedRelease}
+            onBack={() => setActiveScreen(previousScreen)}
+          />
         )}
       </main>
 

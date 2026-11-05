@@ -26,11 +26,6 @@ export interface PlayerBottomBarProps {
   onSelectQuality: (q: "1080p" | "720p" | "480p") => void;
 }
 
-const hidden =
-  "pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-linear-to-t from-scrim/90 to-transparent px-9 pb-7 pt-12 opacity-0";
-const shown =
-  "pointer-events-auto absolute inset-x-0 bottom-0 z-30 bg-linear-to-t from-scrim/90 to-transparent px-9 pb-7 pt-12";
-
 export function PlayerBottomBar({
   isVisible,
   episode,
@@ -54,23 +49,40 @@ export function PlayerBottomBar({
   onSelectQuality,
 }: PlayerBottomBarProps) {
   return (
-    <div className={isVisible ? shown : hidden}>
-      <div data-testid="player-timecodes-above-timeline" className="mb-2 flex items-center gap-5">
-        <span className="w-14 shrink-0 text-sm tabular-nums text-accent-ink">
-          {formatTime(currentTime)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <SeekBar
-            currentTime={currentTime}
-            duration={duration}
-            opening={episode.opening}
-            ending={episode.ending}
-            onSeek={onSeek}
-          />
+    <div
+      className={`absolute bottom-0 left-0 right-0 z-30 bg-linear-to-t/srgb from-black/90 via-black/60 to-transparent px-6 pb-6 pt-12 transition-opacity duration-300 ${
+        isVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-200">
+        <div
+          data-testid="player-episode-badge-above-timeline"
+          className="flex items-center gap-2 rounded-lg bg-black/40 px-2.5 py-1 text-xs text-rose-400 backdrop-blur-sm"
+        >
+          <span>Эпизод {episode.ordinal}</span>
+          {episode.name && (
+            <span className="text-slate-400 font-normal truncate max-w-xs">— {episode.name}</span>
+          )}
         </div>
-        <span className="w-14 shrink-0 text-right text-sm tabular-nums text-ink-2">
-          {formatTime(duration)}
-        </span>
+
+        <div
+          data-testid="player-timecodes-above-timeline"
+          className="rounded-lg bg-black/40 px-2.5 py-1 text-xs text-slate-300 backdrop-blur-sm"
+        >
+          <span>{formatTime(currentTime)}</span>
+          <span className="text-slate-500 mx-1">/</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      <div className="mb-3">
+        <SeekBar
+          currentTime={currentTime}
+          duration={duration}
+          opening={episode.opening}
+          ending={episode.ending}
+          onSeek={onSeek}
+        />
       </div>
 
       <ControlsBar
@@ -84,8 +96,6 @@ export function PlayerBottomBar({
         onTogglePlay={onTogglePlay}
         onPrev={onPrev}
         onNext={onNext}
-        onSkipBack={() => onSeek(Math.max(0, currentTime - 10))}
-        onSkipForward={() => onSeek(Math.min(duration, currentTime + 10))}
         onVolumeChange={onVolumeChange}
         onToggleFullscreen={onToggleFullscreen}
         onOpenDrawer={onOpenDrawer}

@@ -1,9 +1,6 @@
 export { useCatalogStore } from "./state/catalogStore";
 export { AnimeCard } from "./ui/AnimeCard";
-export { CatalogHero } from "./ui/CatalogHero";
 export { GenreSelector } from "./ui/GenreSelector";
 export { GenreView } from "./ui/GenreView";
-export { Rail } from "./ui/Rail";
 export { ReleaseSchedule } from "./ui/ReleaseSchedule";
 export { ReleasesGrid } from "./ui/ReleasesGrid";
-export { ReleasesRail } from "./ui/ReleasesRail";

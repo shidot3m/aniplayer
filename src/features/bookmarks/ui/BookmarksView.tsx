@@ -1,7 +1,8 @@
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Bookmark, FolderHeart, Search } from "lucide-react";
 import { useState } from "react";
 import { AnimeCard, useCatalogStore } from "@/features/catalog";
 import type { BookmarkCategory, Release } from "@/shared/types";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 
@@ -50,37 +51,40 @@ export function BookmarksView({ onSelectRelease }: BookmarksViewProps) {
     : parsedReleases;
 
   return (
-    <div className="px-12 py-6">
+    <div className="mx-auto max-w-7xl px-6 py-6">
       {/* Top Header */}
-      <div className="mb-6 flex flex-col gap-4 border-b border-line pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-4">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setActiveScreen("home")}
-            className="gap-2 text-ink-2 hover:text-ink"
+            className="gap-2 text-slate-400 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Каталог</span>
           </Button>
-          <span aria-hidden className="h-4 w-px bg-line" />
-          <h1 className="text-xl font-semibold tracking-[-0.01em] text-ink">Закладки</h1>
+          <div className="h-4 w-[1px] bg-white/10" />
+          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            <Bookmark className="h-5 w-5 text-rose-500" />
+            Мои закладки
+          </h1>
         </div>
 
         {/* Filter within bookmarks */}
         <div className="relative w-full sm:w-64">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Фильтр по названию"
-            className="h-9 border-line bg-surface-1 pl-9 text-sm"
+            placeholder="Фильтр по названию..."
+            className="pl-9 bg-[#12131A] border-white/10 text-xs h-9"
           />
         </div>
       </div>
 
       {/* 7 Category Tabs */}
-      <div className="mb-8 flex flex-wrap gap-x-6 gap-y-2 border-b border-line pb-3">
+      <div className="mb-6 flex flex-wrap gap-2 overflow-x-auto pb-1">
         {CATEGORIES.map((cat) => {
           const count = bookmarks[cat.id]?.length || 0;
           const isSelected = activeCategory === cat.id;
@@ -90,14 +94,21 @@ export function BookmarksView({ onSelectRelease }: BookmarksViewProps) {
               key={cat.id}
               type="button"
               onClick={() => setActiveCategory(cat.id)}
-              className={
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
                 isSelected
-                  ? "-mb-3 flex cursor-pointer items-baseline gap-2 border-b-2 border-accent pb-2 text-sm font-medium text-ink"
-                  : "-mb-3 flex cursor-pointer items-baseline gap-2 border-b-2 border-transparent pb-2 text-sm text-ink-2 transition-colors hover:text-ink"
-              }
+                  ? "bg-rose-600 text-white"
+                  : "bg-[#12131A] text-slate-400 border border-white/5 hover:border-white/20 hover:text-white"
+              }`}
             >
               <span>{cat.label}</span>
-              <span className="text-[12px] tabular-nums text-ink-3">{count}</span>
+              <Badge
+                variant={isSelected ? "secondary" : "outline"}
+                className={`h-5 px-1.5 text-[10px] ${
+                  isSelected ? "bg-black/40 text-white border-0" : "text-slate-400 border-white/10"
+                }`}
+              >
+                {count}
+              </Badge>
             </button>
           );
         })}
@@ -105,7 +116,7 @@ export function BookmarksView({ onSelectRelease }: BookmarksViewProps) {
 
       {/* Grid of releases */}
       {filteredReleases.length > 0 ? (
-        <div className="grid grid-cols-3 gap-x-5 gap-y-8 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {filteredReleases.map((release) => (
             <AnimeCard
               key={release.id}
@@ -115,12 +126,14 @@ export function BookmarksView({ onSelectRelease }: BookmarksViewProps) {
           ))}
         </div>
       ) : (
-        <div className="flex min-h-60 flex-col items-center justify-center py-16 text-center">
-          <h3 className="text-sm font-medium text-ink">
+        <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-md p-8 text-center">
+          <FolderHeart className="h-12 w-12 text-slate-600 mb-3" />
+          <h3 className="text-sm font-semibold text-slate-200">
             В категории «{CATEGORIES.find((c) => c.id === activeCategory)?.label}» пока пусто
           </h3>
-          <p className="mt-1 max-w-sm text-sm text-ink-2">
-            Добавляйте релизы в закладки из каталога, чтобы быстро возвращаться к просмотру.
+          <p className="mt-1 text-xs text-slate-400 max-w-sm">
+            Добавляйте интересные тайтлы в закладки из каталога, чтобы быстро возвращаться к
+            просмотру.
           </p>
           <Button
             variant="secondary"

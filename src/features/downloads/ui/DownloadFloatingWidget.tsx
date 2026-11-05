@@ -1,7 +1,17 @@
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Loader2, X } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  FolderDown,
+  Loader2,
+  X,
+} from "lucide-react";
 import { useCatalogStore } from "@/features/catalog";
 import { formatBytes } from "@/shared/lib/utils";
 import type { DownloadProgressEvent } from "@/shared/types";
+import { Badge } from "@/shared/ui/badge";
 import { useDownloadStore } from "../state/downloadStore";
 
 function DownloadItemRow({
@@ -18,31 +28,30 @@ function DownloadItemRow({
   const isDownloading = item.status === "DOWNLOADING";
 
   return (
-    <div className="border-t border-line py-2.5 first:border-t-0 first:pt-0">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-2.5 transition-colors hover:bg-white/[0.06]">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-2 min-w-0">
           {isCompleted ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-ink-2" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
           ) : isFailed ? (
-            <AlertCircle className="h-4 w-4 shrink-0 text-accent-ink" />
+            <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
           ) : (
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-accent-ink" />
+            <Loader2 className="h-4 w-4 text-rose-400 animate-spin shrink-0" />
           )}
-          <span className="truncate text-[13px] text-ink tabular-nums">
+          <span className="text-xs font-semibold text-white truncate">
             {item.episodeOrdinal > 0 ? `Эпизод ${item.episodeOrdinal}` : "Загрузка"}
           </span>
+          <span className="text-[10px] text-slate-400">#{item.releaseId}</span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
-          <span className="text-[13px] tabular-nums text-accent-ink">
-            {Math.round(item.percent)}%
-          </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-xs font-bold text-rose-400">{Math.round(item.percent)}%</span>
           <button
             type="button"
             aria-label={isDownloading ? "Отменить загрузку" : "Закрыть уведомление"}
             title={isDownloading ? "Отменить загрузку" : "Закрыть уведомление"}
             onClick={() => (isDownloading ? onCancel(item.episodeId) : onDismiss(item.episodeId))}
-            className="cursor-pointer rounded p-1 text-ink-3 transition-colors hover:text-ink"
+            className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer rounded"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -50,14 +59,16 @@ function DownloadItemRow({
       </div>
 
       {/* Progress bar */}
-      <div className="mb-1.5 h-[3px] w-full overflow-hidden rounded-full bg-surface-2">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10 mb-1.5">
         <div
-          className="h-full rounded-full bg-accent"
+          className={`h-full transition-all duration-200 rounded-full ${
+            isCompleted ? "bg-emerald-500" : isFailed ? "bg-rose-500" : "bg-rose-600"
+          }`}
           style={{ width: `${Math.min(100, Math.max(0, item.percent))}%` }}
         />
       </div>
 
-      <div className="flex items-center justify-between gap-2 text-[11px] tabular-nums text-ink-3">
+      <div className="flex items-center justify-between gap-2 text-[10px] text-slate-400">
         <span className="shrink-0">{formatBytes(item.downloadedBytes)}</span>
         <span className="truncate">
           {item.totalSegments > 0
@@ -66,7 +77,7 @@ function DownloadItemRow({
         </span>
         <span className="shrink-0">{formatBytes(item.speed)}/с</span>
       </div>
-      {item.error && <div className="mt-1 truncate text-[11px] text-accent-ink">{item.error}</div>}
+      {item.error && <div className="mt-1 text-[10px] text-rose-400 truncate">{item.error}</div>}
     </div>
   );
 }
@@ -96,13 +107,16 @@ export function DownloadFloatingWidget() {
   );
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex select-none flex-col items-end pointer-events-auto">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-auto select-none">
       {isWidgetExpanded ? (
-        <div className="w-80 rounded-2xl border border-line bg-surface-2 p-4 shadow-float md:w-96">
-          <div className="mb-2 flex items-center justify-between border-b border-line pb-2.5">
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm font-semibold text-ink">Загрузки</span>
-              <span className="text-[12px] tabular-nums text-ink-3">{items.length}</span>
+        <div className="w-80 md:w-96 rounded-2xl border border-white/15 bg-[#12131A]/95 p-3.5 shadow-2xl backdrop-blur-2xl transition-all">
+          <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <Download className="h-4 w-4 text-rose-500" />
+              <span className="text-xs font-bold text-white">Загрузки</span>
+              <Badge variant="rose" className="h-4 px-1.5 text-[9px]">
+                {items.length}
+              </Badge>
             </div>
 
             <div className="flex items-center gap-1">
@@ -110,7 +124,7 @@ export function DownloadFloatingWidget() {
                 type="button"
                 aria-label="Свернуть виджет"
                 onClick={toggleWidgetExpanded}
-                className="cursor-pointer rounded-md p-1 text-ink-3 transition-colors hover:bg-ink/10 hover:text-ink"
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -118,14 +132,14 @@ export function DownloadFloatingWidget() {
                 type="button"
                 aria-label="Закрыть виджет"
                 onClick={() => setWidgetVisible(false)}
-                className="cursor-pointer rounded-md p-1 text-ink-3 transition-colors hover:bg-ink/10 hover:text-ink"
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          <div className="max-h-60 overflow-y-auto pr-1">
+          <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
             {items.map((item) => (
               <DownloadItemRow
                 key={item.episodeId}
@@ -136,24 +150,25 @@ export function DownloadFloatingWidget() {
             ))}
           </div>
 
-          <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5 text-[13px]">
+          <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-xs">
             <button
               type="button"
               onClick={() => {
                 setActiveScreen("downloads");
                 toggleWidgetExpanded();
               }}
-              className="cursor-pointer text-ink-2 transition-colors hover:text-ink"
+              className="inline-flex items-center gap-1.5 text-rose-400 hover:text-rose-300 font-semibold cursor-pointer transition-colors"
             >
-              Все загрузки
+              <FolderDown className="h-3.5 w-3.5" />
+              <span>Все скачанные</span>
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {activeCount > 0 && (
                 <button
                   type="button"
                   onClick={cancelAllDownloads}
-                  className="cursor-pointer text-[12px] text-ink-2 transition-colors hover:text-accent-ink"
+                  className="text-[11px] text-rose-400 hover:text-rose-300 cursor-pointer transition-colors"
                 >
                   Отменить все
                 </button>
@@ -162,7 +177,7 @@ export function DownloadFloatingWidget() {
                 <button
                   type="button"
                   onClick={clearCompletedDownloads}
-                  className="cursor-pointer text-[12px] text-ink-2 transition-colors hover:text-ink"
+                  className="text-[11px] text-slate-400 hover:text-white cursor-pointer transition-colors"
                 >
                   Очистить
                 </button>
@@ -174,18 +189,18 @@ export function DownloadFloatingWidget() {
         <button
           type="button"
           onClick={toggleWidgetExpanded}
-          className="group flex cursor-pointer items-center gap-2.5 rounded-full border border-line bg-surface-2 px-4 py-2.5 shadow-float transition-colors hover:border-ink/20"
+          className="flex items-center gap-2.5 rounded-full border border-rose-500/40 bg-[#12131A]/95 px-4 py-2.5 shadow-2xl backdrop-blur-2xl hover:border-rose-500 hover:bg-[#161824] transition-all cursor-pointer group"
         >
           {activeCount > 0 ? (
-            <Loader2 className="h-4 w-4 animate-spin text-accent-ink" />
+            <Loader2 className="h-4 w-4 text-rose-500 animate-spin" />
           ) : (
-            <CheckCircle2 className="h-4 w-4 text-ink-2" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           )}
-          <span className="text-[13px] text-ink">
-            {activeCount > 0 ? `Загрузка · ${activeCount}` : "Загрузки завершены"}
+          <span className="text-xs font-semibold text-white">
+            {activeCount > 0 ? `Качается: ${activeCount}` : "Загрузки завершены"}
           </span>
-          <span className="text-[13px] tabular-nums text-accent-ink">{avgPercent}%</span>
-          <ChevronUp className="h-3.5 w-3.5 text-ink-3 transition-colors group-hover:text-ink" />
+          <span className="text-xs font-bold text-rose-400">{avgPercent}%</span>
+          <ChevronUp className="h-3.5 w-3.5 text-slate-400 group-hover:text-white transition-colors" />
         </button>
       )}
     </div>

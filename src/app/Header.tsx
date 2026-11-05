@@ -2,6 +2,7 @@ import { Bookmark, FolderDown, Home, Search, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import { useDownloadStore } from "@/features/downloads";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 
@@ -11,7 +12,7 @@ interface HeaderProps {
 
 function AniplayerLogoMark() {
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
+    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br/srgb from-rose-600 to-rose-700 shadow-md shadow-rose-900/30 border border-white/20 transition-transform group-hover:scale-105">
       <svg
         viewBox="0 0 32 32"
         fill="none"
@@ -19,10 +20,10 @@ function AniplayerLogoMark() {
         className="h-5 w-5"
         aria-hidden="true"
       >
-        <path d="M16 4L27.5 27H21.5L16 15.5L10.5 27H4.5L16 4Z" className="fill-ink" />
-        <path d="M13.5 18L19.5 21.5L13.5 25V18Z" className="fill-accent" />
+        <path d="M16 4L27.5 27H21.5L16 15.5L10.5 27H4.5L16 4Z" fill="white" />
+        <path d="M13.5 18L19.5 21.5L13.5 25V18Z" fill="#E11D48" />
       </svg>
-    </span>
+    </div>
   );
 }
 
@@ -33,7 +34,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
 
   const [localQuery, setLocalQuery] = useState(searchQuery);
 
-  // Debounce the search query so a keystroke does not hit the API.
+  // Debounce search query 300ms
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(localQuery);
@@ -50,19 +51,24 @@ export function Header({ onOpenSettings }: HeaderProps) {
   ).length;
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 w-full shrink-0 items-center justify-between border-b border-line bg-ground px-6">
+    <header className="sticky top-0 z-40 flex h-16 w-full shrink-0 items-center justify-between border-b border-white/10 bg-[#090A0F]/80 px-6 backdrop-blur-xl">
       {/* Left: Logo & Nav */}
       <div className="flex items-center gap-6">
         <button
           type="button"
           onClick={() => setActiveScreen("home")}
-          className="group flex cursor-pointer items-center gap-2.5 rounded-lg text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent-ink"
+          className="flex items-center gap-2.5 text-left group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-500 rounded-xl cursor-pointer"
         >
           <AniplayerLogoMark />
-          <span className="text-base font-semibold tracking-[-0.01em] text-ink">Aniplayer</span>
+          <div>
+            <span className="text-base font-bold tracking-tight text-white">
+              Ani<span className="text-rose-500">player</span>
+            </span>
+            <span className="block text-[10px] text-slate-400 -mt-0.5">4K Anime Player</span>
+          </div>
         </button>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-2">
           <Button
             variant={activeScreen === "home" ? "secondary" : "ghost"}
             size="sm"
@@ -77,12 +83,14 @@ export function Header({ onOpenSettings }: HeaderProps) {
             variant={activeScreen === "bookmarks" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setActiveScreen("bookmarks")}
-            className="gap-2"
+            className="gap-2 relative"
           >
-            <Bookmark className="h-4 w-4" />
+            <Bookmark className="h-4 w-4 text-rose-400" />
             <span>Закладки</span>
             {totalBookmarks > 0 && (
-              <span className="tabular-nums text-[11px] text-ink-3">{totalBookmarks}</span>
+              <Badge variant="rose" className="h-5 px-1.5 text-[10px]">
+                {totalBookmarks}
+              </Badge>
             )}
           </Button>
 
@@ -90,18 +98,22 @@ export function Header({ onOpenSettings }: HeaderProps) {
             variant={activeScreen === "downloads" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setActiveScreen("downloads")}
-            className="gap-2"
+            className="gap-2 relative"
           >
-            <FolderDown className="h-4 w-4" />
-            <span>Загрузки</span>
+            <FolderDown className="h-4 w-4 text-rose-400" />
+            <span>Скачанные</span>
             {downloadedEpisodes.length > 0 && (
-              <span className="tabular-nums text-[11px] text-ink-3">
+              <Badge
+                variant="secondary"
+                className="h-5 px-1.5 text-[10px] bg-white/10 text-slate-300"
+              >
                 {downloadedEpisodes.length}
-              </span>
+              </Badge>
             )}
             {activeDownloadsCount > 0 && (
-              <span className="tabular-nums text-[11px] text-accent-ink">
-                {activeDownloadsCount}
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
               </span>
             )}
           </Button>
@@ -109,9 +121,9 @@ export function Header({ onOpenSettings }: HeaderProps) {
       </div>
 
       {/* Center: Search Bar */}
-      <div className="mx-6 max-w-md flex-1">
+      <div className="flex-1 max-w-md mx-6">
         <div className="relative w-full">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <Input
             value={localQuery}
             onChange={(e) => {
@@ -120,8 +132,8 @@ export function Header({ onOpenSettings }: HeaderProps) {
                 setActiveScreen("home");
               }
             }}
-            placeholder="Поиск"
-            className="h-9 border-line bg-surface-1 pl-9 pr-8 text-sm"
+            placeholder="Поиск аниме по названию..."
+            className="pl-9 pr-8 bg-white/5 border-white/10 text-xs h-9 focus:border-rose-500 rounded-xl backdrop-blur-md"
           />
           {localQuery && (
             <button
@@ -131,7 +143,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
                 setLocalQuery("");
                 setSearchQuery("");
               }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded text-ink-3 transition-colors hover:text-ink focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent-ink"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-rose-500 rounded"
             >
               ✕
             </button>
@@ -140,16 +152,17 @@ export function Header({ onOpenSettings }: HeaderProps) {
       </div>
 
       {/* Right: Actions / Settings */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onOpenSettings}
-        aria-label="Настройки"
-        title="Настройки"
-        className="text-ink-2 hover:text-ink"
-      >
-        <Settings className="h-5 w-5" />
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onOpenSettings}
+          title="Настройки"
+          className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 backdrop-blur-md"
+        >
+          <Settings className="h-4 w-4 text-slate-300" />
+        </Button>
+      </div>
     </header>
   );
 }

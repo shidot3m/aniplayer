@@ -65,7 +65,7 @@ describe("ContinueWatching resume position", () => {
     const playEpisode = vi.fn().mockResolvedValue(undefined);
     usePlayerStore.setState({ playEpisode });
 
-    render(<ContinueWatching />);
+    render(<ContinueWatching onSelectRelease={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: /Продолжить/ }));
 
     expect(playEpisode).toHaveBeenCalledWith(mockRelease, episode2, 76);
@@ -85,7 +85,7 @@ describe("ContinueWatching resume position", () => {
     const playEpisode = vi.fn().mockResolvedValue(undefined);
     usePlayerStore.setState({ playEpisode });
 
-    render(<ContinueWatching />);
+    render(<ContinueWatching onSelectRelease={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: /Начать серию/ }));
 
     expect(playEpisode).toHaveBeenCalledWith(mockRelease, episode2, 0);

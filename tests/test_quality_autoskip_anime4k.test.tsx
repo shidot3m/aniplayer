@@ -47,8 +47,8 @@ describe("Quality Selection & Clamping", () => {
   });
 });
 
-describe("SeekBar timeline markers (OP/ED)", () => {
-  it("marks the opening and the ending on the bar and names each in its tooltip", () => {
+describe("SeekBar Timeline Markers (OP/ED)", () => {
+  it("renders opening (amber) and ending (indigo) timeline markers with tooltips", () => {
     const { container } = render(
       <SeekBar
         currentTime={100}
@@ -59,13 +59,13 @@ describe("SeekBar timeline markers (OP/ED)", () => {
       />,
     );
 
-    // Queried by the marker's own test id, not by a colour class: which token paints a segment
-    // is a design decision (ADR 0018), that the segment is there at all is the behaviour.
-    const opBlock = container.querySelector('[data-testid="seekbar-opening-marker"]');
+    // Opening block (amber-400)
+    const opBlock = container.querySelector(".bg-amber-400\\/80");
     expect(opBlock).toBeDefined();
     expect(opBlock?.getAttribute("title")).toBe("Опенинг");
 
-    const edBlock = container.querySelector('[data-testid="seekbar-ending-marker"]');
+    // Ending block (indigo-400)
+    const edBlock = container.querySelector(".bg-indigo-400\\/80");
     expect(edBlock).toBeDefined();
     expect(edBlock?.getAttribute("title")).toBe("Эндинг");
   });

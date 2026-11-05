@@ -41,7 +41,7 @@ describe("shadcn Switch Component", () => {
 
 describe("SettingsMenu Switch Integration", () => {
   it("renders Switch components in SettingsMenu when opened", () => {
-    render(<SettingsMenu />);
+    render(<SettingsMenu currentQuality="1080p" onSelectQuality={() => {}} />);
     const trigger = screen.getByTitle("Настройки плеера");
     fireEvent.click(trigger);
 
