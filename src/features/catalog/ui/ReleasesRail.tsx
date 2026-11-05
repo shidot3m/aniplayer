@@ -22,11 +22,7 @@ export function ReleasesRail({ title, releases, onSelectRelease }: ReleasesRailP
       <Rail>
         {releases.map((release) => (
           <div key={release.id} className="w-[204px] shrink-0 snap-start">
-            <AnimeCard
-              release={release}
-              onClick={() => onSelectRelease(release)}
-              viewTransitionName={`poster-${release.id}`}
-            />
+            <AnimeCard release={release} onClick={() => onSelectRelease(release)} />
           </div>
         ))}
       </Rail>

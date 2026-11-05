@@ -1,4 +1,5 @@
 import { Bookmark, Check } from "lucide-react";
+import { useRef } from "react";
 import {
   CATEGORY_NAMES,
   findBookmarkCategory,
@@ -17,12 +18,11 @@ import { useCatalogStore } from "../state/catalogStore";
 interface AnimeCardProps {
   release: Release;
   onClick: () => void;
-  /** Shared-element name for the poster morph into the Release page (#71, ADR 0018). */
-  viewTransitionName?: string;
 }
 
-export function AnimeCard({ release, onClick, viewTransitionName }: AnimeCardProps) {
+export function AnimeCard({ release, onClick }: AnimeCardProps) {
   const { bookmarks, history, setBookmark, removeBookmark } = useCatalogStore();
+  const posterRef = useRef<HTMLImageElement>(null);
 
   const currentCategory = findBookmarkCategory(bookmarks, release.id);
   const isWatched = isReleaseWatched(release, history, currentCategory);
@@ -34,20 +34,28 @@ export function AnimeCard({ release, onClick, viewTransitionName }: AnimeCardPro
   const episodeCount = release.episodes_total || release.episodes?.length || 0;
   const typeLabel = release.type?.description || "";
 
+  // The poster takes its shared-element name only at the moment it is the source of a navigation,
+  // so the same Release appearing in several rails never collides on one view-transition-name
+  // (a duplicate aborts the transition). The Release hero carries the matching name. (#71)
+  const open = () => {
+    if (posterRef.current) posterRef.current.style.viewTransitionName = `poster-${release.id}`;
+    onClick();
+  };
+
   return (
     <div className="group relative w-full">
       <button
         type="button"
         aria-label={`Открыть ${release.name.main}`}
-        onClick={onClick}
+        onClick={open}
         className="block w-full cursor-pointer rounded-xl text-left focus:outline-hidden"
       >
         {posterUrl ? (
           <img
+            ref={posterRef}
             src={posterUrl}
             alt={release.name.main}
             loading="lazy"
-            style={viewTransitionName ? { viewTransitionName } : undefined}
             className="pointer-events-none aspect-[2/3] w-full rounded-xl bg-surface-1 object-cover outline outline-0 -outline-offset-2 outline-transparent transition-[transform,box-shadow,outline-color] group-hover:z-10 group-hover:scale-[1.06] group-hover:shadow-lift group-hover:outline-accent group-focus-within:scale-[1.06] group-focus-within:outline-accent"
             onError={(e) => {
               (e.target as HTMLElement).style.visibility = "hidden";

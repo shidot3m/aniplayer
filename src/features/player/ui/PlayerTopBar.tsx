@@ -8,8 +8,6 @@ export interface PlayerTopBarProps {
   episode: EpisodeItem;
   currentTime: number;
   duration: number;
-  /** The enhancement verdict is text, never a badge (ADR 0018); it shows only when the frame is live. */
-  enhancementActive?: boolean;
   onBack: () => void;
 }
 
@@ -24,7 +22,6 @@ export function PlayerTopBar({
   episode,
   currentTime,
   duration,
-  enhancementActive = false,
   onBack,
 }: PlayerTopBarProps) {
   return (
@@ -59,10 +56,6 @@ export function PlayerTopBar({
           </p>
         </div>
       </div>
-
-      {enhancementActive && (
-        <span className="shrink-0 text-[13px] font-medium text-accent-ink">4K Upscale</span>
-      )}
     </div>
   );
 }

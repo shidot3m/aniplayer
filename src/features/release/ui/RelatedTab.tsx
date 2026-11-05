@@ -54,11 +54,7 @@ export function RelatedTab({
                     <span className="pointer-events-none absolute top-1.5 left-1.5 z-20 rounded-[5px] bg-ground/80 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-ink">
                       {index + 1}
                     </span>
-                    <AnimeCard
-                      release={rel}
-                      onClick={() => onSelectRelease(rel)}
-                      viewTransitionName={`poster-${rel.id}`}
-                    />
+                    <AnimeCard release={rel} onClick={() => onSelectRelease(rel)} />
                   </div>
                   {isCurrent && (
                     <p className="mt-1 px-0.5 text-[12px] text-accent-ink">Сейчас смотрите</p>

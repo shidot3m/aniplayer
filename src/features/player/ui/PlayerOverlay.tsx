@@ -108,7 +108,6 @@ export function PlayerOverlay({ release, episode, onBack, onGoToRelease }: Playe
         episode={episode}
         currentTime={playerStore.currentTime}
         duration={playerStore.duration}
-        enhancementActive={isEnhancementActive}
         onBack={handleBack}
       />
 

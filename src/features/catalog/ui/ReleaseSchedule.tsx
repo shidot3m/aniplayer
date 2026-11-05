@@ -61,7 +61,6 @@ export function ReleaseSchedule({ releases, onSelectRelease }: ReleaseSchedulePr
               key={release.id}
               release={release}
               onClick={() => onSelectRelease(release)}
-              viewTransitionName={`poster-${release.id}`}
             />
           ))}
         </div>
