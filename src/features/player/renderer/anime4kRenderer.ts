@@ -183,6 +183,10 @@ export class Anime4kRenderer {
   };
 
   private renderFrame(): void {
+    // The frame loop ticks on its own clock and the element does not promise a frame at that
+    // tick — across a source swap, a buffer eviction or a seek — and copying then throws.
+    if (this.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+
     const device = this.device;
     const context = this.context;
     if (!device || !context || !this.ensureResources()) return;
