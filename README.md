@@ -35,22 +35,43 @@
 - [Rust](https://rustup.rs/) (stable, `x86_64-pc-windows-msvc`)
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) с C++ (для `rusqlite`/Tauri)
 - WebView2 Runtime (в Windows 11 уже есть) — и WebGPU в нём, если включён апскейл Anime4K; без WebGPU апскейл недоступен, остальное работает как обычно
-- Python 3 — только для portable-упаковки
+- Python 3 — только для упаковки и проверки релизного набора
 
-## Установка (portable)
+## Установка
 
-Единственный публикуемый артефакт — `Aniplayer-portable.zip` из релиза [`latest`](../../releases/tag/latest):
+Релизы выходят в двух каналах, и оба держат `data/` и `downloads/` рядом со своим `aniplayer.exe`:
+перенос установленной копии на другую машину остаётся копированием одной папки, а код приложения
+про каналы не знает ничего ([ADR 0016](docs/adr/0016-portable-archive-and-per-user-nsis-installer.md)).
+
+### Portable
+
+`Aniplayer-portable.zip` — `aniplayer.exe` и пустая папка `data/`:
 
 1. Распакуйте архив в папку, доступную на запись (не `Program Files`).
 2. Запустите `aniplayer.exe`. Больше в архиве ничего нет: база создаётся в `data/aniplayer.db`, загрузки — в `downloads/`.
 3. Для обновления замените файлы программы, сохранив `data/` и `downloads/`.
 
+### Установщик
+
+`Aniplayer-setup.exe` — установка для текущего пользователя:
+
+1. Запустите: прав администратора не нужно, файлы идут в `%LOCALAPPDATA%\Aniplayer`.
+2. Появляются ярлык в Start Menu и запись в «Установка и удаление программ».
+3. Удаление из настроек Windows снимает приложение; `data/` и `downloads/` останутся на диске — в комплект установщика они не входят.
+
+Ассоциаций файлов установщик не регистрирует (единственная прежняя — `magnet:` — ушла вместе с
+торрентами), минимальной версии WebView2 не требует: старый рантайм стоит только недоступного
+апскейла Anime4K, а не установки.
+
+Рядом с обоими файлами лежит `SHA256SUMS.txt` в формате `sha256sum` — `sha256sum -c SHA256SUMS.txt`
+проверяет скачанное.
+
 Внутри архива нет ни медиа-рантайма, ни папки шейдеров: hls.js, WebGPU-рендерер Anime4K и его
 WGSL-таблицы (`anime4k-webgpu` 1.0.0, MIT, версия закреплена в lockfile) — frontend-код,
 вшитый в `aniplayer.exe`; декодирует WebView2.
 
-Установщиков нет; база, загрузки и настройки остаются внутри папки. Служебный кэш
-WebView2 Tauri по умолчанию держит в `%LOCALAPPDATA%`. Подробности — в
+Служебный кэш WebView2 Tauri по умолчанию держит в `%LOCALAPPDATA%`. Подробности — в
+[ADR 0016](docs/adr/0016-portable-archive-and-per-user-nsis-installer.md) и
 [ADR 0006](docs/adr/0006-portable-only-distribution.md).
 
 ## Запуск
@@ -74,23 +95,29 @@ bun run tauri:win dev
 ## Сборка
 
 ```bash
-bunx tauri build --no-bundle           # aniplayer.exe в src-tauri/target/release
+bun run tauri:win build                 # aniplayer.exe + NSIS-установщик в src-tauri/target/release/bundle/nsis
 python scripts/package_portable.py    # portable-папка: aniplayer.exe + пустая data/
 ```
 
-Релизный workflow собирает эту папку, упаковывает в `Aniplayer-portable.zip` и проверяет, что
-в архиве есть `aniplayer.exe` и что в нём **нет** медиа-рантайма и шейдеров. Бандлы MSI/NSIS
-не публикуются; per-user-установщик и релизы по тегам версий — [#63](https://github.com/shidot3m/aniplayer/issues/63).
+Одна команда `tauri build` даёт оба канала: голый исполняемый файл для архива и установщик рядом
+с ним. Дальше `scripts/verify_release.py` проверяет выпущенный набор — наличие обоих артефактов,
+`aniplayer.exe` и пустую `data/` в архиве, отсутствие медиа-рантайма и папки шейдеров, и то, что
+`SHA256SUMS.txt` покрывает ровно эти два файла и их фактические хэши. Публикуется ровно то, что
+проверено: `bunx tauri build --no-bundle` больше не путь релиза.
 
 ## CI и релизы
 
-`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: guard JS-тулчейна (CI и скрипты не должны содержать обращений к прежнему npm-клиенту), типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_download_queue`, `test_hls_playlist`, `test_playback_source`, `test_security_config`, `test_startup`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
+`.github/workflows/ci.yml` запускается на каждый push в `master`, каждый pull request и вручную и выполняет только быстрые проверки: guard JS-тулчейна (CI и скрипты не должны содержать обращений к прежнему npm-клиенту), типы, Biome, Vitest, aislop, сборку фронтенда, а также `cargo fmt --check`, clippy с запретом предупреждений, аудит зависимостей и герметичные Rust-тесты (`test_db`, `test_download_queue`, `test_hls_playlist`, `test_playback_source`, `test_security_config`, `test_distribution_config`, `test_startup`). Любая сломанная проверка роняет CI. Релизные сборки здесь не запускаются.
 
-`.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную на ветке `master` (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows portable-сборку и публикует единственный артефакт:
+`.github/workflows/release.yml` — отдельный релизный конвейер. Он запускается по ночному расписанию (03:00 UTC), вручную на ветке `master` (Actions → Release → Run workflow) и по тегам версий `v*`. Каждый запуск собирает Windows-сборку и публикует один набор из трёх файлов:
 
 - `Aniplayer-portable.zip` — `aniplayer.exe` и пустая папка `data/` (база создаётся при первом запуске).
+- `Aniplayer-setup.exe` — per-user NSIS-установщик: ярлык в Start Menu и запись удаления, без повышения прав.
+- `SHA256SUMS.txt` — SHA-256 обоих файлов.
 
-Ночные и ручные сборки обновляют rolling-релиз [`latest`](../../releases/tag/latest) и перемещают тег `latest` на собранный коммит. Теги `v*` публикуют отдельный версионированный релиз и не меняют `latest`. Отдельного `Aniplayer.exe` в релизах нет.
+Перед публикацией `scripts/verify_release.py` обязывает наличие всех трёх и проверяет содержимое архива; несовпадение тега `v*` с версией из `tauri.conf.json` роняет запуск, а рассогласование версий в манифестах роняет `src-tauri/tests/test_distribution_config.rs`.
+
+Ночные и ручные сборки обновляют rolling-релиз [`latest`](../../releases/tag/latest) всеми тремя файлами и перемещают тег `latest` на собранный коммит. Теги `v*` публикуют отдельный версионированный релиз с тем же набором, не помечают его как latest и не двигают тег — собранные версии остаются скачиваемыми.
 
 ## Тесты и качество кода
 
@@ -115,7 +142,7 @@ cargo fmt --check
 cargo clippy --all-targets --locked -- -D warnings
 cargo audit
 cargo test --locked --test test_db --test test_download_queue --test test_hls_playlist \
-  --test test_playback_source --test test_security_config --test test_startup
+  --test test_playback_source --test test_security_config --test test_distribution_config --test test_startup
 ```
 
 `test_api` обращается к живому API AniLiberty и поэтому в CI не входит.
@@ -129,7 +156,7 @@ src/features/        Фичеры: catalog, release, continue-watching, player, 
 src/shared/          Общие ui-компоненты, утилиты и доменные типы (ui/lib/types)
 src-tauri/           Rust-бэкенд: API-клиент, БД, HLS-загрузки, валидация источника, IPC-команды
 tests/               фронтенд-тесты (Vitest); границы фичер проверяет test_feature_boundaries.test.ts
-scripts/             portable-упаковка, запуск Tauri и cargo из MSYS-шеллов
+scripts/             упаковка portable-канала, проверка релизного набора, запуск Tauri и cargo из MSYS-шеллов
 docs/                архитектура, ADR, схема AniLiberty API, заметки по Anime4K, инструкции для агентов
 GLOSSARY.md          доменный словарь
 AGENTS.md            правила работы агентов

@@ -1,6 +1,6 @@
 # Aniplayer
 
-Aniplayer is a portable Windows player for anime from the AniLiberty catalog, with offline downloads and real-time Anime4K enhancement. Playback runs in the app's own webview: a `<video>` element fed by hls.js, with the React controls over the frame.
+Aniplayer is a Windows player for anime from the AniLiberty catalog, shipped in two install channels — a portable archive and a per-user installer — with offline downloads and real-time Anime4K enhancement. Playback runs in the app's own webview: a `<video>` element fed by hls.js, with the React controls over the frame.
 
 ## Language
 
@@ -94,9 +94,17 @@ _Avoid_: option, config
 
 ### Platform
 
+**Install channel**:
+One of the two forms a build ships in: the portable archive or the per-user installer. Both keep their data beside their own executable, so nothing in the app knows which channel it is running under.
+_Avoid_: edition, flavor, variant, build type
+
 **Portable bundle**:
-The only distributed form of the app: a self-contained folder that needs no installation and keeps user data beside the executable.
-_Avoid_: installer, package, distribution
+The channel that needs no installation — `aniplayer.exe` and an empty `data/` in an archive, unpacked wherever the user can write. Moving it to another machine is copying one folder.
+_Avoid_: zip build, standalone executable
+
+**Setup installer**:
+The per-user NSIS channel: it adds a Start Menu shortcut and an uninstall entry, installs into the user's own profile without elevation, and registers nothing else. Removing the app leaves `data/` and `downloads/` on disk, because they were never part of its payload.
+_Avoid_: MSI, per-machine install, package
 
 **JS toolchain**:
 Bun — the single runtime, package manager, and script runner of the project's frontend tooling. It installs dependencies, runs every script and tool, and hosts the tests; no Node runtime or npm client path remains in the project.

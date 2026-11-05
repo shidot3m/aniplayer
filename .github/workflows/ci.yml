@@ -87,4 +87,5 @@ jobs:
           --test test_hls_playlist
           --test test_playback_source
           --test test_security_config
+          --test test_distribution_config
           --test test_startup

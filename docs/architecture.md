@@ -146,7 +146,7 @@ The enhancement is a WebGPU renderer drawn over the media element ([ADR 0015](ad
 
 ## Runtime asset layout
 
-Portable bundle (the only distributed artifact):
+Same tree, either install channel ([ADR 0016](adr/0016-portable-archive-and-per-user-nsis-installer.md)) — the portable archive wherever the user unpacked it, the installed copy in `%LOCALAPPDATA%\Aniplayer`, which the installer creates without elevation:
 
 ```text
 Aniplayer/
@@ -163,11 +163,20 @@ Aniplayer/
    └─ torrents/                           # what an older build left; nothing here is listed or played
 ```
 
-All paths are relative to the executable's directory (`startup::app_dir`). The archive carries no
-media runtime and no shader directory: hls.js is frontend code inside the bundle, WebView2 is
-the decoder, and the Anime4K WGSL tables are frontend code too — a chunk of the bundle that the
-guard test keeps off the startup path. `scripts/package_portable.py` stages the folder, and the release workflow fails a zip
-that still contains `mpv/` or `shaders/`.
+All paths are relative to the executable's directory (`startup::app_dir`), which is why the two channels need no branching: the installer writes its files into a folder the user owns, so the installed copy finds `data/` and `downloads/` exactly where the portable one does, and nothing in the app is told which channel it is in. The archive carries no media runtime and no shader directory: hls.js is frontend code inside the bundle, WebView2 is the decoder, and the Anime4K WGSL tables are frontend code too — a chunk of the bundle that the guard test keeps off the startup path.
+
+### Delivery stages
+
+`.github/workflows/release.yml` runs the stages in this order, and each one fails the run rather than publishing a partial set:
+
+1. **Refuse a mismatched tag.** On a `v*` push the tag must equal `v` plus the version in `tauri.conf.json`; `src-tauri/tests/test_distribution_config.rs` already holds `package.json`, `Cargo.toml`, and `tauri.conf.json` to one version.
+2. **Build both channels once.** `bunx tauri build` emits the executable and, from the same compilation, the NSIS installer under `target/release/bundle/nsis/`.
+3. **Stage the portable folder.** `scripts/package_portable.py` rebuilds `dist_portable/` from scratch as `aniplayer.exe` plus an empty `data/`, and the workflow packs it into `Aniplayer-portable.zip`.
+4. **Name and digest.** The installer is copied to the published name `Aniplayer-setup.exe`, and `SHA256SUMS.txt` records the SHA-256 of both files in the `sha256sum` text format.
+5. **Verify the set.** `scripts/verify_release.py` requires all three files, `aniplayer.exe` and `data/` inside the archive, no `mpv/` or `shaders/`, an installer above the size floor a real NSIS build clears, and a sums file that names exactly those two artifacts with digests that match.
+6. **Publish.** A nightly or manual run refreshes the rolling `latest` release with all three files — deleting any asset outside the set — and moves the `latest` ref. A `v*` tag publishes its own release, marked not-latest, with the same three files, and leaves the tag where it was cut.
+
+The dev flow sits outside these stages: `bun run tauri dev` needs no fetching step, and its data folder is `src-tauri/target/debug/`, the executable's own directory like every other channel.
 
 ## Persistence
 
@@ -202,5 +211,5 @@ One data cleanup runs outside the schema, in `startup::purge_legacy_torrent_down
 - Rust: `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo audit`, and the hermetic test suites listed in `.github/workflows/ci.yml` — including `test_playback_source`, which holds the source verdict (a URL re-parsed, a path confined to the downloads folder, every other scheme refused), `test_download_queue`, which holds the cancel-one-versus-cancel-all contract of the release queue, and `test_startup`, which also proves the legacy purge drops torrent rows idempotently and leaves HLS rows and disk files alone.
 - Frontend playback: the player feature is rendered through React Testing Library with hls.js stubbed as a module boundary (`tests/setup.ts`), covering online, offline, Quality, resume and both error paths, and `tests/test_bundle_split.test.ts` keeps the loader out of the entry chunk.
 - Frontend enhancement: the WebGPU renderer is the other stubbed boundary (`tests/helpers/enhancementStubs.ts`), so `tests/test_anime4k_enhancement.test.tsx` covers switching on and off over a live Episode, a preset change that rebuilds the renderer, the disabled control without `navigator.gpu`, and the fallback when the renderer itself refuses — with no assertion about shader internals. `tests/test_anime4k_presets.test.ts` checks the preset list against the pipelines the package really exports, `tests/test_anime4k_renderer_frame_gate.test.ts` drives the real renderer against a fake GPU device and holds the frame gate (no copy while the element has no current frame data, one copy once it does), and the bundle guard holds the renderer chunk in its own tier and out of the eager graph.
-- Packaging: `scripts/package_portable.py` stages only the executable and an empty `data/`, and the release workflow asserts the archive carries neither `mpv/` nor `shaders/`.
+- Packaging: `scripts/package_portable.py` stages only the executable and an empty `data/`; `scripts/verify_release.py` then requires the published set of three files — portable archive, per-user installer, checksums — and fails on an archive carrying `mpv/` or `shaders/`, an installer under the size floor, or a sums file that names anything else. The shipped configuration behind both channels (install mode, bundler target, no file association, no WebView2 floor, one version across the manifests) is held by `src-tauri/tests/test_distribution_config.rs`, which CI runs with the other hermetic suites.
 - Feature boundaries, bundle budgets, CSP parity, the playback-source confinement, the asset-protocol scope, the single-window stack and the closed capability surface are enforced by tests, not by convention alone.

@@ -35,6 +35,10 @@ __pycache__/
 *.7z
 *.zip
 
+# Release artifacts the pipeline stages at the repo root
+Aniplayer-setup.exe
+SHA256SUMS.txt
+
 # Logs & temp
 *.log
 .DS_Store

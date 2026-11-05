@@ -14,9 +14,14 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  PORTABLE_ASSET: Aniplayer-portable.zip
+  INSTALLER_ASSET: Aniplayer-setup.exe
+  SUMS_ASSET: SHA256SUMS.txt
+
 jobs:
-  portable:
-    name: Build portable release
+  windows:
+    name: Build and publish the Windows channels
     if: github.event_name == 'push' || github.ref_name == github.event.repository.default_branch
     runs-on: windows-latest
     timeout-minutes: 60
@@ -30,37 +35,70 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - name: Build portable bundle
+      # A versioned release is cut from one version spelled in two manifests; the guard test
+      # in src-tauri/tests/test_distribution_config.rs holds the pair together, and this holds
+      # the tag to it, so `v1.0.1` cannot publish an artifact named 1.0.0.
+      - name: Refuse a tag that is not the configured version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_TYPE" != "tag" ]]; then
+            echo "Not a version tag: the rolling release carries whatever the manifests say."
+            exit 0
+          fi
+          version=$(python -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
+          if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::tag '$GITHUB_REF_NAME' does not match the app config version 'v$version'"
+            exit 1
+          fi
+          echo "Publishing v$version."
+
+      - name: Build both channels
         shell: pwsh
         run: |
-          bunx tauri build --no-bundle
+          # One build produces both artifacts: the bare executable the portable archive is
+          # packed from, and the per-user NSIS installer the bundler writes next to it.
+          bunx tauri build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python scripts/package_portable.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Push-Location dist_portable
-          7z a ../Aniplayer-portable.zip .
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          7z a "../$env:PORTABLE_ASSET" .
+          $zipped = $LASTEXITCODE
           Pop-Location
-          7z t Aniplayer-portable.zip
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          $entries = ((& 7z l -ba Aniplayer-portable.zip) -join "`n").Replace('\', '/')
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          if (-not $entries.Contains('aniplayer.exe')) {
-            throw "Aniplayer-portable.zip is missing aniplayer.exe"
+          if ($zipped) { exit $zipped }
+          $installer = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe |
+            Select-Object -First 1
+          if (-not $installer) {
+            throw "tauri build produced no NSIS installer"
           }
-          if ($entries.Contains('mpv/mpv.exe')) {
-            throw "Aniplayer-portable.zip carries a media runtime; the webview is the backend"
-          }
-          if ($entries.Contains('shaders/')) {
-            throw "Aniplayer-portable.zip carries the mpv shader chain"
-          }
+          Copy-Item $installer.FullName $env:INSTALLER_ASSET
 
-      - name: Publish release
+      - name: Checksum the artifact set
+        shell: pwsh
+        run: |
+          # Lowercase hex and a two-space separator: the text format `sha256sum -c` reads,
+          # written with LF so a Linux or macOS checker verifies the same bytes it downloads.
+          $lines = foreach ($name in @($env:PORTABLE_ASSET, $env:INSTALLER_ASSET)) {
+            $hash = (Get-FileHash $name -Algorithm SHA256).Hash.ToLower()
+            "$hash  $name"
+          }
+          [IO.File]::WriteAllText($env:SUMS_ASSET, ($lines -join "`n") + "`n")
+          Get-Content $env:SUMS_ASSET
+
+      - name: Verify the artifact set
+        shell: pwsh
+        run: |
+          python scripts/verify_release.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Publish the release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          version=$(python -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             release_tag="$GITHUB_REF_NAME"
             title="Aniplayer $release_tag"
@@ -72,14 +110,19 @@ jobs:
           fi
 
           cat > release-notes.md <<EOF
-          Portable build of Aniplayer.
+          Windows build of Aniplayer v$version, published in two channels. Both keep \`data/\` and \`downloads/\` beside their own \`aniplayer.exe\`, so moving the app between machines is copying one folder either way, and neither channel needs administrator rights.
 
           - Commit: \`$GITHUB_SHA\`
           - Built: $(date -u +'%Y-%m-%d %H:%M UTC')
           - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
 
-          Download \`Aniplayer-portable.zip\` — it contains \`aniplayer.exe\` and an empty \`data/\` folder. Playback runs in the app's own webview, so no media runtime ships with the build.
-          This is the only release artifact; no standalone executable is published.
+          | File | Channel |
+          | ---- | ------- |
+          | \`$PORTABLE_ASSET\` | portable: \`aniplayer.exe\` and an empty \`data/\`, unpack wherever you like |
+          | \`$INSTALLER_ASSET\` | per-user install: Start Menu shortcut and an uninstall entry, into your own profile |
+          | \`$SUMS_ASSET\` | SHA-256 of both files: \`sha256sum -c $SUMS_ASSET\` |
+
+          Playback runs in the app's own webview, so no media runtime ships with the build. Installation does not require a minimum WebView2 version: an older runtime costs the Anime4K upscale, not the player.
           EOF
 
           if [[ "$latest" == "true" ]]; then
@@ -88,14 +131,19 @@ jobs:
                 --title "$title" --target "$GITHUB_SHA" --latest --notes "Publishing build..."
             fi
 
-            assets=$(gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" --json assets \
+            # The rolling release carries exactly this build's three files; anything else
+            # on it is an older build's artifact and would be a lie about the current one.
+            while read -r asset; do
+              [[ -z "$asset" ]] && continue
+              case "$asset" in
+                "$PORTABLE_ASSET"|"$INSTALLER_ASSET"|"$SUMS_ASSET") ;;
+                *) gh release delete-asset "$release_tag" "$asset" --repo "$GITHUB_REPOSITORY" --yes ;;
+              esac
+            done < <(gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" --json assets \
               --jq '.assets[].name')
-            if grep -Fxq 'Aniplayer.exe' <<<"$assets"; then
-              gh release delete-asset "$release_tag" Aniplayer.exe --repo "$GITHUB_REPOSITORY" --yes
-            fi
 
             gh release upload "$release_tag" --repo "$GITHUB_REPOSITORY" \
-              Aniplayer-portable.zip --clobber
+              "$PORTABLE_ASSET" "$INSTALLER_ASSET" "$SUMS_ASSET" --clobber
 
             gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" \
               --title "$title" --notes-file release-notes.md --target "$GITHUB_SHA" --latest
@@ -109,7 +157,7 @@ jobs:
             fi
 
             gh release upload "$release_tag" --repo "$GITHUB_REPOSITORY" \
-              Aniplayer-portable.zip --clobber
+              "$PORTABLE_ASSET" "$INSTALLER_ASSET" "$SUMS_ASSET" --clobber
 
             gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" \
               --title "$title" --notes-file release-notes.md --latest=false
