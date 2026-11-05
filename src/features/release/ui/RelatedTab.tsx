@@ -1,7 +1,7 @@
-import { Film, Loader2 } from "lucide-react";
-import { AnimeCard } from "@/features/catalog";
+import { Loader2 } from "lucide-react";
+import { AnimeCard, Rail } from "@/features/catalog";
 import type { FranchiseItem, Release } from "@/shared/types";
-import { Badge } from "@/shared/ui/badge";
+import { SectionHead } from "@/shared/ui/section-head";
 
 export interface RelatedTabProps {
   isLoading: boolean;
@@ -10,6 +10,10 @@ export interface RelatedTabProps {
   onSelectRelease: (r: Release) => void;
 }
 
+/**
+ * The "related" block (#70): the franchise in chronological order, each release a small poster
+ * numbered by its place in the story, the current release marked. Clicking any poster opens it.
+ */
 export function RelatedTab({
   isLoading,
   franchises,
@@ -18,58 +22,52 @@ export function RelatedTab({
 }: RelatedTabProps) {
   if (isLoading) {
     return (
-      <div className="flex h-48 flex-col items-center justify-center gap-3">
-        <Loader2 className="h-7 w-7 animate-spin text-accent-ink" />
-        <p className="text-xs text-ink-2">Загрузка связанных релизов...</p>
+      <div className="flex min-h-32 items-center px-12">
+        <Loader2 className="h-6 w-6 animate-spin text-accent-ink" />
       </div>
     );
   }
 
-  const hasReleases = franchises.some((f) => (f.franchise_releases?.length || 0) > 0);
-  if (!hasReleases) {
-    return (
-      <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-line bg-surface-1/40 p-6 text-center text-ink-2">
-        <Film className="mb-2 h-10 w-10 text-ink-3" />
-        <h4 className="text-sm font-semibold text-ink-2">Нет связанных сезонов</h4>
-        <p className="mt-1 text-xs text-ink-2">
-          Для этого аниме нет других частей или фильмов в базе
-        </p>
-      </div>
-    );
-  }
+  const orderedFranchises = franchises
+    .map((franchise) => ({
+      ...franchise,
+      ordered: [...(franchise.franchise_releases || [])]
+        .filter((item) => item.release)
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    }))
+    .filter((franchise) => franchise.ordered.length > 0);
+
+  if (orderedFranchises.length === 0) return null;
 
   return (
-    <div className="space-y-8">
-      {franchises.map((franchise) => (
-        <div key={franchise.id} className="space-y-3">
-          <div className="flex items-center justify-between border-b border-line pb-2">
-            <div>
-              <h3 className="text-sm font-bold text-ink">{franchise.name}</h3>
-              <span className="text-xs text-ink-2">
-                Релизов в серии: {franchise.franchise_releases?.length || 0}
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {franchise.franchise_releases?.map((item) => {
-              const rel = item.release;
-              if (!rel) return null;
+    <div className="pb-4">
+      {orderedFranchises.map((franchise) => (
+        <section key={franchise.id ?? franchise.name} className="mt-8">
+          <SectionHead title="Связанное" trailing="по порядку франшизы" className="mb-1" />
+          <Rail>
+            {franchise.ordered.map((item, index) => {
+              const rel = item.release as Release;
               const isCurrent = rel.id === currentReleaseId;
-
               return (
-                <div key={item.id} className="relative group">
-                  <AnimeCard release={rel} onClick={() => onSelectRelease(rel)} />
+                <div key={item.id ?? rel.id} className="w-[128px] shrink-0 snap-start">
+                  <div className="relative">
+                    <span className="pointer-events-none absolute top-1.5 left-1.5 z-20 rounded-[5px] bg-ground/80 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-ink">
+                      {index + 1}
+                    </span>
+                    <AnimeCard
+                      release={rel}
+                      onClick={() => onSelectRelease(rel)}
+                      viewTransitionName={`poster-${rel.id}`}
+                    />
+                  </div>
                   {isCurrent && (
-                    <div className="pointer-events-none absolute left-2 top-2 z-20">
-                      <Badge className="text-[10px] shadow-lg">Текущий</Badge>
-                    </div>
+                    <p className="mt-1 px-0.5 text-[12px] text-accent-ink">Сейчас смотрите</p>
                   )}
                 </div>
               );
             })}
-          </div>
-        </div>
+          </Rail>
+        </section>
       ))}
     </div>
   );

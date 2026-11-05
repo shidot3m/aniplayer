@@ -32,6 +32,13 @@
   --default-transition-duration: var(--duration-hover);
   --default-transition-timing-function: var(--ease-out);
 
+  /* Shadows are the mockup's, kept as tokens so no component restates them (ADR 0018).
+     A shadow appears only where something truly floats or lifts: key art, hover lift,
+     player glass. */
+  --shadow-art: 0 24px 64px rgba(0, 0, 0, 0.55);
+  --shadow-lift: 0 20px 48px rgba(0, 0, 0, 0.6);
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.45);
+
   --radius-lg: var(--radius, 0.75rem);
   --radius-md: calc(var(--radius, 0.75rem) - 2px);
   --radius-sm: calc(var(--radius, 0.75rem) - 4px);
@@ -90,4 +97,34 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent);
+}
+
+/* Glass is the one ornament, and only over the playing frame — ADR 0018. The recipe is the
+   mockup's: translucent graphite, 18px blur with a touch of saturation, a bright hairline. */
+@utility glass {
+  background-color: var(--color-glass);
+  border: 1px solid var(--color-glass-line);
+  backdrop-filter: blur(var(--blur-glass)) saturate(1.3);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.3);
+}
+
+/* Rails peek the next card and run edge to edge; the scrollbar would break the composition. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* The motion charter's floor. Durations and the curve are tokens (ADR 0018), so reducing them to
+   a single frame drops every token-driven animation to an instant state change — no per-component
+   work, and nothing that hardcodes a duration escapes because none is allowed to.
+   Story: prefers-reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-hover: 0.01ms;
+    --duration-screen-in: 0.01ms;
+    --duration-screen-out: 0.01ms;
+    --ease-out: linear;
+  }
 }

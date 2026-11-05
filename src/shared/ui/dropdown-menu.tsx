@@ -57,10 +57,14 @@ export function DropdownMenu({ children }: { children: React.ReactNode }) {
 export function DropdownMenuTrigger({
   children,
   className,
+  ariaLabel,
+  title,
 }: {
   children: React.ReactNode;
   asChild?: boolean;
   className?: string;
+  ariaLabel?: string;
+  title?: string;
 }) {
   const context = React.useContext(DropdownContext);
   if (!context) throw new Error("DropdownMenuTrigger must be used within DropdownMenu");
@@ -68,6 +72,8 @@ export function DropdownMenuTrigger({
   return (
     <button
       type="button"
+      aria-label={ariaLabel}
+      title={title}
       onClick={(e) => {
         e.stopPropagation();
         context.setIsOpen((prev) => !prev);

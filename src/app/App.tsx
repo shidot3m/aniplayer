@@ -1,10 +1,12 @@
 import { Suspense, useEffect, useState } from "react";
 import { BookmarksView } from "@/features/bookmarks";
 import {
+  CatalogHero,
   GenreSelector,
   GenreView,
   ReleaseSchedule,
   ReleasesGrid,
+  ReleasesRail,
   useCatalogStore,
 } from "@/features/catalog";
 import { ContinueWatching } from "@/features/continue-watching";
@@ -60,6 +62,9 @@ export default function App() {
     selectReleaseWithDetails(release);
   };
 
+  const featured = latestReleases[0] ?? null;
+  const isSearching = searchQuery.trim().length > 0;
+
   if (isPlayerOpen && currentRelease && currentEpisode) {
     return (
       <Suspense
@@ -100,24 +105,35 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden">
-        {activeScreen === "home" && (
-          <div className="mx-auto max-w-7xl px-6 py-6">
-            {/* Continue Watching Section */}
-            {!searchQuery && <ContinueWatching onSelectRelease={handleSelectRelease} />}
-
+        {activeScreen === "home" &&
+          (isSearching ? (
             <ReleasesGrid onSelectRelease={handleSelectRelease} />
-
-            {/* Release Schedule Section (Section 5.3 of spec) */}
-            {!searchQuery && latestReleases.length > 0 && (
-              <ReleaseSchedule releases={latestReleases} onSelectRelease={handleSelectRelease} />
-            )}
-
-            {/* Genres Section at the End */}
-            {!searchQuery && (
-              <GenreSelector selectedGenre={selectedGenre} onSelectGenre={selectGenre} />
-            )}
-          </div>
-        )}
+          ) : (
+            <>
+              {featured && (
+                <CatalogHero release={featured} onOpen={() => handleSelectRelease(featured)} />
+              )}
+              <div className="py-8">
+                <ContinueWatching />
+                <ReleasesRail
+                  title="Новые релизы"
+                  releases={latestReleases}
+                  onSelectRelease={handleSelectRelease}
+                />
+                {latestReleases.length > 0 && (
+                  <div className="px-12 pt-8">
+                    <ReleaseSchedule
+                      releases={latestReleases}
+                      onSelectRelease={handleSelectRelease}
+                    />
+                  </div>
+                )}
+                <div className="px-12 pb-16 pt-8">
+                  <GenreSelector selectedGenre={selectedGenre} onSelectGenre={selectGenre} />
+                </div>
+              </div>
+            </>
+          ))}
 
         {activeScreen === "genre" && selectedGenre && (
           <GenreView

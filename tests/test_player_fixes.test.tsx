@@ -115,8 +115,8 @@ describe("User Bug Fixes Verification", () => {
     render(<ReleaseDetails release={mockRelease} onBack={() => {}} />);
 
     // The button must NOT propose episode 4, but instead propose next unwatched episode 5!
-    expect(screen.getByText("Продолжить с 5 эпизода")).toBeDefined();
-    expect(screen.queryByText("Продолжить с 4 эпизода")).toBeNull();
+    expect(screen.getByText("Смотреть с 5 эпизода")).toBeDefined();
+    expect(screen.queryByText("Смотреть с 4 эпизода")).toBeNull();
   });
 
   it("proposes Episode 4 when Episode 4 is in progress", () => {
@@ -135,7 +135,8 @@ describe("User Bug Fixes Verification", () => {
 
     render(<ReleaseDetails release={mockRelease} onBack={() => {}} />);
 
-    expect(screen.getByText("Продолжить с 4 эпизода")).toBeDefined();
+    // The signature detail: a resume reads its saved position as a timecode (720s → 12:00).
+    expect(screen.getByText("Смотреть с 12:00")).toBeDefined();
   });
 
   it("settings menu in player only has upscale on/off toggle and no preset list", () => {
@@ -171,17 +172,16 @@ describe("User Bug Fixes Verification", () => {
       cachedReleases: { [mockRelease.id]: mockRelease },
     });
 
-    render(<ContinueWatching onSelectRelease={() => {}} />);
+    render(<ContinueWatching />);
 
     // Must render Continue Watching section
     expect(screen.getByText("Продолжить просмотр")).toBeDefined();
 
-    // Must have carousel scroll navigation buttons
+    // The rail keeps its scroll controls in the DOM (revealed on hover / when scrollable)
     expect(screen.getByLabelText("Прокрутить назад")).toBeDefined();
-    expect(screen.getByLabelText("Прокрутить вперед")).toBeDefined();
+    expect(screen.getByLabelText("Прокрутить вперёд")).toBeDefined();
 
-    // Must show next episode 5
-    expect(screen.getByText("Серия 5")).toBeDefined();
-    expect(screen.getByText("Следующая")).toBeDefined();
+    // Episode 4 is done, so the next unwatched installment is offered to start from the top
+    expect(screen.getByRole("button", { name: "Начать серию" })).toBeDefined();
   });
 });
