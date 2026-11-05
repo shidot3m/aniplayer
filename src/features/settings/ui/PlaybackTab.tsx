@@ -63,7 +63,14 @@ export function PlaybackTab() {
           </span>
           <span className="text-rose-400 font-bold">{volume}%</span>
         </div>
-        <Slider value={volume} min={0} max={100} step={1} onChange={setVolume} />
+        <Slider
+          value={volume}
+          min={0}
+          max={100}
+          step={1}
+          ariaLabel="Громкость по умолчанию"
+          onChange={setVolume}
+        />
       </div>
 
       {/* Anime4K Upscaler */}

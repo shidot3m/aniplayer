@@ -141,7 +141,14 @@ export function ControlsBar({
             )}
           </button>
           <div className="w-20">
-            <Slider value={volume} min={0} max={100} step={1} onChange={onVolumeChange} />
+            <Slider
+              value={volume}
+              min={0}
+              max={100}
+              step={1}
+              ariaLabel="Громкость"
+              onChange={onVolumeChange}
+            />
           </div>
         </div>
 

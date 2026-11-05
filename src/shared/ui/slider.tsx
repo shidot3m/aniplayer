@@ -7,6 +7,7 @@ export interface SliderProps {
   max?: number;
   step?: number;
   onChange: (val: number) => void;
+  ariaLabel: string;
   className?: string;
 }
 
@@ -16,6 +17,7 @@ export const Slider: React.FC<SliderProps> = ({
   max = 100,
   step = 1,
   onChange,
+  ariaLabel,
   className,
 }) => {
   const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
@@ -39,6 +41,7 @@ export const Slider: React.FC<SliderProps> = ({
         max={max}
         step={step}
         value={value}
+        aria-label={ariaLabel}
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
       />
