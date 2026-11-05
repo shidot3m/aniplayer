@@ -30,8 +30,29 @@ const PRESET_HOTKEYS: Record<string, string> = Object.fromEntries(
   ANIME4K_PRESETS.map((preset, index) => [`Digit${index + 1}`, preset.id]),
 );
 
+/**
+ * Only typing suppresses the player hotkeys. Range inputs (seek bar, volume slider) stay
+ * focusable controls whose arrow keys belong to the player, and the handlers call
+ * `preventDefault` so the native step cannot move them as well.
+ */
+const TEXT_ENTRY_INPUT_TYPES = new Set([
+  "email",
+  "number",
+  "password",
+  "search",
+  "tel",
+  "text",
+  "url",
+]);
+
+function isTextEntry(target: EventTarget | null): boolean {
+  if (target instanceof HTMLTextAreaElement) return true;
+  if (target instanceof HTMLInputElement) return TEXT_ENTRY_INPUT_TYPES.has(target.type);
+  return false;
+}
+
 function handlePlayerKey(e: KeyboardEvent, p: UsePlayerHotkeysProps, hk: PlayerHotkeysConfig) {
-  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  if (isTextEntry(e.target)) return;
 
   p.onUserActivity();
 
