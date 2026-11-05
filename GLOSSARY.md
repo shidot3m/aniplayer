@@ -100,6 +100,20 @@ _Avoid_: state, phase
 A persisted user preference, such as volume, preferred Quality, Anime4K preset, or hotkeys.
 _Avoid_: option, config
 
+### Design
+
+**Night cinema**:
+The app's design direction: a dark screening room where the poster and the playing frame are the only rich visual material and everything around them — chrome, surfaces, type — stays quiet. Dark only; no light theme exists.
+_Avoid_: dark theme, new design, redesign style, mode
+
+**Crimson**:
+The single accent of the interface — a deep red used for fills, bars and outlines (played progress, hover outline, current states). Small accent text on dark uses a lightened shade to keep contrast. There are no badges, chips or tinted labels; the only ornament allowed on the player is glass — translucent blurred floating overlays (skip prompt, quality and speed pickers).
+_Avoid_: brand color, orange, highlight color, badge
+
+**Timecode**:
+The signature typographic treatment of the interface: every duration, playback position and Episode Ordinal is set in one consistent tabular-numeral style, borrowed from the player's own readouts. In the player the running position takes the accent color.
+_Avoid_: mono labels, code font, counters
+
 ### Platform
 
 **Install channel**:
