@@ -1,7 +1,8 @@
 # Разработка
 
-Для тех, кто собирает Aniplayer из исходников и правит код. Пользовательская инструкция —
-в [README.md](../README.md); устройство кода — в [docs/architecture.md](architecture.md),
+Для тех, кто собирает Aniplayer из исходников и правит код. Витрина проекта —
+в [README.md](../README.md); как устроена поставка обоих каналов — в разделе «Что попадает
+в архив» ниже; устройство кода — в [docs/architecture.md](architecture.md),
 термины — в [GLOSSARY.md](../GLOSSARY.md), решения — в [docs/adr/](adr/).
 
 ## Стек
