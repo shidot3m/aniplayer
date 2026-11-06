@@ -1,4 +1,0 @@
-{
-  "detector_fires_on_synthetic_ga94": true,
-  "messages": 1
-}

@@ -2,7 +2,10 @@
 
 Date: 2026-11-05
 
-Status: accepted
+Status: accepted as direction, not implemented. The delivery waves were reverted in `e66ecfb`
+before they reached a release, so the code of record is still the stock palette this ADR's Context
+describes (`#090a0f` ground, rose `#e11d48`), and the screens in it are the ones a reader will see.
+The direction below stays the decision to build against when the redesign is taken up again.
 
 ## Context
 

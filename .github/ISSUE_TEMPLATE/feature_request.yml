@@ -1,0 +1,38 @@
+name: Предложение
+description: Новая возможность, изменение поведения или то, чего не хватает
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Прежде чем предлагать: часть того, чего не хватает, уже разобрана и отказана
+        с объяснением в [docs/adr/](https://github.com/shidot3m/aniplayer/tree/master/docs/adr)
+        — стоит начать с поиска по ним.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Задача, которая не решается
+      description: Не «хочется кнопку», а что именно мешает пользоваться программой
+      placeholder: "Я хочу …, но сейчас …"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Как бы это выглядело
+      description: Поведение интерфейса, а не реализация
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы, которые пробовались
+      description: Другая программа, обходной путь, настройка
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Понимание границ проекта
+      options:
+        - label: Я понимаю, что Aniplayer играет только то, что отдаёт каталог AniLiberty, и не добавляет свои источники
+        - label: Я понимаю, что субтитров в плейлистах каталога нет и контроль появится только вместе с дорожкой (ADR 0017)
+        - label: Я понимаю, что плеер живёт в одном окне webview и второго окна или внешнего проигрывателя не будет (ADR 0014)

@@ -1,6 +1,0 @@
-﻿17:11:38 opened release: Открыть Отель для нелюдей 2
-17:11:41 pressed play: Воспроизвести эпизод 1
-17:11:44 sample 1: {"currentSrc":"blob:http://tauri.localhost/46ac6476-488e-429c-9afe-7954b5c220cd","readyState":4,"currentTime":2.3,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":2,"segmentsFetched":49}
-17:12:09 sample 2: {"currentSrc":"blob:http://tauri.localhost/46ac6476-488e-429c-9afe-7954b5c220cd","readyState":4,"currentTime":27.3,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":2,"segmentsFetched":49}
-17:12:34 sample 3: {"currentSrc":"blob:http://tauri.localhost/46ac6476-488e-429c-9afe-7954b5c220cd","readyState":4,"currentTime":52.4,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":2,"segmentsFetched":49}
-17:12:59 sample 4: {"currentSrc":"blob:http://tauri.localhost/46ac6476-488e-429c-9afe-7954b5c220cd","readyState":4,"currentTime":77.4,"paused":false,"frame":"1280x720","textTrackCount":0,"textTracks":[],"trackNodes":[],"playlistsFetched":2,"segmentsFetched":49}

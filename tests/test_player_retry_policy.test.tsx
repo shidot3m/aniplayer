@@ -145,7 +145,7 @@ async function parkAt(video: HTMLVideoElement, seconds: number): Promise<void> {
 
 /**
  * The walk the session takes when the network stops answering: one segment further into the
- * playlist each step, with a longer pause. Measured in docs/evidence/62, a segment is ~12 s
+ * playlist each step, with a longer pause. Measured in #62, a segment is ~12 s
  * (`#EXT-X-TARGETDURATION`), the CDN backend is chosen by the segment path and stays chosen, so
  * the only way to reach a live machine is to ask for a different segment — and a different segment
  * lives past the hole the dead one left. The tests anchor on a buffer that ends at 371 s.

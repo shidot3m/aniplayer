@@ -1,0 +1,85 @@
+name: Сообщение об ошибке
+description: Что-то не работает, зависает или ведёт себя не так, как ожидалось
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо. Заполните поля по порядку — без шагов воспроизведения чинить нечем.
+        Если ошибка в воспроизведении, приложите скриншот или короткую запись экрана.
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Прежде чем писать
+      options:
+        - label: Я посмотрел открытые issue и не нашёл этой проблемы
+          required: true
+        - label: Я обновился до последнего релиза из Releases
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Версия Aniplayer
+      description: Свойства aniplayer.exe → «Подробно» → Версия файла; либо дата релиза, откуда скачан архив
+      placeholder: "например, 1.0.0 (сборка latest от 2026-11-06)"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows
+      description: Выпуск и разрядность, например Windows 10 22H2 x64
+      placeholder: "Windows 11 24H2 x64"
+    validations:
+      required: true
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Как установлена программа
+      options:
+        - Portable (Aniplayer-portable.zip)
+        - Установщик (Aniplayer-setup.exe)
+        - Собрал из исходников
+    validations:
+      required: true
+  - type: textarea
+    id: area
+    attributes:
+      label: Что сломалось
+      description: Каталог, поиск, страница релиза, воспроизведение, качество, скачивание, апскейл, закладки, настройки
+      placeholder: Серия не запускается и пишет «…»
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      description: Насколько повторимо, и на какой именно серии (название и эпизод)
+      value: |
+        1. Открыть …
+        2. Нажать …
+        3. Увидеть …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что должно было произойти
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Скриншот, текст ошибки, запись экрана
+      description: |
+        Файлы принимаются прямо здесь. Лог-файлов программа не ведёт; если для понимания проблемы
+        нужно состояние библиотеки, приложите снимок вкладки «Скачанные» и папку `data/` рядом
+        с `aniplayer.exe` (в ней база с закладками и историей — решайте сами, готовы ли вы её отдавать).
+  - type: checkboxes
+    id: network
+    attributes:
+      label: Сеть
+      options:
+        - label: Проблема повторяется и на онлайн-серии, и на скачанной
+        - label: Проблема только на онлайн-серии (скачанная играет)
+        - label: Проблема только на скачанной серии

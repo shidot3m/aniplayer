@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # JS-зависимости не перечислены намеренно: тулчейн проекта — Bun (ADR 0011), а bun.lock
+  # в поддерживаемом Dependabot наборе лок-файлов не значится, и бот открывал бы PR, которые
+  # не проходят `bun install --frozen-lockfile`. Их поднимают вручную тем же коммитом, который
+  # их меняет.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule:
+      interval: weekly

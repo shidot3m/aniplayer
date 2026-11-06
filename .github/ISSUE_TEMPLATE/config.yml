@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Сообщение об уязвимости
+    url: https://github.com/shidot3m/aniplayer/security/policy
+    about: Не пишите о безопасности в публичные issue — используйте приватный отчёт
+  - name: Вопросы по каталогу AniLiberty
+    url: https://aniliberty.top
+    about: Плеер показывает то, что отдаёт сторонний сервис; вопросы к содержимому — к его владельцам

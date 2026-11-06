@@ -2,7 +2,7 @@ import workerPath from "hls.js/dist/hls.worker.js?url";
 
 /**
  * A request the CDN left unanswered must cost a pause, not a frozen frame. Measured on the live
- * stream (docs/evidence/62): `#EXT-X-TARGETDURATION: 12`, median segment 10 s, 138 segments per
+ * stream (#62): `#EXT-X-TARGETDURATION: 12`, median segment 10 s, 138 segments per
  * 22:55 Episode, each fetched as a 302 onto one of several `cache*.libria.fun` backends — and the
  * backend is chosen by the segment, so asking for the SAME segment again lands on the SAME
  * machine. Retries therefore pay off only against a blip, not against a dead host; the session

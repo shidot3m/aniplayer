@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
  * It catches a suppression creeping back into the source, a caption rule switched off for the
  * whole project, and an exemption naming a file that renders no media element. It misses whether
  * the catalog has started carrying text tracks: that is measured, not tested —
- * `docs/evidence/64/catalog_probe.py` and `cea608_probe.py` are the check ADR 0017 names as its
+ * `scripts/catalog_probe.py` and `scripts/cea608_probe.py` are the check ADR 0017 names as its
  * revisit trigger.
  */
 const REPO_ROOT = resolve(import.meta.dirname, "..");
