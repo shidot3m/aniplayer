@@ -325,4 +325,17 @@ impl Database {
             params![format!("{prefix}%")],
         )
     }
+
+    /// Moves every `DOWNLOADING` episode to `FAILED` and reports how many rows changed. A
+    /// `DOWNLOADING` row only exists while a task owns it; at startup nothing owns one, so every
+    /// such row is a download the previous process died in the middle of. The pass changes only
+    /// the status column, never `file_size` or the files on disk, so the bytes already downloaded
+    /// stay put for the user to finish later (issue #78).
+    pub fn mark_downloading_failed(&self) -> Result<usize> {
+        let conn = self.lock_conn()?;
+        conn.execute(
+            "UPDATE downloaded_episodes SET download_status = 'FAILED' WHERE download_status = 'DOWNLOADING'",
+            [],
+        )
+    }
 }

@@ -1,4 +1,14 @@
-import { CheckCircle2, Film, FolderDown, FolderOpen, HardDrive, Play, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Film,
+  FolderDown,
+  FolderOpen,
+  HardDrive,
+  Play,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useCatalogStore } from "@/features/catalog";
 import { usePlayerStore } from "@/features/player";
@@ -13,16 +23,23 @@ function DownloadedEpisodeRow({
   meta,
   release,
   isWatched,
+  sourceM3u8,
   onPlay,
   onDelete,
+  onRetry,
 }: {
   meta: DownloadedEpisodeMeta;
   release: Release | null;
   isWatched: boolean;
+  sourceM3u8: string;
   onPlay: (meta: DownloadedEpisodeMeta, release: Release | null) => void;
   onDelete: (episodeId: string) => void;
+  onRetry: (meta: DownloadedEpisodeMeta, sourceM3u8: string) => void;
 }) {
   const isCompleted = meta.download_status === "COMPLETED";
+  // A row the startup pass reconciled after its download died with the process (issue #78): it is
+  // indexed but has no playlist, so it must not read as a series ready to watch offline.
+  const isInterrupted = meta.download_status === "FAILED" && !isCompleted;
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-3 transition-colors hover:border-white/15 hover:bg-white/[0.05]">
@@ -38,7 +55,11 @@ function DownloadedEpisodeRow({
               : "border-white/10 bg-white/5 text-slate-500 cursor-not-allowed"
           }`}
         >
-          <Play className="h-4 w-4 fill-current ml-0.5" />
+          {isInterrupted ? (
+            <AlertTriangle className="h-4 w-4" />
+          ) : (
+            <Play className="h-4 w-4 fill-current ml-0.5" />
+          )}
         </button>
 
         <div className="min-w-0">
@@ -49,6 +70,14 @@ function DownloadedEpisodeRow({
             <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
               {meta.quality || "1080p"}
             </Badge>
+            {isInterrupted && (
+              <Badge
+                variant="outline"
+                className="border-amber-500/40 text-amber-400 text-[10px] py-0 px-1.5 h-4 flex items-center gap-1"
+              >
+                <span>Не завершено</span>
+              </Badge>
+            )}
             {isWatched && (
               <Badge
                 variant="outline"
@@ -64,11 +93,27 @@ function DownloadedEpisodeRow({
             {meta.opening_start != null && meta.opening_stop != null && (
               <span>• Таймкоды сохранены</span>
             )}
+            {isInterrupted && (
+              <span className="text-amber-400/90">
+                • Загрузка прервана, серия не готова к офлайну
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {isInterrupted && sourceM3u8 && (
+          <button
+            type="button"
+            aria-label={`Скачать заново эпизод ${meta.episode_ordinal}`}
+            onClick={() => onRetry(meta, sourceM3u8)}
+            title="Скачать заново"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           aria-label="Удалить файл эпизода"
@@ -91,6 +136,7 @@ function DownloadedReleaseCard({
   onPlay,
   onDelete,
   onOpenFolder,
+  onRetry,
 }: {
   releaseId: number;
   items: DownloadedEpisodeMeta[];
@@ -99,6 +145,7 @@ function DownloadedReleaseCard({
   onPlay: (meta: DownloadedEpisodeMeta, release: Release | null) => void;
   onDelete: (episodeId: string) => void;
   onOpenFolder: (releaseId: number) => void;
+  onRetry: (meta: DownloadedEpisodeMeta, sourceM3u8: string) => void;
 }) {
   const title = release?.name?.main || `Аниме #${releaseId}`;
   const poster = formatPosterUrl(
@@ -108,7 +155,16 @@ function DownloadedReleaseCard({
       release?.poster?.optimized?.preview ||
       release?.poster?.thumbnail,
   );
-  const totalSize = items.reduce((acc, curr) => acc + curr.file_size, 0);
+  // Only completed episodes count as offline: an interrupted download is indexed but has no
+  // playlist, and the header must not present it as a series ready to watch (issue #78).
+  const completed = items.filter((item) => item.download_status === "COMPLETED");
+  const totalSize = completed.reduce((acc, curr) => acc + curr.file_size, 0);
+  // The catalog is the only source of the HLS stream a retry needs; the database stores every
+  // other field of the download.
+  const sourceFor = (episodeId: string): string => {
+    const ep = release?.episodes?.find((e) => e.id === episodeId);
+    return ep?.hls_1080 || ep?.hls_720 || ep?.hls_480 || "";
+  };
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#12131A] p-5 shadow-xl transition-all">
@@ -128,7 +184,7 @@ function DownloadedReleaseCard({
             <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-slate-400">
               <span className="flex items-center gap-1">
                 <Film className="h-3.5 w-3.5 text-rose-400" />
-                {items.length} эп.
+                {completed.length} эп.
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -157,8 +213,10 @@ function DownloadedReleaseCard({
             meta={epMeta}
             release={release}
             isWatched={watchedEpIds.has(epMeta.episode_id)}
+            sourceM3u8={sourceFor(epMeta.episode_id)}
             onPlay={onPlay}
             onDelete={onDelete}
+            onRetry={onRetry}
           />
         ))}
       </div>
@@ -168,6 +226,7 @@ function DownloadedReleaseCard({
 
 function buildOfflineEpisodes(metas: DownloadedEpisodeMeta[]): EpisodeItem[] {
   return metas
+    .filter((meta) => meta.download_status === "COMPLETED")
     .slice()
     .sort((a, b) => a.episode_ordinal - b.episode_ordinal)
     .map((meta) => {
@@ -191,6 +250,7 @@ export function DownloadsView() {
     fetchDownloadedEpisodes,
     deleteDownloadedEpisode,
     openDownloadsFolder,
+    retryDownload,
   } = useDownloadStore();
   const { openPlayer } = usePlayerStore();
 
@@ -209,7 +269,10 @@ export function DownloadsView() {
     return map;
   }, [downloadedEpisodes]);
 
-  const totalSize = downloadedEpisodes.reduce((acc, curr) => acc + curr.file_size, 0);
+  // The headline counts only episodes that are actually offline: an interrupted download is
+  // indexed but not playable, and must not inflate «N серий • X на диске» (issue #78).
+  const completedEpisodes = downloadedEpisodes.filter((ep) => ep.download_status === "COMPLETED");
+  const totalSize = completedEpisodes.reduce((acc, curr) => acc + curr.file_size, 0);
 
   // Cached release finder
   const findRelease = (releaseId: number): Release | null => {
@@ -249,6 +312,10 @@ export function DownloadsView() {
     [history],
   );
 
+  const handleRetry = (meta: DownloadedEpisodeMeta, sourceM3u8: string) => {
+    void retryDownload(meta, sourceM3u8);
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
       {/* Top Banner */}
@@ -259,8 +326,7 @@ export function DownloadsView() {
             <span>Скачанные аниме</span>
           </h1>
           <p className="mt-1 text-xs text-slate-400">
-            Офлайн-библиотека • {downloadedEpisodes.length} серий • {formatBytes(totalSize)} на
-            диске
+            Офлайн-библиотека • {completedEpisodes.length} серий • {formatBytes(totalSize)} на диске
           </p>
         </div>
 
@@ -303,6 +369,7 @@ export function DownloadsView() {
               onPlay={handlePlayOffline}
               onDelete={deleteDownloadedEpisode}
               onOpenFolder={openDownloadsFolder}
+              onRetry={handleRetry}
             />
           ))}
         </div>

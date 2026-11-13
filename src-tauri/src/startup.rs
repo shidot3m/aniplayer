@@ -18,6 +18,9 @@ pub enum StartupError {
     #[error("Aniplayer could not clear the downloads an older version left in its library.\n{reason}\nCheck that the database file is writable and the disk is not full, then restart Aniplayer.")]
     LegacyCleanup { reason: String },
 
+    #[error("Aniplayer could not reconcile the downloads a previous run left unfinished.\n{reason}\nCheck that the database file is writable and the disk is not full, then restart Aniplayer.")]
+    InterruptedDownloads { reason: String },
+
     #[error("Aniplayer stopped with an internal error.\n{reason}")]
     Run { reason: String },
 }
@@ -55,6 +58,25 @@ pub fn purge_legacy_torrent_downloads(db: &Database) -> Result<usize, StartupErr
         })
 }
 
+/// Reconciles the HLS downloads a previous process died in the middle of.
+///
+/// A `DOWNLOADING` row is written when a task starts and is only left behind when the task is
+/// killed with its process — closing the window, a restart, `Stop-Process`. Nothing owns the row
+/// on the next launch: it would sit in the library as a `0 Б` episode that is neither playable
+/// (no playlist) nor resumable, and its segments would be orphaned on disk. The pass moves every
+/// such row to `FAILED` so it reads as an unfinished download the library offers to download
+/// again, and it leaves the already-downloaded bytes on disk untouched (issue #78).
+///
+/// Runs on every startup: it is one `UPDATE` filtered by status, so it stays correct after the
+/// rows are reconciled and needs no version marker. At startup no live task exists, so there is
+/// no in-flight `DOWNLOADING` row to disturb.
+pub fn reconcile_interrupted_downloads(db: &Database) -> Result<usize, StartupError> {
+    db.mark_downloading_failed()
+        .map_err(|e| StartupError::InterruptedDownloads {
+            reason: e.to_string(),
+        })
+}
+
 /// The directory the application keeps its data in: next to the executable, so
 /// the portable archive stays self-contained.
 pub fn app_dir() -> std::path::PathBuf {
@@ -71,6 +93,7 @@ pub fn bootstrap() -> Result<AppState, StartupError> {
     let db_path = app_dir.join("data").join("aniplayer.db");
     let db = Arc::new(open_database(&db_path)?);
     purge_legacy_torrent_downloads(&db)?;
+    reconcile_interrupted_downloads(&db)?;
 
     Ok(AppState {
         db: db.clone(),

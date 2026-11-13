@@ -73,7 +73,9 @@ function DownloadItemRow({
         <span className="truncate">
           {item.totalSegments > 0
             ? `${item.downloadedSegments} / ${item.totalSegments} сегментов`
-            : "Загрузка…"}
+            : isFailed
+              ? "Не начато"
+              : "Загрузка…"}
         </span>
         <span className="shrink-0">{formatBytes(item.speed)}/с</span>
       </div>

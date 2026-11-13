@@ -307,3 +307,158 @@ fn startup_purge_leaves_an_untouched_index_alone() {
 
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// A Downloaded row with an explicit status: the reconcile pass must key off this, not off the
+/// size, so the test sets it directly rather than through a completed download.
+fn row_with_status(
+    episode_id: &str,
+    release_id: i64,
+    ordinal: f64,
+    file_path: &str,
+    status: &str,
+    file_size: i64,
+) -> DownloadedEpisodeMeta {
+    DownloadedEpisodeMeta {
+        episode_id: episode_id.to_string(),
+        release_id,
+        episode_ordinal: ordinal,
+        file_path: file_path.to_string(),
+        file_size,
+        quality: "1080p".to_string(),
+        opening_start: Some(23.0),
+        opening_stop: Some(113.0),
+        ending_start: None,
+        ending_stop: None,
+        download_status: status.to_string(),
+    }
+}
+
+fn status_of(db: &Database, episode_id: &str) -> String {
+    db.get_downloaded_episode(episode_id)
+        .expect("read downloaded episode")
+        .unwrap_or_else(|| panic!("row {episode_id} must still be indexed"))
+        .download_status
+}
+
+/// Issue #78: an HLS download interrupted by the death of the process leaves a `DOWNLOADING`
+/// row with no playlist and orphan segments on disk. On the next start there is no live task to
+/// finish it, so the pass must stop the row reading as a playable download (move it to `FAILED`)
+/// while leaving the user's already-downloaded bytes where they are.
+#[test]
+fn startup_marks_interrupted_downloads_failed_without_touching_their_bytes() {
+    let dir = unique_temp_dir("interrupted");
+    let db = startup::open_database(&dir.join("data").join("aniplayer.db"))
+        .expect("database must open at a writable path");
+
+    // The orphaned folder a killed download leaves behind: segments, no playlist.
+    let episode_dir = dir.join("downloads").join("42").join("1");
+    std::fs::create_dir_all(&episode_dir).unwrap();
+    std::fs::write(episode_dir.join("segment-00000.ts"), b"partial segment").unwrap();
+    std::fs::write(episode_dir.join("segment-00001.ts"), b"partial segment").unwrap();
+
+    db.save_downloaded_episode(&row_with_status(
+        "ep-int",
+        42,
+        1.0,
+        &episode_dir.join("index.m3u8").to_string_lossy(),
+        "DOWNLOADING",
+        0,
+    ))
+    .expect("seed interrupted row");
+    // Rows that are already in a terminal state must not be rewritten.
+    db.save_downloaded_episode(&row_with_status(
+        "ep-done",
+        42,
+        2.0,
+        "downloads/42/2/index.m3u8",
+        "COMPLETED",
+        300_000_000,
+    ))
+    .expect("seed completed row");
+    db.save_downloaded_episode(&row_with_status(
+        "ep-fail",
+        42,
+        3.0,
+        "downloads/42/3/index.m3u8",
+        "FAILED",
+        0,
+    ))
+    .expect("seed failed row");
+
+    assert_eq!(
+        startup::reconcile_interrupted_downloads(&db).expect("reconcile must report success"),
+        1,
+        "only the interrupted DOWNLOADING row is reconciled"
+    );
+
+    assert_eq!(
+        status_of(&db, "ep-int"),
+        "FAILED",
+        "the interrupted row stops reading as a live download"
+    );
+    assert_eq!(
+        status_of(&db, "ep-done"),
+        "COMPLETED",
+        "a completed row is left alone"
+    );
+    assert_eq!(
+        status_of(&db, "ep-fail"),
+        "FAILED",
+        "an already-failed row is left alone"
+    );
+
+    assert!(
+        episode_dir.join("segment-00000.ts").is_file()
+            && episode_dir.join("segment-00001.ts").is_file(),
+        "the user's already-downloaded bytes are never the reconcile pass's to delete"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// The pass runs on every startup: with nothing interrupted it changes no rows, and a second run
+/// after the first reconciled them reports zero again.
+#[test]
+fn startup_reconcile_is_idempotent_and_quiet_on_a_clean_library() {
+    let dir = unique_temp_dir("interrupted-noop");
+    let db = startup::open_database(&dir.join("data").join("aniplayer.db"))
+        .expect("database must open at a writable path");
+
+    db.save_downloaded_episode(&row_with_status(
+        "ep-1",
+        7,
+        1.0,
+        "downloads/7/1/index.m3u8",
+        "COMPLETED",
+        100,
+    ))
+    .expect("seed completed row");
+
+    assert_eq!(
+        startup::reconcile_interrupted_downloads(&db).expect("clean library is quiet"),
+        0,
+        "a library with no interrupted rows is not rewritten"
+    );
+
+    db.save_downloaded_episode(&row_with_status(
+        "ep-2",
+        7,
+        2.0,
+        "downloads/7/2/index.m3u8",
+        "DOWNLOADING",
+        0,
+    ))
+    .expect("seed interrupted row");
+    assert_eq!(
+        startup::reconcile_interrupted_downloads(&db).expect("first reconcile"),
+        1,
+        "one interrupted row is reconciled"
+    );
+    assert_eq!(
+        startup::reconcile_interrupted_downloads(&db).expect("second reconcile is repeatable"),
+        0,
+        "the pass changes nothing the second time"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}

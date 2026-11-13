@@ -93,8 +93,12 @@ The `index.m3u8` inside a downloaded Episode folder, whose segment, init-segment
 _Avoid_: cached playlist, manifest file
 
 **Download status**:
-One of PENDING, DOWNLOADING, COMPLETED, or FAILED.
+One of PENDING, DOWNLOADING, COMPLETED, or FAILED. `DOWNLOADING` is owned by a live task; `FAILED` covers both a download that errored and an Interrupted download the app reconciled at startup.
 _Avoid_: state, phase
+
+**Interrupted download**:
+An HLS Download whose process died before its task reached a terminal state, leaving a `DOWNLOADING` row with no Offline playlist and orphan segments on disk. The next startup reconciles it to `FAILED` and leaves its bytes in place; the library offers to download it again.
+_Avoid_: stalled download, broken download, resume
 
 **Setting**:
 A persisted user preference, such as volume, preferred Quality, Anime4K preset, or hotkeys.

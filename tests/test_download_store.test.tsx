@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { useDownloadStore } from "@/features/downloads";
 import { DownloadFloatingWidget } from "@/features/downloads/ui/DownloadFloatingWidget";
 import { formatBytes } from "@/shared/lib/utils";
+import type { DownloadedEpisodeMeta } from "@/shared/types";
 
 const invoke = vi.hoisted(() => vi.fn().mockResolvedValue(null));
 
@@ -129,6 +130,64 @@ describe("HLS download queue", () => {
 
     expect(useDownloadStore.getState().activeDownloads).toEqual({});
     expect(lastCommand()).toEqual({ command: "downloader_cancel_all", args: undefined });
+  });
+});
+
+describe("resuming an interrupted download", () => {
+  /** A FAILED row the startup pass left behind: no bytes, the source it once had is gone. */
+  function interruptedMeta(): DownloadedEpisodeMeta {
+    return {
+      episode_id: "ep-100",
+      release_id: 42,
+      episode_ordinal: 3,
+      file_path: "downloads/42/3/index.m3u8",
+      file_size: 0,
+      quality: "1080p",
+      opening_start: 23,
+      opening_stop: 113,
+      ending_start: null,
+      ending_stop: null,
+      download_status: "FAILED",
+    };
+  }
+
+  it("re-runs the download from the catalog stream and refreshes the index", async () => {
+    installTauri();
+    invoke.mockImplementation((cmd: string) =>
+      Promise.resolve(cmd === "db_get_all_downloaded_episodes" ? [] : null),
+    );
+
+    await useDownloadStore
+      .getState()
+      .retryDownload(interruptedMeta(), "https://cdn/1080/index.m3u8");
+
+    expect(invoke).toHaveBeenCalledWith("downloader_start_episode", {
+      releaseId: 42,
+      episode: {
+        episodeId: "ep-100",
+        ordinal: 3,
+        m3u8Url: "https://cdn/1080/index.m3u8",
+        quality: "1080p",
+        opStart: 23,
+        opStop: 113,
+        edStart: null,
+        edStop: null,
+      },
+    });
+    // The refreshed index re-appears as a widget line through backend events; the retry itself
+    // must not raise a native dialog (issue #77 retired those).
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    expect(alertSpy).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it("refuses to start without a resolvable stream", async () => {
+    installTauri();
+    invoke.mockClear();
+
+    await useDownloadStore.getState().retryDownload(interruptedMeta(), "");
+
+    expect(invoke).not.toHaveBeenCalledWith("downloader_start_episode", expect.anything());
   });
 });
 
